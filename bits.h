@@ -12,6 +12,9 @@
 
 #include <stdint.h>
 
+#define MAX(a,b) (((b) > (a)) ? (b) : (a))
+#define MIN(a,b) (((b) < (a)) ? (b) : (a))
+
 uintptr_t nextupow2(uintptr_t);
 
 #endif
