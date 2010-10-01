@@ -29,6 +29,7 @@ int channel_destroy(channel_t *);
 
 scalar_t channel_read(channel_t *);
 void channel_write(channel_t *, scalar_t);
+int channel_tryread(channel_t *, scalar_t *);
 
 int channel_grow_buffer(channel_t *, size_t);
 int channel_shrink_buffer(channel_t *, size_t);

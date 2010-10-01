@@ -81,6 +81,26 @@ scalar_t channel_read(channel_t *self) {
     return value;
 }
 
+int channel_tryread(channel_t *self, scalar_t *result) {
+    assert(self != NULL);
+    assert(result != NULL);
+
+    int status;
+    assert(0 == pthread_mutex_lock(&self->m_mutex));
+        if (self->m_count > 0) {
+            *result = self->m_ringbuf[self->m_start];
+            self->m_start = (self->m_start + 1) % self->m_bufsize;
+            self->m_count--;
+            status = 0;
+        }
+        else {
+            status = EWOULDBLOCK;
+        }
+    pthread_mutex_unlock(&self->m_mutex);
+
+    return status;
+}
+
 void channel_write(channel_t *self, scalar_t value) {
     assert(self != NULL);
     static const struct timespec wait_timeout = { 0, 250000 };
