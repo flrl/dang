@@ -27,9 +27,11 @@ void scalar_destroy(scalar_t *self) {
     self->m_value.int_value = 0;
 }
 
-void scalar_clone(scalar_t *self, const scalar_t *other) {
+void scalar_clone(scalar_t * restrict self, const scalar_t * restrict other) {
     assert(self != NULL);
     assert(other != NULL);
+    
+    if (self == other)  return;
     
     if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
     

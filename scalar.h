@@ -30,7 +30,7 @@ typedef struct scalar_t {
 
 void scalar_init(scalar_t *);
 void scalar_destroy(scalar_t *);
-void scalar_clone(scalar_t *, const scalar_t *);
+void scalar_clone(scalar_t * restrict, const scalar_t * restrict);
 
 void scalar_set_int_value(scalar_t *, intptr_t);
 void scalar_set_double_value(scalar_t *, double);
