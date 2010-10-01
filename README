@@ -1,0 +1,1 @@
+gcc --std=c99 -o dang -g -Wall *.c
