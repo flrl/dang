@@ -10,10 +10,6 @@
 #ifndef SCALAR_H
 #define SCALAR_H
 
-#include <assert.h>
-#include <stdint.h>
-#include <stdlib.h>
-
 typedef enum scalar_type_t {
     ScUNDEFINED = 0,
     ScINT       = 1,
@@ -23,19 +19,25 @@ typedef enum scalar_type_t {
 } scalar_type_t;
 
 typedef struct scalar_t {
-    scalar_type_t type;
+    scalar_type_t m_type;
     union {
         intptr_t int_value;
         double   double_value;
-        /* string_t *string_value; */
+        char     *string_value;
         /* reference_t *reference_value; */
-    } value;
+    } m_value;
 } scalar_t;
 
 void scalar_init(scalar_t *);
 void scalar_destroy(scalar_t *);
+void scalar_clone(scalar_t *, const scalar_t *);
 
+void scalar_set_int_value(scalar_t *, intptr_t);
+void scalar_set_double_value(scalar_t *, double);
+void scalar_set_string_value(scalar_t *, const char *);
 
-
+intptr_t scalar_get_int_value(const scalar_t *);
+double scalar_get_double_value(const scalar_t *);
+const char *scalar_get_string_value(const scalar_t *);
 
 #endif
