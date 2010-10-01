@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bits.h"
 #include "channel.h"
 
 //typedef struct channel_t {
@@ -26,11 +27,15 @@
 //    pthread_cond_t m_has_space;
 //} channel_t;
 
+static const size_t MIN_BUFSIZE = 1;
+static const size_t MAX_BUFSIZE = 4096; // no particular reason
 
 static int _channel_resize_nonlocking(channel_t *self, size_t new_size) {
     assert(self != NULL);
     assert(new_size >= self->m_count);
     assert(new_size != self->m_bufsize);
+    assert(new_size >= MIN_BUFSIZE);
+    assert(new_size <= MAX_BUFSIZE);
     
     int status = 0;    
     scalar_t *new_ringbuf = calloc(new_size, sizeof(scalar_t));
@@ -54,7 +59,8 @@ static int _channel_resize_nonlocking(channel_t *self, size_t new_size) {
 
 int channel_grow_buffer(channel_t *self, size_t new_size) {
     assert(self != NULL);
-    assert(new_size > 0);
+    assert(new_size >= MIN_BUFSIZE);
+    assert(new_size <= MAX_BUFSIZE);
 
     int status = 0;
     int post_has_space = 0;
@@ -79,7 +85,8 @@ int channel_grow_buffer(channel_t *self, size_t new_size) {
 
 int channel_shrink_buffer(channel_t *self, size_t new_size) {
     assert(self != NULL);
-    assert(new_size > 0);
+    assert(new_size >= MIN_BUFSIZE);
+    assert(new_size <= MAX_BUFSIZE);
     
     int status = 0;
     
@@ -100,7 +107,9 @@ int channel_shrink_buffer(channel_t *self, size_t new_size) {
 
 int channel_init(channel_t *self, size_t bufsize) {
     assert(self != NULL);
-    assert(bufsize > 0);  // FIXME make bufsize a power of 2
+    assert(bufsize >= MIN_BUFSIZE);
+    assert(bufsize <= MAX_BUFSIZE);
+    // FIXME make bufsize a power of 2
     
     if (0 == pthread_mutex_init(&self->m_mutex, NULL)) {    
         if (0 == pthread_mutex_lock(&self->m_mutex)) {
@@ -128,13 +137,22 @@ int channel_destroy(channel_t *self) { // FIXME implement this
 
 scalar_t channel_read(channel_t *self) {
     assert(self != NULL);
-
+    static const struct timespec wait_timeout = { 10, 0 };
+    
     scalar_t value;
     scalar_init(&value);
     
     assert(0 == pthread_mutex_lock(&self->m_mutex));
         while (self->m_count == 0) {
-            pthread_cond_wait(&self->m_has_items, &self->m_mutex);
+            if (ETIMEDOUT == pthread_cond_timedwait(&self->m_has_items, &self->m_mutex, &wait_timeout)) {
+                size_t bufsize = self->m_bufsize;
+                if (bufsize > MIN_BUFSIZE) {
+                    size_t new_size = MAX(MIN_BUFSIZE, bufsize / 2);
+                    pthread_mutex_unlock(&self->m_mutex);
+                    channel_shrink_buffer(self, new_size);
+                    assert(0 == pthread_mutex_lock(&self->m_mutex));
+                }
+            }
         }
         value = self->m_ringbuf[self->m_start];
         self->m_start = (self->m_start + 1) % self->m_bufsize;
@@ -147,16 +165,19 @@ scalar_t channel_read(channel_t *self) {
 }
 
 void channel_write(channel_t *self, scalar_t value) {
-    static const struct timespec wait_timeout = { 0, 250000 };
     assert(self != NULL);
+    static const struct timespec wait_timeout = { 0, 250000 };
 
     assert(0 == pthread_mutex_lock(&self->m_mutex));
         while (self->m_count >= self->m_bufsize) {
             if (ETIMEDOUT == pthread_cond_timedwait(&self->m_has_space, &self->m_mutex, &wait_timeout)) {
                 size_t bufsize = self->m_bufsize;
-                pthread_mutex_unlock(&self->m_mutex);
-                channel_grow_buffer(self, 2 * bufsize);
-                assert(0 == pthread_mutex_lock(&self->m_mutex));
+                if (bufsize < MAX_BUFSIZE) {
+                    size_t new_size = MIN(MAX_BUFSIZE, bufsize * 2);
+                    pthread_mutex_unlock(&self->m_mutex);
+                    channel_grow_buffer(self, new_size);
+                    assert(0 == pthread_mutex_lock(&self->m_mutex));                    
+                }
             }
         }
         size_t index = (self->m_start + self->m_count) % self->m_bufsize;
