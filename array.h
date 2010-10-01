@@ -17,20 +17,19 @@
 typedef struct array_t {
     size_t m_allocated_count;
     size_t m_count;
-    struct scalar_t *m_items;
+    scalar_t *m_items;
 } array_t;
 
-array_t *array_create(size_t initial_size);
-array_t *array_destroy(array_t *self);
+int array_init(array_t *);
+int array_destroy(array_t *);
+int array_reserve(array_t *, size_t);
 
-scalar_t array_item_at(array_t *self, size_t index);
+int array_item_at(array_t *, size_t, scalar_t *);
 
-int  array_push(array_t *self, scalar_t value);
-int  array_unshift(array_t *self, scalar_t value);
+int array_push(array_t *, const scalar_t *);
+int array_unshift(array_t *, const scalar_t *);
 
-scalar_t array_pop(array_t *self);
-scalar_t array_shift(array_t *self);
-
-array_t *array_splice(array_t *self, size_t index, size_t count);
+int array_pop(array_t *, scalar_t *);
+int array_shift(array_t *, scalar_t *);
 
 #endif
