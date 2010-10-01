@@ -7,6 +7,8 @@
  *
  */
 
+#include <sys/errno.h>
+
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -145,11 +147,17 @@ scalar_t channel_read(channel_t *self) {
 }
 
 void channel_write(channel_t *self, scalar_t value) {
+    static const struct timespec wait_timeout = { 0, 250000 };
     assert(self != NULL);
 
     assert(0 == pthread_mutex_lock(&self->m_mutex));
         while (self->m_count >= self->m_bufsize) {
-            pthread_cond_wait(&self->m_has_space, &self->m_mutex);
+            if (ETIMEDOUT == pthread_cond_timedwait(&self->m_has_space, &self->m_mutex, &wait_timeout)) {
+                size_t bufsize = self->m_bufsize;
+                pthread_mutex_unlock(&self->m_mutex);
+                channel_grow_buffer(self, 2 * bufsize);
+                assert(0 == pthread_mutex_lock(&self->m_mutex));
+            }
         }
         size_t index = (self->m_start + self->m_count) % self->m_bufsize;
         self->m_ringbuf[index] = value;
