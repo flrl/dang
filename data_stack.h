@@ -1,0 +1,32 @@
+/*
+ *  data_stack.h
+ *  dang
+ *
+ *  Created by Ellie on 2/10/10.
+ *  Copyright 2010 Ellie. All rights reserved.
+ *
+ */
+
+#include <pthread.h>
+
+#include "array.h"
+#include "scalar.h"
+
+typedef struct data_stack_scope_t {
+    struct data_stack_t *m_parent;
+    size_t m_allocated_size;
+    size_t m_top;
+    scalar_t m_items;
+    pthread_mutex_t m_mutex;
+} data_stack_scope_t;
+
+extern data_stack_scope_t *g_data_stack_top;
+
+int data_stack_scope_init(data_stack_scope_t *);
+int data_stack_scope_destroy(data_stack_scope_t *);
+int data_stack_scope_reserve(data_stack_scope_t *, size_t);
+int data_stack_scope_push(data_stack_scope_t *, const scalar_t *);
+int data_stack_scope_pop(data_stack_scope_t *, scalar_t *);
+
+int data_stack_start_scope(data_stack_scope_t **);
+int data_stack_end_scope(data_stack_scope_t **);
