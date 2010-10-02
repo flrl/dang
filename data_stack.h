@@ -19,7 +19,7 @@ typedef struct data_stack_scope_t {
     struct data_stack_scope_t *m_parent;
     size_t m_allocated_size;
     size_t m_top;
-    scalar_t m_items;
+    scalar_t *m_items;
     pthread_mutex_t m_mutex;
 } data_stack_scope_t;
 
