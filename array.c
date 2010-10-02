@@ -124,7 +124,12 @@ int array_pop(array_t *self, scalar_t *result) {
 
     if (self->m_count > 0) {
         --self->m_count;
-        if (result != NULL)  *result = self->m_items[self->m_count];
+        if (result != NULL) {
+            *result = self->m_items[self->m_count];   
+        }
+        else {
+            scalar_destroy(&self->m_items[self->m_count]);
+        }
         return 0;
     }
     else {
@@ -139,7 +144,12 @@ int array_shift(array_t *self, scalar_t *result) {
         scalar_t value = self->m_items[0];
         --self->m_count;
         memmove(&self->m_items[0], &self->m_items[1], self->m_count * sizeof(scalar_t));
-        if (result != NULL)  *result = value;
+        if (result != NULL) {
+            *result = value;    
+        }
+        else {
+            scalar_destroy(&value);
+        }
         return 0;
     }
     else {
