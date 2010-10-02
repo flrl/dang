@@ -52,13 +52,11 @@ int channel_destroy(channel_t *self) { // FIXME implement this
     return 0;
 }
 
-scalar_t channel_read(channel_t *self) {
+int channel_read(channel_t *self, scalar_t *result) {
     assert(self != NULL);
+    assert(result != NULL);
     static const struct timespec wait_timeout = { 10, 0 };
-    
-    scalar_t value;
-    scalar_init(&value);
-    
+        
     assert(0 == pthread_mutex_lock(&self->m_mutex));
         while (self->m_count == 0) {
             if (ETIMEDOUT == pthread_cond_timedwait(&self->m_has_items, &self->m_mutex, &wait_timeout)) {
@@ -71,14 +69,14 @@ scalar_t channel_read(channel_t *self) {
                 }
             }
         }
-        value = self->m_ringbuf[self->m_start];
+        scalar_assign(result, &self->m_ringbuf[self->m_start]);
         self->m_start = (self->m_start + 1) % self->m_bufsize;
         self->m_count--;
     pthread_mutex_unlock(&self->m_mutex);        
 
     pthread_cond_signal(&self->m_has_space);    
 
-    return value;
+    return 0;
 }
 
 int channel_tryread(channel_t *self, scalar_t *result) {
@@ -88,7 +86,7 @@ int channel_tryread(channel_t *self, scalar_t *result) {
     int status;
     assert(0 == pthread_mutex_lock(&self->m_mutex));
         if (self->m_count > 0) {
-            *result = self->m_ringbuf[self->m_start];
+            scalar_assign(result, &self->m_ringbuf[self->m_start]);
             self->m_start = (self->m_start + 1) % self->m_bufsize;
             self->m_count--;
             status = 0;
@@ -101,7 +99,7 @@ int channel_tryread(channel_t *self, scalar_t *result) {
     return status;
 }
 
-void channel_write(channel_t *self, scalar_t value) {
+int channel_write(channel_t *self, const scalar_t *value) {
     assert(self != NULL);
     static const struct timespec wait_timeout = { 0, 250000 };
 
@@ -118,11 +116,12 @@ void channel_write(channel_t *self, scalar_t value) {
             }
         }
         size_t index = (self->m_start + self->m_count) % self->m_bufsize;
-        self->m_ringbuf[index] = value;
+        scalar_clone(&self->m_ringbuf[index], value);
         self->m_count++;
     pthread_mutex_unlock(&self->m_mutex);
 
     pthread_cond_signal(&self->m_has_items);
+    return 0;
 }
 
 int channel_grow_buffer(channel_t *self, size_t new_size) {
