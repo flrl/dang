@@ -39,6 +39,6 @@ void scalar_set_string_value(scalar_t *, const char *);
 
 intptr_t scalar_get_int_value(const scalar_t *);
 double scalar_get_double_value(const scalar_t *);
-const char *scalar_get_string_value(const scalar_t *);
+void scalar_get_string_value(const scalar_t *, char **);
 
 #endif

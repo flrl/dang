@@ -8,7 +8,9 @@
  */
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -50,7 +52,9 @@ void scalar_assign(scalar_t * restrict self, const scalar_t * restrict other) {
     assert(other != NULL);
     
     if (self == other)  return;
-    
+
+    if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
+
     memcpy(self, other, sizeof(scalar_t));
 }
 
@@ -79,6 +83,8 @@ void scalar_set_string_value(scalar_t *self, const char *sval) {
 intptr_t scalar_get_int_value(const scalar_t *self) {
     assert(self != NULL);
     switch(self->m_type) {
+        case ScUNDEFINED:
+            return 0;
         case ScINT:
             return self->m_value.int_value;
         case ScDOUBLE:
@@ -93,6 +99,8 @@ intptr_t scalar_get_int_value(const scalar_t *self) {
 double scalar_get_double_value(const scalar_t *self) {
     assert(self != NULL);
     switch(self->m_type) {
+        case ScUNDEFINED:
+            return 0.0;
         case ScINT:
             return (double) self->m_value.int_value;
         case ScDOUBLE:
@@ -104,8 +112,29 @@ double scalar_get_double_value(const scalar_t *self) {
     }    
 }
 
-const char *scalar_get_string_value(const scalar_t *self) {
+void scalar_get_string_value(const scalar_t *self, char **result) {
     assert(self != NULL);
-    // FIXME write this
-    return NULL;
+
+    char buffer[100];
+    
+    switch(self->m_type) {
+        case ScUNDEFINED:
+            *result = strdup("");
+            return;
+        case ScINT:
+            snprintf(buffer, sizeof(buffer), "%"PRIiPTR"", self->m_value.int_value);
+            *result = strdup(buffer);
+            break;
+        case ScDOUBLE:
+            snprintf(buffer, sizeof(buffer), "%g", self->m_value.double_value);
+            *result = strdup(buffer);
+            break;
+        case ScSTRING:
+            *result = strdup(self->m_value.string_value);
+            break;
+        default:
+            ; // do nothing
+    }
+    
+    return;
 }
