@@ -40,7 +40,7 @@ int data_stack_scope_init(data_stack_scope_t *self) {
     assert(self != NULL);
     
     int status;
-    if (status == pthread_mutex_init(&self->m_mutex, NULL)) {
+    if (0 == (status = pthread_mutex_init(&self->m_mutex, NULL))) {
         int locked = pthread_mutex_lock(&self->m_mutex);
             assert(locked == 0);
             if (NULL != (self->m_items = calloc(data_stack_scope_initial_reserve_size, sizeof(scalar_t)))) {
