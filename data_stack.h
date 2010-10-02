@@ -7,6 +7,9 @@
  *
  */
 
+#ifndef DATA_STACK_H
+#define DATA_STACK_H
+
 #include <pthread.h>
 
 #include "array.h"
@@ -30,3 +33,5 @@ int data_stack_scope_pop(data_stack_scope_t *, scalar_t *);
 
 int data_stack_start_scope(data_stack_scope_t **);
 int data_stack_end_scope(data_stack_scope_t **);
+
+#endif
