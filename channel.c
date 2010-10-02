@@ -43,7 +43,7 @@ int channel_init(channel_t *self, size_t bufsize) {
         }
     }
     
-    perror("channel_init");
+    perror("channel_init");  // FIXME don't think this will do what i wanted it to do
     return -1;
 }
 
@@ -57,7 +57,8 @@ int channel_read(channel_t *self, scalar_t *result) {
     assert(result != NULL);
     static const struct timespec wait_timeout = { 10, 0 };
         
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0); 
         while (self->m_count == 0) {
             if (ETIMEDOUT == pthread_cond_timedwait(&self->m_has_items, &self->m_mutex, &wait_timeout)) {
                 size_t bufsize = self->m_bufsize;
@@ -65,7 +66,8 @@ int channel_read(channel_t *self, scalar_t *result) {
                     size_t new_size = MAX(MIN_BUFSIZE, bufsize / 2);
                     pthread_mutex_unlock(&self->m_mutex);
                     channel_shrink_buffer(self, new_size);
-                    assert(0 == pthread_mutex_lock(&self->m_mutex));
+                    int locked = pthread_mutex_lock(&self->m_mutex);
+                    assert(locked == 0);
                 }
             }
         }
@@ -84,7 +86,8 @@ int channel_tryread(channel_t *self, scalar_t *result) {
     assert(result != NULL);
 
     int status;
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
         if (self->m_count > 0) {
             scalar_assign(result, &self->m_ringbuf[self->m_start]);
             self->m_start = (self->m_start + 1) % self->m_bufsize;
@@ -103,7 +106,8 @@ int channel_write(channel_t *self, const scalar_t *value) {
     assert(self != NULL);
     static const struct timespec wait_timeout = { 0, 250000 };
 
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
         while (self->m_count >= self->m_bufsize) {
             if (ETIMEDOUT == pthread_cond_timedwait(&self->m_has_space, &self->m_mutex, &wait_timeout)) {
                 size_t bufsize = self->m_bufsize;
@@ -111,7 +115,8 @@ int channel_write(channel_t *self, const scalar_t *value) {
                     size_t new_size = MIN(MAX_BUFSIZE, bufsize * 2);
                     pthread_mutex_unlock(&self->m_mutex);
                     channel_grow_buffer(self, new_size);
-                    assert(0 == pthread_mutex_lock(&self->m_mutex));                    
+                    int locked = pthread_mutex_lock(&self->m_mutex);
+                    assert(locked == 0);                    
                 }
             }
         }
@@ -132,15 +137,16 @@ int channel_grow_buffer(channel_t *self, size_t new_size) {
     int status = 0;
     int post_has_space = 0;
     
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
-    if (new_size > self->m_bufsize) {
-        if (0 == (status = _channel_resize_nonlocking(self, new_size))) {
-            post_has_space = 1;            
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
+        if (new_size > self->m_bufsize) {
+            if (0 == (status = _channel_resize_nonlocking(self, new_size))) {
+                post_has_space = 1;            
+            }
         }
-    }
-    else {
-        status = 0; // grow to current size or less requested: do nothing
-    }
+        else {
+            status = 0; // grow to current size or less requested: do nothing
+        }
     pthread_mutex_unlock(&self->m_mutex);
     
     if (post_has_space) {
@@ -157,16 +163,17 @@ int channel_shrink_buffer(channel_t *self, size_t new_size) {
     
     int status = 0;
     
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
-    if (new_size < self->m_bufsize) {
-        while (self->m_count > new_size) {
-            pthread_cond_wait(&self->m_has_space, &self->m_mutex);   
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
+        if (new_size < self->m_bufsize) {
+            while (self->m_count > new_size) {
+                pthread_cond_wait(&self->m_has_space, &self->m_mutex);   
+            }
+            status = _channel_resize_nonlocking(self, new_size);
         }
-        status = _channel_resize_nonlocking(self, new_size);
-    }
-    else {
-        status = 0; // shrink to current size or greater requested: do nothing
-    }
+        else {
+            status = 0; // shrink to current size or greater requested: do nothing
+        }
     pthread_mutex_unlock(&self->m_mutex);
     
     return status;

@@ -39,21 +39,22 @@ void _data_stack_scope_count(data_stack_scope_t *, int);
 int data_stack_scope_init(data_stack_scope_t *self) {
     assert(self != NULL);
     
-    assert(0 == pthread_mutex_init(&self->m_mutex, NULL));
-
-    int status = 0;
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
-        if (NULL != (self->m_items = calloc(data_stack_scope_initial_reserve_size, sizeof(scalar_t)))) {
-            self->m_parent = NULL;
-            self->m_allocated_count = data_stack_scope_initial_reserve_size;
-            self->m_count = 0;
-            self->m_subscope_count = 0;
-            status = 0;
-        }
-        else {
-            status = -1;
-        }
-    pthread_mutex_unlock(&self->m_mutex);
+    int status;
+    if (status == pthread_mutex_init(&self->m_mutex, NULL)) {
+        int locked = pthread_mutex_lock(&self->m_mutex);
+            assert(locked == 0);
+            if (NULL != (self->m_items = calloc(data_stack_scope_initial_reserve_size, sizeof(scalar_t)))) {
+                self->m_parent = NULL;
+                self->m_allocated_count = data_stack_scope_initial_reserve_size;
+                self->m_count = 0;
+                self->m_subscope_count = 0;
+                status = 0;
+            }
+            else {
+                status = -1;
+            }
+        pthread_mutex_unlock(&self->m_mutex);        
+    }
     
     return status;
 }
@@ -61,7 +62,8 @@ int data_stack_scope_init(data_stack_scope_t *self) {
 int data_stack_scope_destroy(data_stack_scope_t *self) {
     assert(self != NULL);
     
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
+    int locked = pthread_mutex_lock(&self->m_mutex);
+    assert(locked == 0);
     pthread_mutex_destroy(&self->m_mutex);  // FIXME with mutex locked, or not?
 
     free(self->m_items);
@@ -73,7 +75,8 @@ int data_stack_scope_reserve(data_stack_scope_t *self, size_t new_size) {
     assert(self != NULL);
     
     int status;
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
         if (new_size > self->m_allocated_count) {
             scalar_t *tmp = self->m_items;
             if (NULL != (self->m_items = calloc(new_size, sizeof(scalar_t)))) {
@@ -99,12 +102,14 @@ int data_stack_scope_push(data_stack_scope_t *self, const scalar_t *value) {
     assert(value != NULL);
     
     int status = 0;
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
         if (self->m_count == self->m_allocated_count) {
             size_t new_size = self->m_allocated_count + data_stack_scope_grow_size;
             pthread_mutex_unlock(&self->m_mutex);
             status = data_stack_scope_reserve(self, new_size);
-            assert(0 == pthread_mutex_lock(&self->m_mutex));
+            int locked = pthread_mutex_lock(&self->m_mutex);
+            assert(locked == 0);
         }
         
         if (status == 0)  scalar_clone(&self->m_items[self->m_count++], value);
@@ -116,20 +121,21 @@ int data_stack_scope_pop(data_stack_scope_t *self, scalar_t *result) {
     assert(self != NULL);
     
     int status = 0;
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
-    if (self->m_count > 0) {
-        scalar_t value = self->m_items[--self->m_count];
-        if (result != NULL) {
-            *result = value;   
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
+        if (self->m_count > 0) {
+            scalar_t value = self->m_items[--self->m_count];
+            if (result != NULL) {
+                *result = value;   
+            }
+            else {
+                scalar_destroy(&value);
+            }
+            status = 0;
         }
         else {
-            scalar_destroy(&value);
+            status = -1;
         }
-        status = 0;
-    }
-    else {
-        status = -1;
-    }
     pthread_mutex_unlock(&self->m_mutex);
     return status;
 }
@@ -147,7 +153,8 @@ int data_stack_start_scope(data_stack_scope_t **data_stack_top) {
             // register the new scope for cleanup later
             data_stack_scope_registry_node_t *reg_entry;
             if (NULL != (reg_entry = calloc(1, sizeof(data_stack_scope_registry_node_t)))) {
-                assert(0 == pthread_mutex_lock(&_data_stack_registry_mutex));
+                int locked = pthread_mutex_lock(&_data_stack_registry_mutex);
+                    assert(locked == 0);
                     reg_entry->m_scope = new_scope;
                     reg_entry->m_next = _data_stack_registry;
                     _data_stack_registry = reg_entry;
@@ -178,7 +185,8 @@ int data_stack_end_scope(data_stack_scope_t **data_stack_top) {
         _data_stack_scope_count(*data_stack_top, -1);
 
         // remove its registry entry
-        assert(0 == pthread_mutex_lock(&_data_stack_registry_mutex));
+        int locked = pthread_mutex_lock(&_data_stack_registry_mutex);
+            assert(locked == 0);
             for (data_stack_scope_registry_node_t *i = _data_stack_registry; i != NULL && i->m_next != NULL; i = i->m_next) {
                 if (i->m_next->m_scope == old_scope) {
                     data_stack_scope_registry_node_t *tmp = i->m_next;
@@ -197,14 +205,16 @@ int data_stack_end_scope(data_stack_scope_t **data_stack_top) {
 void _data_stack_scope_count(data_stack_scope_t *self, int delta) { // FIXME rename this
     assert(self != NULL);
     
-    assert(0 == pthread_mutex_lock(&self->m_mutex));
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
         assert(self->m_subscope_count > 0 || delta >= 0);
         self->m_subscope_count += delta;
     pthread_mutex_unlock(&self->m_mutex);
 }
 
 int data_stack_registry_reap(void) {
-    assert(0 == pthread_mutex_lock(&_data_stack_registry_mutex));
+    int locked = pthread_mutex_lock(&_data_stack_registry_mutex);
+        assert(locked == 0);
         while(_data_stack_registry != NULL) {
             data_stack_scope_registry_node_t *tmp = _data_stack_registry;
             _data_stack_registry = _data_stack_registry->m_next;
