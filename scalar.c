@@ -45,6 +45,15 @@ void scalar_clone(scalar_t * restrict self, const scalar_t * restrict other) {
     }
 }
 
+void scalar_assign(scalar_t * restrict self, const scalar_t * restrict other) {
+    assert(self != NULL);
+    assert(other != NULL);
+    
+    if (self == other)  return;
+    
+    memcpy(self, other, sizeof(scalar_t));
+}
+
 void scalar_set_int_value(scalar_t *self, intptr_t ival) {
     assert(self != NULL);
     if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
