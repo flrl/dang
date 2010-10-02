@@ -202,3 +202,16 @@ void _data_stack_scope_count(data_stack_scope_t *self, int delta) { // FIXME ren
         self->m_subscope_count += delta;
     pthread_mutex_unlock(&self->m_mutex);
 }
+
+int data_stack_registry_reap(void) {
+    assert(0 == pthread_mutex_lock(&_data_stack_registry_mutex));
+        while(_data_stack_registry != NULL) {
+            data_stack_scope_registry_node_t *tmp = _data_stack_registry;
+            _data_stack_registry = _data_stack_registry->m_next;
+            data_stack_scope_destroy(tmp->m_scope);
+            free(tmp->m_scope);
+            free(tmp);
+        }
+    pthread_mutex_unlock(&_data_stack_registry_mutex);
+    return 0;
+}

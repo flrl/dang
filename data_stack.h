@@ -32,6 +32,7 @@ int data_stack_scope_pop(data_stack_scope_t *, scalar_t *);
 
 int data_stack_start_scope(data_stack_scope_t **);
 int data_stack_end_scope(data_stack_scope_t **);
-int data_stack_destroy(void);
+
+int data_stack_registry_reap(void);
 
 #endif
