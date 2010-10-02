@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "bits.h"
 #include "data_stack.h"
 
 //typedef struct data_stack_scope_t {
@@ -19,6 +20,7 @@
 //    size_t m_count;
 //    scalar_t *m_items;
 //    pthread_mutex_t m_mutex;
+//    size_t m_subscope_count;
 //} data_stack_scope_t;
 
 static const int data_stack_scope_initial_reserve_size = 10;
@@ -30,6 +32,9 @@ typedef struct data_stack_scope_registry_node_t {
 } data_stack_scope_registry_node_t;
 
 static data_stack_scope_registry_node_t *_data_stack_registry = NULL;
+static pthread_mutex_t _data_stack_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+void _data_stack_scope_count(data_stack_scope_t *, int);
 
 int data_stack_scope_init(data_stack_scope_t *self) {
     assert(self != NULL);
@@ -42,6 +47,7 @@ int data_stack_scope_init(data_stack_scope_t *self) {
             self->m_parent = NULL;
             self->m_allocated_count = data_stack_scope_initial_reserve_size;
             self->m_count = 0;
+            self->m_subscope_count = 0;
             status = 0;
         }
         else {
@@ -128,21 +134,24 @@ int data_stack_scope_pop(data_stack_scope_t *self, scalar_t *result) {
     return status;
 }
 
-int data_stack_start_scope(data_stack_scope_t **data_stack) { 
+int data_stack_start_scope(data_stack_scope_t **data_stack_top) { 
     // FIXME thread safety?
     // FIXME think about this more
     data_stack_scope_t *new_scope;
     if (NULL != (new_scope = calloc(1, sizeof(data_stack_scope_t)))) {
         if (0 == data_stack_scope_init(new_scope)) {
-            new_scope->m_parent = *data_stack;
-            *data_stack = new_scope;
+            new_scope->m_parent = *data_stack_top;
+            _data_stack_scope_count(*data_stack_top, +1);
+            *data_stack_top = new_scope;
             
             // register the new scope for cleanup later
             data_stack_scope_registry_node_t *reg_entry;
             if (NULL != (reg_entry = calloc(1, sizeof(data_stack_scope_registry_node_t)))) {
-                reg_entry->m_scope = new_scope;
-                reg_entry->m_next = _data_stack_registry;
-                _data_stack_registry = reg_entry;
+                assert(0 == pthread_mutex_lock(&_data_stack_registry_mutex));
+                    reg_entry->m_scope = new_scope;
+                    reg_entry->m_next = _data_stack_registry;
+                    _data_stack_registry = reg_entry;
+                pthread_mutex_unlock(&_data_stack_registry_mutex);
             }
             
             return 0;
@@ -157,10 +166,39 @@ int data_stack_start_scope(data_stack_scope_t **data_stack) {
     }
 }
 
-int data_stack_end_scope(data_stack_scope_t **data_stack) { 
+int data_stack_end_scope(data_stack_scope_t **data_stack_top) { 
     // FIXME thread safety?
     // FIXME think about this more
-    data_stack_scope_t *old_scope = *data_stack;
-    *data_stack = old_scope->m_parent;
+    data_stack_scope_t *old_scope = *data_stack_top;
+    *data_stack_top = old_scope->m_parent;
+    
+    // if nothing else refers to the old scope, it can be cleaned up
+    if (old_scope->m_subscope_count == 0) {
+        data_stack_scope_destroy(old_scope);
+        _data_stack_scope_count(*data_stack_top, -1);
+
+        // remove its registry entry
+        assert(0 == pthread_mutex_lock(&_data_stack_registry_mutex));
+            for (data_stack_scope_registry_node_t *i = _data_stack_registry; i != NULL && i->m_next != NULL; i = i->m_next) {
+                if (i->m_next->m_scope == old_scope) {
+                    data_stack_scope_registry_node_t *tmp = i->m_next;
+                    i->m_next = i->m_next->m_next;
+                    free(tmp);
+                }
+            }
+        pthread_mutex_unlock(&_data_stack_registry_mutex);
+    
+        free(old_scope);
+    }
+    
     return -0;
+}
+
+void _data_stack_scope_count(data_stack_scope_t *self, int delta) { // FIXME rename this
+    assert(self != NULL);
+    
+    assert(0 == pthread_mutex_lock(&self->m_mutex));
+        assert(self->m_subscope_count > 0 || delta >= 0);
+        self->m_subscope_count += delta;
+    pthread_mutex_unlock(&self->m_mutex);
 }

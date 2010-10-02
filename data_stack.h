@@ -21,6 +21,7 @@ typedef struct data_stack_scope_t {
     size_t m_count;
     scalar_t *m_items;
     pthread_mutex_t m_mutex;
+    size_t m_subscope_count;
 } data_stack_scope_t;
 
 int data_stack_scope_init(data_stack_scope_t *);
@@ -31,5 +32,6 @@ int data_stack_scope_pop(data_stack_scope_t *, scalar_t *);
 
 int data_stack_start_scope(data_stack_scope_t **);
 int data_stack_end_scope(data_stack_scope_t **);
+int data_stack_destroy(void);
 
 #endif
