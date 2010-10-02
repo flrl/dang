@@ -17,13 +17,11 @@
 
 typedef struct data_stack_scope_t {
     struct data_stack_scope_t *m_parent;
-    size_t m_allocated_size;
-    size_t m_top;
+    size_t m_allocated_count;
+    size_t m_count;
     scalar_t *m_items;
     pthread_mutex_t m_mutex;
 } data_stack_scope_t;
-
-extern data_stack_scope_t *g_data_stack_top;
 
 int data_stack_scope_init(data_stack_scope_t *);
 int data_stack_scope_destroy(data_stack_scope_t *);
