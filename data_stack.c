@@ -24,6 +24,13 @@
 static const int data_stack_scope_initial_reserve_size = 10;
 static const int data_stack_scope_grow_size = 10;
 
+typedef struct data_stack_scope_registry_node_t {
+    struct data_stack_scope_registry_node_t *m_next;
+    data_stack_scope_t *m_scope;
+} data_stack_scope_registry_node_t;
+
+static data_stack_scope_registry_node_t *_data_stack_registry = NULL;
+
 int data_stack_scope_init(data_stack_scope_t *self) {
     assert(self != NULL);
     
@@ -129,6 +136,15 @@ int data_stack_start_scope(data_stack_scope_t **data_stack) {
         if (0 == data_stack_scope_init(new_scope)) {
             new_scope->m_parent = *data_stack;
             *data_stack = new_scope;
+            
+            // register the new scope for cleanup later
+            data_stack_scope_registry_node_t *reg_entry;
+            if (NULL != (reg_entry = calloc(1, sizeof(data_stack_scope_registry_node_t)))) {
+                reg_entry->m_scope = new_scope;
+                reg_entry->m_next = _data_stack_registry;
+                _data_stack_registry = reg_entry;
+            }
+            
             return 0;
         }
         else {
