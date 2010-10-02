@@ -12,7 +12,6 @@
 
 #include <pthread.h>
 
-#include "array.h"
 #include "scalar.h"
 
 typedef struct data_stack_scope_t {
