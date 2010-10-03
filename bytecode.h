@@ -25,7 +25,12 @@ typedef enum instruction_t {
     iSWAP,
     iDUP,
     iLIT,
-
+    iADD,
+    iSUBT,
+    iMULT,
+    iDIV,
+    iMOD,
+    
 //    iOVER,
 //    iTUCK,
 //    iPICK,
@@ -37,7 +42,7 @@ typedef enum instruction_t {
 //    i2DUP,
 //    iNDUP,
 //    i2SWAP,
-//    iQDUP,
+//    iDUPIFNE0,
 //    iINCR,
 //    iDECR,
 //    iADD,

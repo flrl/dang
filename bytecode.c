@@ -58,6 +58,51 @@ int instruction_lit(const uint8_t *instruction_ptr, data_stack_scope_t *data_sta
     return 1 + sizeof(scalar_t);
 }
 
+// ( a b -- a+b )
+int instruction_add(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+    // FIXME haven't defined maths operators for scalar_t yet, whoops!
+    return 1;
+}
+
+// ( a b -- a-b )
+int instruction_subt(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+    // FIXME haven't defined maths operators for scalar_t yet, whoops!
+    return 1;
+}
+
+// ( a b -- a*b )
+int instruction_mult(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+    // FIXME haven't defined maths operators for scalar_t yet, whoops!
+    return 1;
+}
+
+// ( a b -- a/b )
+int instruction_div(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+    // FIXME haven't defined maths operators for scalar_t yet, whoops!
+    return 1;
+}
+
+// ( a b -- a%b )
+int instruction_mod(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+    // FIXME haven't defined maths operators for scalar_t yet, whoops!
+    return 1;
+}
+
 // N.B This needs to match the order of instruction_t (in bytecode.h)
 // FIXME possibly break this out into its own file (e.g. instruction_table.c) and generate it
 const instruction_func instruction_table[] = {
@@ -67,6 +112,11 @@ const instruction_func instruction_table[] = {
     &instruction_swap,
     &instruction_dup,
     &instruction_lit,
+    &instruction_add,
+    &instruction_subt,
+    &instruction_mult,
+    &instruction_div,
+    &instruction_mod,
 };
 
 
