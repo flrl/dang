@@ -10,6 +10,8 @@
 #ifndef SCALAR_H
 #define SCALAR_H
 
+#include <stdint.h>
+
 typedef enum scalar_type_t {
     ScUNDEFINED = 0,
     ScINT       = 1,
