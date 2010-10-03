@@ -103,6 +103,33 @@ int instruction_mod(const uint8_t *instruction_ptr, data_stack_scope_t *data_sta
     return 1;
 }
 
+// ( -- )
+int instruction_branch(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    const scalar_t *offset = (const scalar_t *) (instruction_ptr + 1);
+    return scalar_get_int_value(offset);
+}
+
+// ( a -- )
+int instruction_0branch(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    const scalar_t *branch_offset = (const scalar_t *) (instruction_ptr + 1);
+    int incr = 0;
+
+    scalar_t a;
+    data_stack_scope_pop(data_stack, &a);
+
+    if (scalar_get_int_value(&a) == 0) {
+        // branch by offset
+        incr = scalar_get_int_value(branch_offset);
+    }
+    else {
+        // skip to the next instruction
+        incr = 1 + sizeof(scalar_t);
+    }
+    
+    scalar_destroy(&a);
+    return incr;
+}
+
 // N.B This needs to match the order of instruction_t (in bytecode.h)
 // FIXME possibly break this out into its own file (e.g. instruction_table.c) and generate it
 const instruction_func instruction_table[] = {
@@ -117,6 +144,8 @@ const instruction_func instruction_table[] = {
     &instruction_mult,
     &instruction_div,
     &instruction_mod,
+    &instruction_branch,
+    &instruction_0branch,
 };
 
 

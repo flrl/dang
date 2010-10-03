@@ -30,6 +30,8 @@ typedef enum instruction_t {
     iMULT,
     iDIV,
     iMOD,
+    iBRANCH,
+    i0BRANCH,
     
 //    iOVER,
 //    iTUCK,
