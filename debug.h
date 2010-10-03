@@ -12,7 +12,7 @@
 #include <stdio.h>
 #endif
 
-// these are redefined each time, to allow each source file to define NDEBUG independently
+// these are redefined each time this file is included, to allow each source file to define NDEBUG independently
 #ifdef NDEBUG
     #define debug(...) ((void)0)
 #else
