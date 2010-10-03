@@ -140,6 +140,24 @@ int data_stack_scope_pop(data_stack_scope_t *self, scalar_t *result) {
     return status;
 }
 
+int data_stack_scope_top(data_stack_scope_t *self, scalar_t *result) {
+    assert(self != NULL);
+    assert(result != NULL);
+    
+    int status = 0;
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
+        if (self->m_count > 0) {
+            scalar_clone(result, &self->m_items[self->m_count - 1])
+            status = 0;
+        }
+        else {
+            status = -1;
+        }
+    pthread_mutex_unlock(&self->m_mutex);
+    return status;
+}
+
 int data_stack_start_scope(data_stack_scope_t **data_stack_top) { 
     // FIXME thread safety?
     // FIXME think about this more
