@@ -124,12 +124,12 @@ int data_stack_scope_pop(data_stack_scope_t *self, scalar_t *result) {
     int locked = pthread_mutex_lock(&self->m_mutex);
         assert(locked == 0);
         if (self->m_count > 0) {
-            scalar_t value = self->m_items[--self->m_count];
+            --self->m_count;
             if (result != NULL) {
-                *result = value;   
+                scalar_assign(result, &self->m_items[self->m_count]);
             }
             else {
-                scalar_destroy(&value);
+                scalar_destroy(&self->m_items[self->m_count]);
             }
             status = 0;
         }
