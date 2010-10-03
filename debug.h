@@ -16,6 +16,6 @@
 #ifdef NDEBUG
     #define debug(...) ((void)0)
 #else
-    #define debug(...)  do { fprintf(stderr, "debug(%s:%d) %s: ", __FILE__, __LINE__, __func__); fprintf(stderr, __VA_ARGS__); } while (0)
+    #define debug(...)  do { fprintf(stderr, "debug %s(%s:%d): ", __func__, __FILE__, __LINE__); fprintf(stderr, __VA_ARGS__); } while (0)
 #endif
 //
