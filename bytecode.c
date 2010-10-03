@@ -52,55 +52,16 @@ int instruction_dup(const uint8_t *instruction_ptr, data_stack_scope_t *data_sta
 }
 
 // ( -- a ) 
-int instruction_lit(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
-    const scalar_t *a = (const scalar_t *) (instruction_ptr + 1);
-    data_stack_scope_push(data_stack, a);
-    return 1 + sizeof(scalar_t);
-}
+int instruction_intlit(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    const intptr_t *lit = (const intptr_t *) (instruction_ptr + 1);
 
-// ( a b -- a+b )
-int instruction_add(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
-    scalar_t a, b;
-    data_stack_scope_pop(data_stack, &b);
-    data_stack_scope_pop(data_stack, &a);
-    // FIXME haven't defined maths operators for scalar_t yet, whoops!
-    return 1;
-}
-
-// ( a b -- a-b )
-int instruction_subt(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
-    scalar_t a, b;
-    data_stack_scope_pop(data_stack, &b);
-    data_stack_scope_pop(data_stack, &a);
-    // FIXME haven't defined maths operators for scalar_t yet, whoops!
-    return 1;
-}
-
-// ( a b -- a*b )
-int instruction_mult(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
-    scalar_t a, b;
-    data_stack_scope_pop(data_stack, &b);
-    data_stack_scope_pop(data_stack, &a);
-    // FIXME haven't defined maths operators for scalar_t yet, whoops!
-    return 1;
-}
-
-// ( a b -- a/b )
-int instruction_div(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
-    scalar_t a, b;
-    data_stack_scope_pop(data_stack, &b);
-    data_stack_scope_pop(data_stack, &a);
-    // FIXME haven't defined maths operators for scalar_t yet, whoops!
-    return 1;
-}
-
-// ( a b -- a%b )
-int instruction_mod(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
-    scalar_t a, b;
-    data_stack_scope_pop(data_stack, &b);
-    data_stack_scope_pop(data_stack, &a);
-    // FIXME haven't defined maths operators for scalar_t yet, whoops!
-    return 1;
+    scalar_t a;
+    scalar_init(&a);
+    scalar_set_int_value(&a, *lit);
+    data_stack_scope_push(data_stack, &a);
+    scalar_destroy(&a);
+    
+    return 1 + sizeof(intptr_t);
 }
 
 // ( -- )
@@ -130,6 +91,78 @@ int instruction_0branch(const uint8_t *instruction_ptr, data_stack_scope_t *data
     return incr;
 }
 
+// ( a b -- a+b )
+int instruction_intadd(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+
+    scalar_t c;
+    scalar_init(&c);
+    scalar_set_int_value(&c, scalar_get_int_value(&a) + scalar_get_int_value(&b));
+    data_stack_scope_push(data_stack, &c);
+    scalar_destroy(&c);
+    return 1;
+}
+
+// ( a b -- a-b )
+int instruction_intsubt(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+    
+    scalar_t c;
+    scalar_init(&c);
+    scalar_set_int_value(&c, scalar_get_int_value(&a) - scalar_get_int_value(&b));
+    data_stack_scope_push(data_stack, &c);
+    scalar_destroy(&c);
+    return 1;
+}
+
+// ( a b -- a*b )
+int instruction_intmult(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+
+    scalar_t c;
+    scalar_init(&c);
+    scalar_set_int_value(&c, scalar_get_int_value(&a) * scalar_get_int_value(&b));
+    data_stack_scope_push(data_stack, &c);
+    scalar_destroy(&c);    
+    return 1;
+}
+
+// ( a b -- a/b )
+int instruction_intdiv(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+    
+    scalar_t c;
+    scalar_init(&c);
+    scalar_set_int_value(&c, scalar_get_int_value(&a) / scalar_get_int_value(&b));
+    data_stack_scope_push(data_stack, &c);
+    scalar_destroy(&c);
+    
+    return 1;
+}
+
+// ( a b -- a%b )
+int instruction_intmod(const uint8_t *instruction_ptr, data_stack_scope_t *data_stack, void *return_stack) {
+    scalar_t a, b;
+    data_stack_scope_pop(data_stack, &b);
+    data_stack_scope_pop(data_stack, &a);
+    
+    scalar_t c;
+    scalar_init(&c);
+    scalar_set_int_value(&c, scalar_get_int_value(&a) % scalar_get_int_value(&b));
+    data_stack_scope_push(data_stack, &c);
+    scalar_destroy(&c);
+    
+    return 1;
+}
+
 // N.B This needs to match the order of instruction_t (in bytecode.h)
 // FIXME possibly break this out into its own file (e.g. instruction_table.c) and generate it
 const instruction_func instruction_table[] = {
@@ -138,14 +171,14 @@ const instruction_func instruction_table[] = {
     &instruction_drop,
     &instruction_swap,
     &instruction_dup,
-    &instruction_lit,
-    &instruction_add,
-    &instruction_subt,
-    &instruction_mult,
-    &instruction_div,
-    &instruction_mod,
     &instruction_branch,
     &instruction_0branch,
+    &instruction_intlit,
+    &instruction_intadd,
+    &instruction_intsubt,
+    &instruction_intmult,
+    &instruction_intdiv,
+    &instruction_intmod,
 };
 
 
