@@ -148,7 +148,7 @@ int data_stack_scope_top(data_stack_scope_t *self, scalar_t *result) {
     int locked = pthread_mutex_lock(&self->m_mutex);
         assert(locked == 0);
         if (self->m_count > 0) {
-            scalar_clone(result, &self->m_items[self->m_count - 1])
+            scalar_clone(result, &self->m_items[self->m_count - 1]);
             status = 0;
         }
         else {
