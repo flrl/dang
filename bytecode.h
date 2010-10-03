@@ -10,9 +10,11 @@
 #ifndef BYTECODE_H
 #define BYTECODE_H
 
+#include <stdint.h>
+
 #include "data_stack.h"
 
-typedef int(*instruction_func)(data_stack_scope_t *, void *);
+typedef int(*instruction_func)(const uint8_t *, data_stack_scope_t *, void *);
 extern const instruction_func instruction_table[];
 
 typedef enum instruction_t {
@@ -22,6 +24,8 @@ typedef enum instruction_t {
     iDROP,
     iSWAP,
     iDUP,
+    iLIT,
+
 //    iOVER,
 //    iTUCK,
 //    iPICK,
@@ -94,7 +98,6 @@ typedef enum instruction_t {
 //    DE>NAME,
 //    DFA>DE,
 //    DFA>CFA,
-//    LIT,
 //    CREATE,
 //    ,,
 //    [,
