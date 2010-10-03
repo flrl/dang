@@ -10,6 +10,7 @@
 #include <assert.h>
 
 #include "bytecode.h"
+#include "debug.h"
 #include "scalar.h"
 
 // dummy function for lookup table -- should not be executed!
@@ -101,6 +102,7 @@ int instruction_intadd(const uint8_t *instruction_ptr, data_stack_scope_t *data_
     scalar_init(&c);
     scalar_set_int_value(&c, scalar_get_int_value(&a) + scalar_get_int_value(&b));
     data_stack_scope_push(data_stack, &c);
+    debug("%ld + %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
     scalar_destroy(&c);
     return 1;
 }
@@ -115,6 +117,7 @@ int instruction_intsubt(const uint8_t *instruction_ptr, data_stack_scope_t *data
     scalar_init(&c);
     scalar_set_int_value(&c, scalar_get_int_value(&a) - scalar_get_int_value(&b));
     data_stack_scope_push(data_stack, &c);
+    debug("%ld - %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
     scalar_destroy(&c);
     return 1;
 }
@@ -129,6 +132,7 @@ int instruction_intmult(const uint8_t *instruction_ptr, data_stack_scope_t *data
     scalar_init(&c);
     scalar_set_int_value(&c, scalar_get_int_value(&a) * scalar_get_int_value(&b));
     data_stack_scope_push(data_stack, &c);
+    debug("%ld * %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
     scalar_destroy(&c);    
     return 1;
 }
@@ -143,8 +147,8 @@ int instruction_intdiv(const uint8_t *instruction_ptr, data_stack_scope_t *data_
     scalar_init(&c);
     scalar_set_int_value(&c, scalar_get_int_value(&a) / scalar_get_int_value(&b));
     data_stack_scope_push(data_stack, &c);
-    scalar_destroy(&c);
-    
+    debug("%ld / %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
+    scalar_destroy(&c);    
     return 1;
 }
 
@@ -158,8 +162,8 @@ int instruction_intmod(const uint8_t *instruction_ptr, data_stack_scope_t *data_
     scalar_init(&c);
     scalar_set_int_value(&c, scalar_get_int_value(&a) % scalar_get_int_value(&b));
     data_stack_scope_push(data_stack, &c);
+    debug("%ld %% %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
     scalar_destroy(&c);
-    
     return 1;
 }
 
