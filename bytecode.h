@@ -22,6 +22,8 @@ typedef enum instruction_t {
     i__MIN = 0,
     iEND = 0,
     iNOOP = 1,
+    iCALL,
+    iRETURN,
     iDROP,
     iSWAP,
     iDUP,

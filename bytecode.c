@@ -25,6 +25,29 @@ int instruction_noop(const uint8_t *instruction_ptr, size_t instruction_index, d
     return 0;
 }
 
+// ( [params] -- ) ( -- addr )
+int instruction_call(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+    const size_t *jump_dest = (const size_t *) (instruction_ptr + 1);
+    int offset = *jump_dest - instruction_index;
+    return_stack_push(return_stack, instruction_index + 1 + sizeof(size_t));
+    data_stack_start_scope(data_stack);
+    return offset;
+}
+
+// ( -- result ) ( addr -- )
+int instruction_return(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+    scalar_t result;
+    scalar_init(&result);
+    data_stack_pop(*data_stack, &result);
+    data_stack_end_scope(data_stack);
+    data_stack_push(*data_stack, &result);
+    scalar_destroy(&result);
+
+    size_t jump_dest;
+    return_stack_pop(return_stack, &jump_dest);
+    return jump_dest - instruction_index;
+}
+
 // ( a -- )
 int instruction_drop(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
     data_stack_pop(*data_stack, NULL);
@@ -172,6 +195,8 @@ int instruction_intmod(const uint8_t *instruction_ptr, size_t instruction_index,
 const instruction_func instruction_table[] = {
     &instruction_exit,
     &instruction_noop,
+    &instruction_call,
+    &instruction_return,
     &instruction_drop,
     &instruction_swap,
     &instruction_dup,
