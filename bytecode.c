@@ -8,6 +8,7 @@
  */
 
 #include <assert.h>
+#include <stdlib.h>
 
 #include "bytecode.h"
 #include "debug.h"
@@ -27,22 +28,46 @@ int instruction_noop(const uint8_t *instruction_ptr, size_t instruction_index, d
 
 // ( [params] -- ) ( -- addr )
 int instruction_call(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    const size_t *jump_dest = (const size_t *) (instruction_ptr + 1);
-    int offset = *jump_dest - instruction_index;
-    return_stack_push(return_stack, instruction_index + 1 + sizeof(size_t));
+    const uint8_t *argc = (const uint8_t *) (instruction_ptr + 1);
+    const size_t *jump_dest = (const size_t *) (instruction_ptr + 1 + sizeof(uint8_t));
+    
+    // pop and stash the params off the caller's stack
+    scalar_t *argv = calloc(*argc, sizeof(scalar_t));
+    assert(argv != NULL);
+    for (unsigned i = 0; i < *argc; i++) {
+        scalar_init(&argv[i]);
+        data_stack_pop(*data_stack, &argv[i]);
+    }
+    
+    // push a new stack for the callee
     data_stack_start_scope(data_stack);
-    return offset;
+
+    // push the stashed params onto the callee's stack
+    for (unsigned i = *argc - 1; i >= 0; i--) {
+        data_stack_push(*data_stack, &argv[i]);
+        scalar_destroy(&argv[i]);
+    }
+    
+    // hook up return stack
+    return_stack_push(return_stack, instruction_index + 1 + sizeof(uint8_t) + sizeof(size_t));
+    return *jump_dest - instruction_index;
 }
 
 // ( -- result ) ( addr -- )
 int instruction_return(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+    // pop and stash the result from the returning stack
     scalar_t result;
     scalar_init(&result);
     data_stack_pop(*data_stack, &result);
+
+    // pop the returning scope
     data_stack_end_scope(data_stack);
+
+    // push the stashed result onto the caller's stack
     data_stack_push(*data_stack, &result);
     scalar_destroy(&result);
 
+    // unhook return stack
     size_t jump_dest;
     return_stack_pop(return_stack, &jump_dest);
     return jump_dest - instruction_index;
