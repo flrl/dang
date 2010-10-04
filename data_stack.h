@@ -29,6 +29,8 @@ int data_stack_scope_reserve(data_stack_scope_t *, size_t);
 int data_stack_scope_push(data_stack_scope_t *, const scalar_t *);
 int data_stack_scope_pop(data_stack_scope_t *, scalar_t *);
 int data_stack_scope_top(data_stack_scope_t *, scalar_t *);
+int data_stack_scope_read_index(data_stack_scope_t *, size_t, scalar_t *);
+int data_stack_scope_write_index(data_stack_scope_t *, size_t, const scalar_t *);
 
 int data_stack_start_scope(data_stack_scope_t **);
 int data_stack_end_scope(data_stack_scope_t **);

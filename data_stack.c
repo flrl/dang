@@ -158,6 +158,46 @@ int data_stack_scope_top(data_stack_scope_t *self, scalar_t *result) {
     return status;
 }
 
+int data_stack_scope_read_index(data_stack_scope_t *self, size_t index, scalar_t *result) {
+    assert(self != NULL);
+    assert(result != NULL);
+    
+    int status = 0;
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
+        if (index < self->m_count) {
+            scalar_clone(result, &self->m_items[index]);
+            status = 0;
+        }
+        else {
+            status = -1;
+        }
+    pthread_mutex_unlock(&self->m_mutex);
+    return status;
+}
+
+int data_stack_scope_write_index(data_stack_scope_t *self, size_t index, const scalar_t *value) {
+    assert(self != NULL);
+    assert(value != NULL);
+    
+    int status = 0;
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
+        if (index < self->m_count) {
+            scalar_clone(&self->m_items[index], value);
+            status = 0;
+        }
+//        else if (index == self->m_count) {
+//            ; // FIXME push it onto the end?
+//        }
+        else {
+            status = -1;
+        }
+    pthread_mutex_unlock(&self->m_mutex);
+    return status;
+}
+
+
 int data_stack_start_scope(data_stack_scope_t **data_stack_top) { 
     // FIXME thread safety?
     // FIXME think about this more
