@@ -12,6 +12,6 @@
 
 #include "data_stack.h"
 
-int vm_execute(const uint8_t *, size_t, size_t, data_stack_scope_t *, void *);
+int vm_execute(const uint8_t *, size_t, size_t, data_stack_t *, void *);
 
 #endif

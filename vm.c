@@ -12,7 +12,7 @@
 #include "bytecode.h"
 #include "vm.h"
 
-int vm_execute(const uint8_t *bytecode, size_t bytecode_length, size_t start_index, data_stack_scope_t *data_stack, void *return_stack) {
+int vm_execute(const uint8_t *bytecode, size_t bytecode_length, size_t start_index, data_stack_t *data_stack, void *return_stack) {
     
     size_t counter = start_index;
     int incr;

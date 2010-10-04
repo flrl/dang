@@ -14,7 +14,7 @@
 
 #include "data_stack.h"
 
-typedef int(*instruction_func)(const uint8_t *, data_stack_scope_t *, void *);
+typedef int(*instruction_func)(const uint8_t *, data_stack_t *, void *);
 extern const instruction_func instruction_table[];
 
 typedef enum instruction_t {
