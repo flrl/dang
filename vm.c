@@ -29,7 +29,7 @@ int vm_execute(const uint8_t *bytecode, size_t bytecode_length, size_t start_ind
                 ++counter;
                 break;
             default:
-                incr = instruction_table[instruction](&bytecode[counter], counter, data_stack, &return_stack);
+                incr = instruction_table[instruction](&bytecode[counter], counter, &data_stack, &return_stack);
                 assert(incr != 0);
                 counter += incr;
                 break;
