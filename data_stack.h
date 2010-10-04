@@ -31,6 +31,8 @@ int data_stack_pop(data_stack_t *, scalar_t *);
 int data_stack_top(data_stack_t *, scalar_t *);
 int data_stack_read_index(data_stack_t *, size_t, scalar_t *);
 int data_stack_write_index(data_stack_t *, size_t, const scalar_t *);
+int data_stack_npush(data_stack_t *, size_t, const scalar_t *);
+int data_stack_npop(data_stack_t *, size_t, scalar_t *);
 
 int data_stack_start_scope(data_stack_t **);
 int data_stack_end_scope(data_stack_t **);
