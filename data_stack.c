@@ -34,7 +34,7 @@ typedef struct data_stack_registry_node_t {
 static data_stack_registry_node_t *_data_stack_registry = NULL;
 static pthread_mutex_t _data_stack_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-void _data_stack_count(data_stack_t *, int);
+void _data_stack_track_subscopes(data_stack_t *, int);
 
 int data_stack_init(data_stack_t *self) {
     assert(self != NULL);
@@ -205,7 +205,7 @@ int data_stack_start_scope(data_stack_t **data_stack_top) {
     if (NULL != (new_scope = calloc(1, sizeof(data_stack_t)))) {
         if (0 == data_stack_init(new_scope)) {
             new_scope->m_parent = *data_stack_top;
-            _data_stack_count(*data_stack_top, +1);
+            _data_stack_track_subscopes(*data_stack_top, +1);
             *data_stack_top = new_scope;
             
             // register the new scope for cleanup later
@@ -240,7 +240,7 @@ int data_stack_end_scope(data_stack_t **data_stack_top) {
     // if nothing else refers to the old scope, it can be cleaned up
     if (old_scope->m_subscope_count == 0) {
         data_stack_destroy(old_scope);
-        _data_stack_count(*data_stack_top, -1);
+        _data_stack_track_subscopes(*data_stack_top, -1);
 
         // remove its registry entry
         int locked = pthread_mutex_lock(&_data_stack_registry_mutex);
@@ -260,7 +260,7 @@ int data_stack_end_scope(data_stack_t **data_stack_top) {
     return -0;
 }
 
-void _data_stack_count(data_stack_t *self, int delta) { // FIXME rename this
+void _data_stack_track_subscopes(data_stack_t *self, int delta) {
     assert(self != NULL);
     
     int locked = pthread_mutex_lock(&self->m_mutex);
