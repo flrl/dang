@@ -109,11 +109,11 @@ int instruction_dup(const uint8_t *instruction_ptr, size_t instruction_index, da
 
 // ( -- a ) 
 int instruction_intlit(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    const intptr_t *lit = (const intptr_t *) (instruction_ptr + 1);
+    const intptr_t lit = *(const intptr_t *)(instruction_ptr + 1);
 
     scalar_t a;
     scalar_init(&a);
-    scalar_set_int_value(&a, *lit);
+    scalar_set_int_value(&a, lit);
     data_stack_push(*data_stack, &a);
     scalar_destroy(&a);
     
@@ -158,6 +158,8 @@ int instruction_intadd(const uint8_t *instruction_ptr, size_t instruction_index,
     scalar_set_int_value(&c, scalar_get_int_value(&a) + scalar_get_int_value(&b));
     data_stack_push(*data_stack, &c);
     debug("%ld + %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
+    scalar_destroy(&a);
+    scalar_destroy(&b);
     scalar_destroy(&c);
     return 1;
 }
