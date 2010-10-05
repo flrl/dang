@@ -122,15 +122,13 @@ int instruction_intlit(const uint8_t *instruction_ptr, size_t instruction_index,
 
 // ( -- )
 int instruction_branch(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    // FIXME why is this using a scalar_t?!
-    const scalar_t *offset = (const scalar_t *) (instruction_ptr + 1);
-    return scalar_get_int_value(offset);
+    const intptr_t offset = *(const intptr_t *)(instruction_ptr + 1);
+    return offset;
 }
 
 // ( a -- )
 int instruction_0branch(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    // FIXME why is this using a scalar_t?!
-    const scalar_t *branch_offset = (const scalar_t *) (instruction_ptr + 1);
+    const intptr_t branch_offset = *(const intptr_t *)(instruction_ptr + 1);
     int incr = 0;
 
     scalar_t a;
@@ -138,11 +136,11 @@ int instruction_0branch(const uint8_t *instruction_ptr, size_t instruction_index
 
     if (scalar_get_int_value(&a) == 0) {
         // branch by offset
-        incr = scalar_get_int_value(branch_offset);
+        incr = branch_offset;
     }
     else {
         // skip to the next instruction
-        incr = 1 + sizeof(scalar_t);
+        incr = 1 + sizeof(intptr_t);
     }
     
     scalar_destroy(&a);
