@@ -28,45 +28,52 @@ int instruction_noop(const uint8_t *instruction_ptr, size_t instruction_index, d
 
 // ( [params] -- ) ( -- addr )
 int instruction_call(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    const uint8_t *argc = (const uint8_t *) (instruction_ptr + 1);
-    const size_t *jump_dest = (const size_t *) (instruction_ptr + 1 + sizeof(uint8_t));
+    const size_t argc = *(const uint8_t *)(instruction_ptr + 1);
+    const size_t jump_dest = *(const size_t *) (instruction_ptr + 1 + sizeof(uint8_t));
     
     // pop and stash the params off the caller's stack
-    scalar_t *argv = calloc(*argc, sizeof(scalar_t));
+    scalar_t *argv = calloc(argc, sizeof(scalar_t));
     assert(argv != NULL);
-    for (unsigned i = 0; i < *argc; i++) {
-        scalar_init(&argv[i]);
-        data_stack_pop(*data_stack, &argv[i]);
-    }
+    data_stack_npop(*data_stack, argc, argv);
     
     // push a new stack for the callee
     data_stack_start_scope(data_stack);
 
     // push the stashed params onto the callee's stack
-    for (unsigned i = *argc - 1; i >= 0; i--) {
-        data_stack_push(*data_stack, &argv[i]);
+    data_stack_npush(*data_stack, argc, argv);
+    
+    // clean up the stash
+    for (size_t i = 0; i < argc; i++) {
         scalar_destroy(&argv[i]);
     }
+    free(argv);
     
     // hook up return stack
     return_stack_push(return_stack, instruction_index + 1 + sizeof(uint8_t) + sizeof(size_t));
-    return *jump_dest - instruction_index;
+    return jump_dest - instruction_index;
 }
 
-// ( -- result ) ( addr -- )
+// ( -- [results] ) ( addr -- )
 int instruction_return(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+    const size_t resultc = *(const uint8_t *)(instruction_ptr + 1);
+
     // pop and stash the result from the returning stack
-    scalar_t result;
-    scalar_init(&result);
-    data_stack_pop(*data_stack, &result);
+    scalar_t *resultv = calloc(resultc, sizeof(scalar_t));
+    assert(resultv != NULL);
+    data_stack_npop(*data_stack, resultc, resultv);
 
     // pop the returning scope
     data_stack_end_scope(data_stack);
 
-    // push the stashed result onto the caller's stack
-    data_stack_push(*data_stack, &result);
-    scalar_destroy(&result);
+    // push the stashed results onto the caller's stack
+    data_stack_npush(*data_stack, resultc, resultv);
 
+    // clean up the stash
+    for (size_t i = 0; i < resultc; i++) {
+        scalar_destroy(&resultv[i]);
+    }
+    free(resultv);
+    
     // unhook return stack
     size_t jump_dest;
     return_stack_pop(return_stack, &jump_dest);
@@ -115,12 +122,14 @@ int instruction_intlit(const uint8_t *instruction_ptr, size_t instruction_index,
 
 // ( -- )
 int instruction_branch(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+    // FIXME why is this using a scalar_t?!
     const scalar_t *offset = (const scalar_t *) (instruction_ptr + 1);
     return scalar_get_int_value(offset);
 }
 
 // ( a -- )
 int instruction_0branch(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+    // FIXME why is this using a scalar_t?!
     const scalar_t *branch_offset = (const scalar_t *) (instruction_ptr + 1);
     int incr = 0;
 
