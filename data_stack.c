@@ -140,6 +140,54 @@ int data_stack_pop(data_stack_t *self, scalar_t *result) {
     return status;
 }
 
+int data_stack_npush(data_stack_t *self, size_t n, const scalar_t *values) {
+    assert(self != NULL);
+    assert(values != NULL);
+    
+    int status = 0;
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
+        if (self->m_count + n >= self->m_allocated_count) {
+            size_t new_size = self->m_allocated_count + data_stack_grow_size;
+            while (new_size < self->m_count + n)  new_size += data_stack_grow_size;
+
+            // FIXME this unlock/resize/lock thing is retarded
+            pthread_mutex_unlock(self->m_mutex);
+            status = data_stack_reserve(self, new_size);
+            int locked = pthread_mutex_lock(&self->m_mutex);
+            assert(locked == 0);
+        }
+        
+        if (status == 0) {
+            for (size_t i = n ; i > 0; i--) { // unsigned >= 0 is always true, so leave it offset by one
+                scalar_clone(&self->m_items[self->m_count++], &values[i-1]);
+            }
+        }    
+    pthread_mutex_unlock(&self->m_mutex);
+    return status;
+}
+
+int data_stack_npop(data_stack_t *self, size_t n, scalar_t *result) {
+    assert(self != NULL);
+    assert(values != NULL);
+    
+    int status = 0;
+    int locked = pthread_mutex_lock(&self->m_mutex);
+        assert(locked == 0);
+        if (self->m_count >= n) {
+            for (size_t i = 0; i < n; i++) {
+                scalar_assign(result[i], &self->m_items[--self->m_count]);
+            }
+            status = 0;
+        }
+        else {
+            status = -1;
+        }    
+    pthread_mutex_unlock(&self->m_mutex);
+    return status;
+}
+
+
 int data_stack_top(data_stack_t *self, scalar_t *result) {
     assert(self != NULL);
     assert(result != NULL);
