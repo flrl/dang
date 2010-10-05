@@ -35,6 +35,7 @@ static data_stack_registry_node_t *_data_stack_registry = NULL;
 static pthread_mutex_t _data_stack_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void _data_stack_track_subscopes(data_stack_t *, int);
+int _data_stack_reserve_nonlocking(data_stack_t *, size_t);
 
 int data_stack_init(data_stack_t *self) {
     assert(self != NULL);
@@ -74,27 +75,33 @@ int data_stack_destroy(data_stack_t *self) {
 int data_stack_reserve(data_stack_t *self, size_t new_size) {
     assert(self != NULL);
     
-    int status;
+    int status = 0;
     int locked = pthread_mutex_lock(&self->m_mutex);
         assert(locked == 0);
-        if (new_size > self->m_allocated_count) {
-            scalar_t *tmp = self->m_items;
-            if (NULL != (self->m_items = calloc(new_size, sizeof(scalar_t)))) {
-                self->m_allocated_count = new_size;
-                memcpy(self->m_items, tmp, self->m_count * sizeof(scalar_t));
-                free(tmp);
-                status = 0;
-            }
-            else {
-                self->m_items = tmp;
-                status = -1;
-            }
-        }
-        else {
-            status = 0; // do nothing
-        }
+        status = _data_stack_reserve_nonlocking(self, new_size);
     pthread_mutex_unlock(&self->m_mutex);
     return status;
+}
+
+int _data_stack_reserve_nonlocking(data_stack_t *self, size_t new_size) {
+    assert(self != NULL);
+
+    if (new_size > self->m_allocated_count) {
+        scalar_t *tmp = self->m_items;
+        if (NULL != (self->m_items = calloc(new_size, sizeof(scalar_t)))) {
+            self->m_allocated_count = new_size;
+            memcpy(self->m_items, tmp, self->m_count * sizeof(scalar_t));
+            free(tmp);
+            return 0;
+        }
+        else {
+            self->m_items = tmp;
+            return -1;
+        }
+    }
+    else {
+        return 0; // do nothing
+    }
 }
 
 int data_stack_push(data_stack_t *self, const scalar_t *value) {
@@ -106,10 +113,7 @@ int data_stack_push(data_stack_t *self, const scalar_t *value) {
         assert(locked == 0);
         if (self->m_count == self->m_allocated_count) {
             size_t new_size = self->m_allocated_count + data_stack_grow_size;
-            pthread_mutex_unlock(&self->m_mutex);
-            status = data_stack_reserve(self, new_size);
-            int locked = pthread_mutex_lock(&self->m_mutex);
-            assert(locked == 0);
+            status = _data_stack_reserve_nonlocking(self, new_size);
         }
         
         if (status == 0)  scalar_clone(&self->m_items[self->m_count++], value);
@@ -149,13 +153,8 @@ int data_stack_npush(data_stack_t *self, size_t n, const scalar_t *values) {
         assert(locked == 0);
         if (self->m_count + n >= self->m_allocated_count) {
             size_t new_size = self->m_allocated_count + data_stack_grow_size;
-            while (new_size < self->m_count + n)  new_size += data_stack_grow_size;
-
-            // FIXME this unlock/resize/lock thing is retarded
-            pthread_mutex_unlock(self->m_mutex);
-            status = data_stack_reserve(self, new_size);
-            int locked = pthread_mutex_lock(&self->m_mutex);
-            assert(locked == 0);
+            while (self->m_count + n >= new_size)  new_size += data_stack_grow_size;
+            status = _data_stack_reserve_nonlocking(self, new_size);
         }
         
         if (status == 0) {
@@ -169,14 +168,14 @@ int data_stack_npush(data_stack_t *self, size_t n, const scalar_t *values) {
 
 int data_stack_npop(data_stack_t *self, size_t n, scalar_t *result) {
     assert(self != NULL);
-    assert(values != NULL);
+    assert(result != NULL);
     
     int status = 0;
     int locked = pthread_mutex_lock(&self->m_mutex);
         assert(locked == 0);
         if (self->m_count >= n) {
             for (size_t i = 0; i < n; i++) {
-                scalar_assign(result[i], &self->m_items[--self->m_count]);
+                scalar_assign(&result[i], &self->m_items[--self->m_count]);
             }
             status = 0;
         }
