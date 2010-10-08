@@ -1,0 +1,34 @@
+
+
+memory management and things
+
+local variables stored on data stack
+    - this is re-entrant, since each invocation of the function has its own data stack
+    - if scope is based on functions (not arbitrary blocks) then don't need to worry about needing to access a parent scope's 
+      locals
+    - but if nested functions are implemented, then we -do- need a way to refer to a variable from a containing scope
+        - one possibility would be quietly promoting any locals that are referenced from a nested function to globals
+            - but this isn't re-entrant: all invocations of the function now unexpectedly refer to the same shared instance for 
+              globals promoted in this way.
+        - and then data stack accesses need to be atomic, cause multiple threads might be hitting it
+
+
+all variables stored in pools
+    - need to reference count them -- how?
+        - does simply being in someone's scope count as a reference, or only if you explicitly take a reference?
+          e.g. does  "my $foo" require a non-zero reference count at wherever $foo is allocated, or does the refcount only 
+          become non-zero when someone later says "my $bar = \$foo" ?
+    - can intertwine a free list so the pool space can be reclaimed as locals go out of scope
+    - each invocation of a function is going to have its locals stored at a different location in the pool, so we need
+      a symbol table so they can refer to them consistently.  each local would get a globally unique identifier.  the bytecode
+      for each function would initially arrange storage for its locals and register them in its symbol table.  operations for
+      reading/writing to locals would then take an identifier as a parameter and look up the symbol table to find the right
+      place to read/write to
+        - need some tidy data structure for the symbol table.  keys would be the unique identifiers (i.e. just ints), values
+          would be an index into the pool (so that the pool can be grown/reallocated elsewhere without invalidating pointers)
+    - globals can be stored in the same pool.  they just don't get freed until program end.
+    - each function's data stack then is only used for transient data between operations
+        - which i think means its only ever accessed by the thread the function is running in
+            - which i think means data stack operations don't need to be atomic, and i can get rid of the locking infrastructure
+    - do pool accesses need to be atomic?
+        - read-write locking on the entire pool, or at some smaller granularity (a la global_t?)
