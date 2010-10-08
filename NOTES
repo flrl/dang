@@ -19,6 +19,8 @@ all variables stored in pools
           e.g. does  "my $foo" require a non-zero reference count at wherever $foo is allocated, or does the refcount only 
           become non-zero when someone later says "my $bar = \$foo" ?
     - can intertwine a free list so the pool space can be reclaimed as locals go out of scope
+        - just have a "type" value of "FREE" and another field in the union which is a pointer to the next free pool entry.
+          the wrapper struct for the pool would have a head pointer
     - each invocation of a function is going to have its locals stored at a different location in the pool, so we need
       a symbol table so they can refer to them consistently.  each local would get a globally unique identifier.  the bytecode
       for each function would initially arrange storage for its locals and register them in its symbol table.  operations for
@@ -29,10 +31,23 @@ all variables stored in pools
         - but this symbol table doesn't help with that, cause each invocation is going to refer to the same unique identifier,
           which is going to refer to the same in the pool, so it's completely non re-entrant
             - unless each function invocation has its own symbol table, just like it has its own data stack
-                - and now i'm back at square one?
+                - but this is then not really much different from just keeping locals on the data stack
+                - though i guess the symbol table is easier to scan upwards if an identifier doesn't exist at the current scope
+                    - i think it would need the same sort of spaghetti stack setup that the data stack uses so that nested 
+                      functions/closures/coroutines can access their ancestors' locals
+                        - does this mean the data stack no longer needs the spaghetti stack setup?  it still needs a parent
+                          pointer so get back to the old scope when the function returns
     - globals can be stored in the same pool.  they just don't get freed until program end.
     - each function's data stack then is only used for transient data between operations
         - which i think means its only ever accessed by the thread the function is running in
             - which i think means data stack operations don't need to be atomic, and i can get rid of the locking infrastructure
     - do pool accesses need to be atomic?
-        - read-write locking on the entire pool, or at some smaller granularity (a la global_t?)
+        - read-write locking on the entire pool? some smaller granularity (a la global_t?)
+    - what happens when the pool is full?  
+        - reallocate its contents to a larger size? would need to lock the entire pool so nothing tries to access it during the 
+          resize
+        - allow multiple pools to exist at once? how do you uniquely identify a single variable in a single pool?
+
+
+
+
