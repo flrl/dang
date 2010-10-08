@@ -26,6 +26,10 @@ all variables stored in pools
       place to read/write to
         - need some tidy data structure for the symbol table.  keys would be the unique identifiers (i.e. just ints), values
           would be an index into the pool (so that the pool can be grown/reallocated elsewhere without invalidating pointers)
+        - but this symbol table doesn't help with that, cause each invocation is going to refer to the same unique identifier,
+          which is going to refer to the same in the pool, so it's completely non re-entrant
+            - unless each function invocation has its own symbol table, just like it has its own data stack
+                - and now i'm back at square one?
     - globals can be stored in the same pool.  they just don't get freed until program end.
     - each function's data stack then is only used for transient data between operations
         - which i think means its only ever accessed by the thread the function is running in
