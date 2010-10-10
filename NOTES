@@ -47,7 +47,8 @@ all variables stored in pools
         - reallocate its contents to a larger size? would need to lock the entire pool so nothing tries to access it during the 
           resize
         - allow multiple pools to exist at once? how do you uniquely identify a single variable in a single pool?
-
+    - if all scalar ops are contextual and variables aren't stored on the data stack, does the data stack need to be scalars, or
+      can it just be intptr_t's a la forth cells?
 
 
 
