@@ -43,6 +43,10 @@ all variables stored in pools
             - which i think means data stack operations don't need to be atomic, and i can get rid of the locking infrastructure
     - do pool accesses need to be atomic?
         - read-write locking on the entire pool? some smaller granularity (a la global_t?)
+        - add a "shared" flag and a mutex pointer to pooled_scalar_t.  accesses to scalars that have this flag set should
+          lock/unlock the mutex, while accesses to other scalars don't incur the overhead. 
+            - all globals, and any local variables refered to by nested functions, should be created with the shared flag.  
+            - any other conditions where this is needed?
     - what happens when the pool is full?  
         - reallocate its contents to a larger size? would need to lock the entire pool so nothing tries to access it during the 
           resize
