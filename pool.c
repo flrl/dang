@@ -89,38 +89,50 @@ void pool_increase_refcount(scalar_pool_t *self, scalar_t handle) {
 scalar_t pool_allocate_scalar(scalar_pool_t *self, uint32_t flags) {
     assert(self != NULL);
     
-    if (self->m_free_list_head >= 0) {
-        // allocate a new one from the free list
-        scalar_t handle = self->m_free_list_head;
-        self->m_free_list_head = self->m_items[handle].m_value.next_free;
+    if (0 == pthread_mutex_lock(&self->m_free_list_mutex)) {
+        scalar_t handle;
+        
+        if (self->m_free_count > 0) {
+            // allocate a new one from the free list
+            assert(self->m_free_list_head >= 0);
+            handle = self->m_free_list_head;        
+            self->m_free_list_head = self->m_items[handle].m_value.next_free;
+            self->m_free_count--;
+
+            pthread_mutex_unlock(&self->m_free_list_mutex);
+        }
+        else {
+            // grow the pool and allocate a new one from the increased free list
+            handle = self->m_allocated_count;
+            
+            size_t new_size = self->m_allocated_count + scalar_pool_grow_size;
+            pooled_scalar_t *tmp = calloc(new_size, sizeof(pooled_scalar_t));
+            if (tmp != NULL)  {
+                pthread_mutex_unlock(&self->m_free_list_mutex);
+                return -1;   
+            }
+            memcpy(tmp, self->m_items, self->m_allocated_count * sizeof(pooled_scalar_t));
+            free(self->m_items);
+            self->m_items = tmp;
+            self->m_allocated_count = new_size;
+            
+            self->m_free_list_head = handle + 1;
+            for (size_t i = self->m_free_list_head; i < new_size - 1; i++) {
+                self->m_items[i].m_value.next_free = i + 1;
+            }
+            self->m_items[new_size - 1].m_value.next_free = -1;            
+            self->m_free_count = scalar_pool_grow_size - 1;
+            
+            pthread_mutex_unlock(&self->m_free_list_mutex);
+        }
+        
         self->m_items[handle].m_flags = SCALAR_UNDEF; // FIXME needs flags as an argument
         self->m_items[handle].m_value.as_int = 0;
-        self->m_free_count--;
         self->m_count++;
         return handle;
     }
     else {
-        // grow the pool and allocate a new one from the increased free list
-        scalar_t handle = self->m_allocated_count;
-
-        size_t new_size = self->m_allocated_count + scalar_pool_grow_size;
-        pooled_scalar_t *tmp = calloc(new_size, sizeof(pooled_scalar_t));
-        if (tmp != NULL)  return -1;
-        memcpy(tmp, self->m_items, self->m_allocated_count * sizeof(pooled_scalar_t));
-        free(self->m_items);
-        self->m_items = tmp;
-        self->m_allocated_count = new_size;
-
-        self->m_free_list_head = handle + 1;
-        for (size_t i = self->m_free_list_head; i < new_size - 1; i++) {
-            self->m_items[i].m_value.next_free = i + 1;
-        }
-        self->m_items[new_size - 1].m_value.next_free = -1;
-        
-        self->m_free_count += scalar_pool_grow_size - 1;
-        self->m_count++;
-        
-        return handle;
+        return -1;
     }
 }
 
@@ -149,17 +161,21 @@ void _pool_add_to_free_list(scalar_pool_t *self, scalar_t handle) {
     
     scalar_t prev = handle;
 
-    for ( ; prev >= 0 && SCALAR_UNALLOC != (self->m_items[prev].m_flags & SCALAR_TYPE_MASK); --prev) ;
+    if (0 == pthread_mutex_lock(&self->m_free_list_mutex)) {
+        for ( ; prev >= 0 && SCALAR_UNALLOC != (self->m_items[prev].m_flags & SCALAR_TYPE_MASK); --prev) ;
+        
+        if (prev >= 0) {
+            self->m_items[handle].m_value.next_free = self->m_items[prev].m_value.next_free;
+            self->m_items[prev].m_value.next_free = handle;
+        }
+        else {
+            self->m_items[handle].m_value.next_free = self->m_free_list_head;
+            self->m_free_list_head = handle;
+        }
+        
+        self->m_items[handle].m_flags = SCALAR_UNALLOC;  // FIXME do this here?
+        self->m_free_count++;
 
-    if (prev >= 0) {
-        self->m_items[handle].m_value.next_free = self->m_items[prev].m_value.next_free;
-        self->m_items[prev].m_value.next_free = handle;
+        pthread_mutex_unlock(&self->m_free_list_mutex);
     }
-    else {
-        self->m_items[handle].m_value.next_free = self->m_free_list_head;
-        self->m_free_list_head = handle;
-    }
-    
-    self->m_items[handle].m_flags = SCALAR_UNALLOC;  // FIXME do this here?
-    self->m_free_count++;
 }
