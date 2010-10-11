@@ -70,7 +70,7 @@ int pool_destroy(scalar_pool_t *self) {
         free(self->m_items);
         self->m_allocated_count = self->m_count = 0;
         pthread_mutex_destroy(&self->m_free_list_mutex);
-        // FIXME loop over and destroy all the currently defined pool items
+        // FIXME loop over and properly destroy all the currently defined pool items
         return 0;
     }
     else {
@@ -126,7 +126,7 @@ scalar_t pool_allocate_scalar(scalar_pool_t *self, uint32_t flags) {
             pthread_mutex_unlock(&self->m_free_list_mutex);
         }
         
-        self->m_items[handle].m_flags = SCALAR_UNDEF; // FIXME needs flags as an argument
+        self->m_items[handle].m_flags = SCALAR_UNDEF; // FIXME sanitise flags argument and use it, eg set up mutex for shared ones
         self->m_items[handle].m_value.as_int = 0;
         self->m_count++;
         return handle;
@@ -173,7 +173,7 @@ void _pool_add_to_free_list(scalar_pool_t *self, scalar_t handle) {
             self->m_free_list_head = handle;
         }
         
-        self->m_items[handle].m_flags = SCALAR_UNALLOC;  // FIXME do this here?
+        self->m_items[handle].m_flags = SCALAR_UNALLOC;
         self->m_free_count++;
 
         pthread_mutex_unlock(&self->m_free_list_mutex);
