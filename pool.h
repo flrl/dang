@@ -11,6 +11,7 @@
 #ifndef POOL_H
 #define POOL_H
 
+#include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
 
@@ -20,10 +21,11 @@
 #define SCALAR_STRING       0x03u
 // ...
 
-#define SCALAR_TYPEMASK     0xFFu
+#define SCALAR_UNALLOC      0xFFu
+#define SCALAR_TYPE_MASK    0xFFu
 
-#define SCALAR_FLAG_PTR     0x40000000u
-#define SCALAR_FLAG_ISFREE  0x80000000u
+#define SCALAR_FLAG_SHARED  0x40000000u
+#define SCALAR_FLAG_PTR     0x80000000u
 
 typedef struct pooled_scalar_t {
     uint32_t m_flags;
@@ -34,6 +36,7 @@ typedef struct pooled_scalar_t {
         char     *as_string;
         intptr_t next_free;
     } m_value;
+    pthread_mutex_t *m_mutex;
 } pooled_scalar_t;
 
 typedef struct scalar_pool_t {
@@ -41,6 +44,7 @@ typedef struct scalar_pool_t {
     size_t m_count;
     pooled_scalar_t *m_items;
     intptr_t m_free_list_head;
+    pthread_mutex_t m_free_list_mutex;
 } scalar_pool_t;
 
 typedef intptr_t scalar_t;
