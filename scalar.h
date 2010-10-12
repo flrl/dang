@@ -20,11 +20,16 @@
 #define SCALAR_FLOAT        0x02u
 #define SCALAR_STRING       0x03u
 // ...
+#define SCALAR_SCAREF       0x81u
+#define SCALAR_ARRREF       0x82u
+#define SCALAR_HASHREF      0x83u
+
 #define SCALAR_UNDEF        0xFFu
 #define SCALAR_TYPE_MASK    0xFFu
 
 #define SCALAR_FLAG_PTR     0x40000000u
 #define SCALAR_FLAG_SHARED  0x80000000u
+
 
 typedef struct scalar_t {
     uint32_t m_flags;
@@ -32,18 +37,19 @@ typedef struct scalar_t {
         intptr_t as_int;
         float    as_float;
         char     *as_string;
+        intptr_t next_free;
     } m_value;    
-} scalar_t;
+} anon_scalar_t;
 
 typedef struct pooled_scalar_t {
     uint32_t m_flags;
-    uint32_t m_references;
     union {
         intptr_t as_int;
         float    as_float;
         char     *as_string;
         intptr_t next_free;
     } m_value;
+    uint32_t m_references;
     pthread_mutex_t *m_mutex;
 } pooled_scalar_t;
 
@@ -56,25 +62,26 @@ typedef struct scalar_pool_t {
     pthread_mutex_t m_free_list_mutex;
 } scalar_pool_t;
 
-typedef size_t scalar_handle_t;
+typedef uintptr_t scalar_handle_t;
 
+
+// scalar pool functions
 int scalar_pool_init(void);
 int scalar_pool_destroy(void);
-
 scalar_handle_t scalar_pool_allocate_scalar(uint32_t);
 void scalar_pool_release_scalar(scalar_handle_t);
 void scalar_pool_increase_refcount(scalar_handle_t);
 
-
+// pooled scalar functions
 void scalar_reset(scalar_handle_t);
-
 void scalar_set_int_value(scalar_handle_t, intptr_t);
 void scalar_set_float_value(scalar_handle_t, float);
 void scalar_set_string_value(scalar_handle_t, const char *);
-
 intptr_t scalar_get_int_value(scalar_handle_t);
 float scalar_get_float_value(scalar_handle_t);
 void scalar_get_string_value(scalar_handle_t, char **);
 
+// anon scalar functions
+// FIXME put these here
 
 #endif
