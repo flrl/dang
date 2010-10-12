@@ -26,6 +26,15 @@
 #define SCALAR_FLAG_PTR     0x40000000u
 #define SCALAR_FLAG_SHARED  0x80000000u
 
+typedef struct scalar_t {
+    uint32_t m_flags;
+    union {
+        intptr_t as_int;
+        float    as_float;
+        char     *as_string;
+    } m_value;    
+} scalar_t;
+
 typedef struct pooled_scalar_t {
     uint32_t m_flags;
     uint32_t m_references;
@@ -47,25 +56,25 @@ typedef struct scalar_pool_t {
     pthread_mutex_t m_free_list_mutex;
 } scalar_pool_t;
 
-typedef size_t scalar_t;
+typedef size_t scalar_handle_t;
 
 int scalar_pool_init(void);
 int scalar_pool_destroy(void);
 
-scalar_t scalar_pool_allocate_scalar(uint32_t);
-void scalar_pool_release_scalar(scalar_t);
-void scalar_pool_increase_refcount(scalar_t);
+scalar_handle_t scalar_pool_allocate_scalar(uint32_t);
+void scalar_pool_release_scalar(scalar_handle_t);
+void scalar_pool_increase_refcount(scalar_handle_t);
 
 
-void scalar_reset(scalar_t);
+void scalar_reset(scalar_handle_t);
 
-void scalar_set_int_value(scalar_t, intptr_t);
-void scalar_set_float_value(scalar_t, float);
-void scalar_set_string_value(scalar_t, const char *);
+void scalar_set_int_value(scalar_handle_t, intptr_t);
+void scalar_set_float_value(scalar_handle_t, float);
+void scalar_set_string_value(scalar_handle_t, const char *);
 
-intptr_t scalar_get_int_value(scalar_t);
-float scalar_get_float_value(scalar_t);
-void scalar_get_string_value(scalar_t, char **);
+intptr_t scalar_get_int_value(scalar_handle_t);
+float scalar_get_float_value(scalar_handle_t);
+void scalar_get_string_value(scalar_handle_t, char **);
 
 
 #endif

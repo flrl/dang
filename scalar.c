@@ -22,7 +22,7 @@ static scalar_pool_t g_scalar_pool;
 const size_t scalar_pool_initial_size = 1024;   // FIXME arbitrary number
 const size_t scalar_pool_grow_size = 1024;      // FIXME arbitrary number
 
-void _scalar_pool_add_to_free_list(scalar_t);
+void _scalar_pool_add_to_free_list(scalar_handle_t);
 
 int scalar_pool_init(void) {
     if (NULL != (g_scalar_pool.m_items = calloc(scalar_pool_initial_size, sizeof(g_scalar_pool.m_items[0])))) {
@@ -30,7 +30,7 @@ int scalar_pool_init(void) {
         g_scalar_pool.m_count = 0;
         if (0 == pthread_mutex_init(&g_scalar_pool.m_free_list_mutex, NULL)) {
             g_scalar_pool.m_free_list_head = 1;
-            for (scalar_t i = 2; i < g_scalar_pool.m_allocated_count - 1; i++) {
+            for (scalar_handle_t i = 2; i < g_scalar_pool.m_allocated_count - 1; i++) {
                 POOL_ITEM(i).m_value.next_free = i;
             }
             POOL_ITEM(g_scalar_pool.m_allocated_count).m_value.next_free = 0;
@@ -59,7 +59,7 @@ int scalar_pool_destroy(void) {
     }
 }
 
-void scalar_pool_increase_refcount(scalar_t handle) {
+void scalar_pool_increase_refcount(scalar_handle_t handle) {
     assert(handle != 0);
     assert(handle <= g_scalar_pool.m_allocated_count);
     assert(SCALAR_UNALLOC != (POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK));
@@ -76,9 +76,9 @@ void scalar_pool_increase_refcount(scalar_t handle) {
     if (shared)  pthread_mutex_unlock(POOL_ITEM(handle).m_mutex);
 }
 
-scalar_t scalar_pool_allocate_scalar(uint32_t flags) {
+scalar_handle_t scalar_pool_allocate_scalar(uint32_t flags) {
     if (0 == pthread_mutex_lock(&g_scalar_pool.m_free_list_mutex)) {
-        scalar_t handle;
+        scalar_handle_t handle;
         
         if (g_scalar_pool.m_free_count > 0) {
             // allocate a new one from the free list
@@ -105,7 +105,7 @@ scalar_t scalar_pool_allocate_scalar(uint32_t flags) {
             g_scalar_pool.m_allocated_count = new_size;
             
             g_scalar_pool.m_free_list_head = handle + 1;            
-            for (scalar_t i = g_scalar_pool.m_free_list_head; i < new_size - 1; i++) {
+            for (scalar_handle_t i = g_scalar_pool.m_free_list_head; i < new_size - 1; i++) {
                 POOL_ITEM(i).m_value.next_free = i;
             }
             g_scalar_pool.m_items[new_size - 1].m_value.next_free = 0;
@@ -124,7 +124,7 @@ scalar_t scalar_pool_allocate_scalar(uint32_t flags) {
     }
 }
 
-void scalar_pool_release_scalar(scalar_t handle) {
+void scalar_pool_release_scalar(scalar_handle_t handle) {
     assert(handle != 0);
     assert(handle <= g_scalar_pool.m_allocated_count);
     assert(POOL_ITEM(handle).m_references > 0);
@@ -143,10 +143,10 @@ void scalar_pool_release_scalar(scalar_t handle) {
     }
 }
 
-void _scalar_pool_add_to_free_list(scalar_t handle) {
+void _scalar_pool_add_to_free_list(scalar_handle_t handle) {
     assert(handle != 0);
 
-    scalar_t prev = handle;
+    scalar_handle_t prev = handle;
 
     if (0 == pthread_mutex_lock(&g_scalar_pool.m_free_list_mutex)) {
         for ( ; prev > 0 && SCALAR_UNALLOC != (POOL_ITEM(prev).m_flags & SCALAR_TYPE_MASK); --prev) ;
@@ -168,7 +168,7 @@ void _scalar_pool_add_to_free_list(scalar_t handle) {
 }
 
 
-static inline int _scalar_lock(scalar_t handle) {
+static inline int _scalar_lock(scalar_handle_t handle) {
     if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
         return pthread_mutex_lock(POOL_ITEM(handle).m_mutex);
     }
@@ -177,7 +177,7 @@ static inline int _scalar_lock(scalar_t handle) {
     }
 }
 
-static inline int _scalar_unlock(scalar_t handle) {
+static inline int _scalar_unlock(scalar_handle_t handle) {
     if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
         return pthread_mutex_unlock(POOL_ITEM(handle).m_mutex);
     }
@@ -186,7 +186,7 @@ static inline int _scalar_unlock(scalar_t handle) {
     }
 }
 
-static inline void _scalar_reset_unlocked(scalar_t handle) {
+static inline void _scalar_reset_unlocked(scalar_handle_t handle) {
     assert(handle != 0);
     
     // clean up allocated memory, if anything
@@ -208,14 +208,14 @@ static inline void _scalar_reset_unlocked(scalar_t handle) {
 }
 
 
-void scalar_reset(scalar_t handle) {
+void scalar_reset(scalar_handle_t handle) {
     if (0 == _scalar_lock(handle)) {
         _scalar_reset_unlocked(handle);
         _scalar_unlock(handle);
     }
 }
 
-void scalar_set_int_value(scalar_t handle, intptr_t ival) {
+void scalar_set_int_value(scalar_handle_t handle, intptr_t ival) {
     assert(handle != 0);
     
     if (0 == _scalar_lock(handle)) {
@@ -227,7 +227,7 @@ void scalar_set_int_value(scalar_t handle, intptr_t ival) {
     }    
 }
 
-void scalar_set_float_value(scalar_t handle, float fval) {
+void scalar_set_float_value(scalar_handle_t handle, float fval) {
     assert(handle != 0);
     
     if (0 == _scalar_lock(handle)) {
@@ -239,7 +239,7 @@ void scalar_set_float_value(scalar_t handle, float fval) {
     }
 }
 
-void scalar_set_string_value(scalar_t handle, const char *sval) {
+void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
     assert(handle != 0);
     assert(sval != NULL);
     
@@ -252,7 +252,7 @@ void scalar_set_string_value(scalar_t handle, const char *sval) {
     }
 }
 
-intptr_t scalar_get_int_value(scalar_t handle) {
+intptr_t scalar_get_int_value(scalar_handle_t handle) {
     assert(handle != 0);
     
     intptr_t value;
@@ -282,7 +282,7 @@ intptr_t scalar_get_int_value(scalar_t handle) {
     return value;    
 }
 
-float scalar_get_float_value(scalar_t handle) {
+float scalar_get_float_value(scalar_handle_t handle) {
     assert(handle != 0);
 
     float value;
@@ -312,7 +312,7 @@ float scalar_get_float_value(scalar_t handle) {
     return value;    
 }
 
-void scalar_get_string_value(scalar_t handle, char **result) {
+void scalar_get_string_value(scalar_handle_t handle, char **result) {
     assert(handle != 0);
 
     char numeric[100];
