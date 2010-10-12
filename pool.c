@@ -35,6 +35,7 @@
 //    pthread_mutex_t *m_mutex;
 //} pooled_scalar_t;
 
+#define POOL_ITEM(x)        self->m_items[(x) - 1]
 
 const size_t scalar_pool_initial_size = 1024;   // FIXME arbitrary number
 const size_t scalar_pool_grow_size = 1024;      // FIXME arbitrary number
@@ -47,11 +48,11 @@ int pool_init(scalar_pool_t *self) {
         self->m_allocated_count = self->m_free_count = scalar_pool_initial_size;
         self->m_count = 0;
         if (0 == pthread_mutex_init(&self->m_free_list_mutex, NULL)) {
-            self->m_free_list_head = 0;
-            for (size_t i = 1; i < self->m_allocated_count - 1; i++) {
-                self->m_items[i - 1].m_value.next_free = i;
+            self->m_free_list_head = 1;
+            for (scalar_t i = 2; i < self->m_allocated_count - 1; i++) {
+                POOL_ITEM(i).m_value.next_free = i;
             }
-            self->m_items[self->m_allocated_count - 1].m_value.next_free = -1;
+            POOL_ITEM(self->m_allocated_count).m_value.next_free = 0;
             return 0;
         }
         else {
@@ -80,10 +81,20 @@ int pool_destroy(scalar_pool_t *self) {
 
 void pool_increase_refcount(scalar_pool_t *self, scalar_t handle) {
     assert(self != NULL);
+    assert(handle != 0);
     assert(handle <= self->m_allocated_count);
-    assert(SCALAR_UNALLOC != (self->m_items[handle].m_flags & SCALAR_TYPE_MASK));
-    assert(self->m_items[handle].m_references > 0);
-    ++self->m_items[handle].m_references;
+    assert(SCALAR_UNALLOC != (POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK));
+    assert(POOL_ITEM(handle).m_references > 0);
+
+    const uint32_t shared = POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED;
+    if (shared) {
+        assert(POOL_ITEM(handle).m_mutex != NULL);
+        pthread_mutex_lock(POOL_ITEM(handle).m_mutex);
+    }
+
+    ++POOL_ITEM(handle).m_references;
+
+    if (shared)  pthread_mutex_unlock(POOL_ITEM(handle).m_mutex);
 }
 
 scalar_t pool_allocate_scalar(scalar_pool_t *self, uint32_t flags) {
@@ -94,16 +105,16 @@ scalar_t pool_allocate_scalar(scalar_pool_t *self, uint32_t flags) {
         
         if (self->m_free_count > 0) {
             // allocate a new one from the free list
-            assert(self->m_free_list_head >= 0);
+            assert(self->m_free_list_head != 0);
             handle = self->m_free_list_head;        
-            self->m_free_list_head = self->m_items[handle].m_value.next_free;
+            self->m_free_list_head = POOL_ITEM(handle).m_value.next_free;
             self->m_free_count--;
 
             pthread_mutex_unlock(&self->m_free_list_mutex);
         }
         else {
             // grow the pool and allocate a new one from the increased free list
-            handle = self->m_allocated_count;
+            handle = self->m_allocated_count + 1;
             
             size_t new_size = self->m_allocated_count + scalar_pool_grow_size;
             pooled_scalar_t *tmp = calloc(new_size, sizeof(pooled_scalar_t));
@@ -116,18 +127,23 @@ scalar_t pool_allocate_scalar(scalar_pool_t *self, uint32_t flags) {
             self->m_items = tmp;
             self->m_allocated_count = new_size;
             
-            self->m_free_list_head = handle + 1;
-            for (size_t i = self->m_free_list_head; i < new_size - 1; i++) {
-                self->m_items[i].m_value.next_free = i + 1;
+//            for (scalar_t i = 2; i < self->m_allocated_count - 1; i++) {
+//                POOL_ITEM(i).m_value.next_free = i;
+//            }
+//            POOL_ITEM(self->m_allocated_count).m_value.next_free = 0;
+            
+            self->m_free_list_head = handle + 1;            
+            for (scalar_t i = self->m_free_list_head; i < new_size - 1; i++) {
+                POOL_ITEM(i).m_value.next_free = i;
             }
-            self->m_items[new_size - 1].m_value.next_free = -1;            
+            self->m_items[new_size - 1].m_value.next_free = 0;
             self->m_free_count = scalar_pool_grow_size - 1;
             
             pthread_mutex_unlock(&self->m_free_list_mutex);
         }
         
-        self->m_items[handle].m_flags = SCALAR_UNDEF; // FIXME sanitise flags argument and use it, eg set up mutex for shared ones
-        self->m_items[handle].m_value.as_int = 0;
+        POOL_ITEM(handle).m_flags = SCALAR_UNDEF; // FIXME sanitise flags argument and use it, eg set up mutex for shared ones
+        POOL_ITEM(handle).m_value.as_int = 0;
         self->m_count++;
         return handle;
     }
@@ -138,15 +154,15 @@ scalar_t pool_allocate_scalar(scalar_pool_t *self, uint32_t flags) {
 
 void pool_release_scalar(scalar_pool_t *self, scalar_t handle) {
     assert(self != NULL);
-    assert(handle >= 0);
+    assert(handle != 0);
     assert(handle <= self->m_allocated_count);
-    assert(self->m_items[handle].m_references > 0);
+    assert(POOL_ITEM(handle).m_references > 0);
     
-    if (--self->m_items[handle].m_references == 0) {
-        if (self->m_items[handle].m_flags & SCALAR_FLAG_PTR) {
-            switch(self->m_items[handle].m_flags & SCALAR_TYPE_MASK) {
+    if (--POOL_ITEM(handle).m_references == 0) {
+        if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_PTR) {
+            switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
                 case SCALAR_STRING:
-                    free(self->m_items[handle].m_value.as_string);
+                    free(POOL_ITEM(handle).m_value.as_string);
                     break;
             }
         }
@@ -157,23 +173,23 @@ void pool_release_scalar(scalar_pool_t *self, scalar_t handle) {
 
 void _pool_add_to_free_list(scalar_pool_t *self, scalar_t handle) {
     assert(self != NULL);
-    assert(handle >= 0);
-    
+    assert(handle != 0);
+
     scalar_t prev = handle;
 
     if (0 == pthread_mutex_lock(&self->m_free_list_mutex)) {
-        for ( ; prev >= 0 && SCALAR_UNALLOC != (self->m_items[prev].m_flags & SCALAR_TYPE_MASK); --prev) ;
+        for ( ; prev > 0 && SCALAR_UNALLOC != (POOL_ITEM(prev).m_flags & SCALAR_TYPE_MASK); --prev) ;
         
-        if (prev >= 0) {
-            self->m_items[handle].m_value.next_free = self->m_items[prev].m_value.next_free;
-            self->m_items[prev].m_value.next_free = handle;
+        if (prev > 0) {
+            POOL_ITEM(handle).m_value.next_free = POOL_ITEM(prev).m_value.next_free;
+            POOL_ITEM(prev).m_value.next_free = handle;
         }
         else {
-            self->m_items[handle].m_value.next_free = self->m_free_list_head;
+            POOL_ITEM(handle).m_value.next_free = self->m_free_list_head;
             self->m_free_list_head = handle;
         }
         
-        self->m_items[handle].m_flags = SCALAR_UNALLOC;
+        POOL_ITEM(handle).m_flags = SCALAR_UNALLOC;
         self->m_free_count++;
 
         pthread_mutex_unlock(&self->m_free_list_mutex);

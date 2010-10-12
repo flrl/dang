@@ -47,7 +47,7 @@ typedef struct scalar_pool_t {
     pthread_mutex_t m_free_list_mutex;
 } scalar_pool_t;
 
-typedef intptr_t scalar_t;
+typedef size_t scalar_t;
 
 int pool_init(scalar_pool_t *);
 int pool_destroy(scalar_pool_t *);
