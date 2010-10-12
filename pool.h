@@ -49,11 +49,24 @@ typedef struct scalar_pool_t {
 
 typedef size_t scalar_t;
 
-int scalar_pool_init(scalar_pool_t *);
-int scalar_pool_destroy(scalar_pool_t *);
+int scalar_pool_init(void);
+int scalar_pool_destroy(void);
 
-scalar_t scalar_pool_allocate_scalar(scalar_pool_t *, uint32_t);
-void scalar_pool_release_scalar(scalar_pool_t *, scalar_t);
-void scalar_pool_increase_refcount(scalar_pool_t *, scalar_t);
+scalar_t scalar_pool_allocate_scalar(uint32_t);
+void scalar_pool_release_scalar(scalar_t);
+void scalar_pool_increase_refcount(scalar_t);
+
+
+void scalar_init(scalar_t);
+void scalar_destroy(scalar_t);
+
+void scalar_set_int_value(scalar_t, intptr_t);
+void scalar_set_double_value(scalar_t, float);
+void scalar_set_string_value(scalar_t, const char *);
+
+intptr_t scalar_get_int_value(scalar_t);
+double scalar_get_double_value(scalar_t);
+void scalar_get_string_value(scalar_t, char **);
+
 
 #endif
