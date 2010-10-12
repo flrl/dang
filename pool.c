@@ -128,6 +128,7 @@ void scalar_pool_release_scalar(scalar_t handle) {
     assert(POOL_ITEM(handle).m_references > 0);
     
     if (--POOL_ITEM(handle).m_references == 0) {
+        // FIXME should this just call scalar_destroy?
         if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_PTR) {
             switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
                 case SCALAR_STRING:
@@ -162,4 +163,113 @@ void _scalar_pool_add_to_free_list(scalar_t handle) {
 
         pthread_mutex_unlock(&g_scalar_pool.m_free_list_mutex);
     }
+}
+
+// FIXME
+
+void scalar_init(scalar_t handle) {
+    assert(handle != 0);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) != SCALAR_UNALLOC);
+    
+    if ((POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  scalar_destroy(handle);
+    
+    // FIXME what does this need to actually do now?
+//    self->m_type = ScUNDEFINED;
+//    self->m_value.int_value = 0;
+}
+
+void scalar_destroy(scalar_t handle) {
+    assert(handle != 0);
+    // FIXME what does this need to actually do now?
+    // FIXME i guess it sets it back to undef, and cleans up any malloc'd values
+//    if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
+//    self->m_type = ScUNDEFINED;
+//    self->m_value.int_value = 0;
+}
+
+void scalar_set_int_value(scalar_t handle, intptr_t ival) {
+    assert(handle != 0);
+    // FIXME what does this need to actually do now?
+//    if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
+//    self->m_type = ScINT;
+//    self->m_value.int_value = ival;
+}
+
+void scalar_set_double_value(scalar_t handle, float dval) {
+    assert(handle != 0);
+    // FIXME what does this need to actually do now?
+//    if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
+//    self->m_type = ScDOUBLE;
+//    self->m_value.double_value = dval;
+}
+
+void scalar_set_string_value(scalar_t handle, const char *sval) {
+    assert(handle != 0);
+    assert(sval != NULL);
+    // FIXME what does this need to actually do now?
+//    if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
+//    self->m_type = ScSTRING;
+//    self->m_value.string_value = strdup(sval);
+}
+
+intptr_t scalar_get_int_value(scalar_t handle) {
+    assert(handle != 0);
+    // FIXME what does this need to actually do now?
+//    switch(self->m_type) {
+//        case ScUNDEFINED:
+//            return 0;
+//        case ScINT:
+//            return self->m_value.int_value;
+//        case ScDOUBLE:
+//            return (intptr_t) self->m_value.double_value;
+//        case ScSTRING:
+//            return self->m_value.string_value != NULL ? strtol(self->m_value.string_value, NULL, 0) : 0;
+//        default:
+//            return 0;
+//    }
+}
+
+float scalar_get_double_value(scalar_t handle) {
+    assert(handle != 0);
+    // FIXME what does this need to actually do now?
+//    switch(self->m_type) {
+//        case ScUNDEFINED:
+//            return 0.0;
+//        case ScINT:
+//            return (double) self->m_value.int_value;
+//        case ScDOUBLE:
+//            return self->m_value.double_value;
+//        case ScSTRING:
+//            return self->m_value.string_value != NULL ? strtod(self->m_value.string_value, NULL) : 0.0;
+//        default:
+//            return 0;
+//    }    
+}
+
+void scalar_get_string_value(scalar_t handle, char **result) {
+    assert(handle != 0);
+    // FIXME what does this need to actually do now?
+//    
+//    char buffer[100];
+//    
+//    switch(self->m_type) {
+//        case ScUNDEFINED:
+//            *result = strdup("");
+//            return;
+//        case ScINT:
+//            snprintf(buffer, sizeof(buffer), "%"PRIiPTR"", self->m_value.int_value);
+//            *result = strdup(buffer);
+//            break;
+//        case ScDOUBLE:
+//            snprintf(buffer, sizeof(buffer), "%g", self->m_value.double_value);
+//            *result = strdup(buffer);
+//            break;
+//        case ScSTRING:
+//            *result = strdup(self->m_value.string_value);
+//            break;
+//        default:
+//            ; // do nothing
+//    }
+//    
+//    return;
 }

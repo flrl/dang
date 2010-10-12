@@ -65,7 +65,7 @@ void scalar_set_double_value(scalar_t, float);
 void scalar_set_string_value(scalar_t, const char *);
 
 intptr_t scalar_get_int_value(scalar_t);
-double scalar_get_double_value(scalar_t);
+float scalar_get_double_value(scalar_t);
 void scalar_get_string_value(scalar_t, char **);
 
 
