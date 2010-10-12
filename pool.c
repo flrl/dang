@@ -8,9 +8,11 @@
  */
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 
+#include "debug.h"
 #include "pool.h"
 
 #define POOL_ITEM(x)        g_scalar_pool.m_items[(x) - 1]
@@ -165,111 +167,177 @@ void _scalar_pool_add_to_free_list(scalar_t handle) {
     }
 }
 
-// FIXME
 
-void scalar_init(scalar_t handle) {
-    assert(handle != 0);
-    assert((POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) != SCALAR_UNALLOC);
-    
-    if ((POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  scalar_destroy(handle);
-    
-    // FIXME what does this need to actually do now?
-//    self->m_type = ScUNDEFINED;
-//    self->m_value.int_value = 0;
+static inline int _scalar_lock(scalar_t handle) {
+    if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
+        return pthread_mutex_lock(POOL_ITEM(handle).m_mutex);
+    }
+    else {
+        return 0;
+    }
 }
 
-void scalar_destroy(scalar_t handle) {
+static inline int _scalar_unlock(scalar_t handle) {
+    if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
+        return pthread_mutex_unlock(POOL_ITEM(handle).m_mutex);
+    }
+    else {
+        return 0;
+    }
+}
+
+static inline void _scalar_reset_unlocked(scalar_t handle) {
     assert(handle != 0);
-    // FIXME what does this need to actually do now?
-    // FIXME i guess it sets it back to undef, and cleans up any malloc'd values
-//    if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
-//    self->m_type = ScUNDEFINED;
-//    self->m_value.int_value = 0;
+    
+    // clean up allocated memory, if anything
+    if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_PTR) {
+        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_STRING:
+                free(POOL_ITEM(handle).m_value.as_string);
+                POOL_ITEM(handle).m_flags &= ~SCALAR_FLAG_PTR;
+                break;
+        }
+    }
+    
+    // FIXME if it was a reference type, decrease ref counts on referenced object here
+    
+    // set up default values
+    POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+    POOL_ITEM(handle).m_flags |= SCALAR_UNDEF;
+    POOL_ITEM(handle).m_value.as_int = 0;    
+}
+
+
+void scalar_reset(scalar_t handle) {
+    if (0 == _scalar_lock(handle)) {
+        _scalar_reset_unlocked(handle);
+        _scalar_unlock(handle);
+    }
 }
 
 void scalar_set_int_value(scalar_t handle, intptr_t ival) {
     assert(handle != 0);
-    // FIXME what does this need to actually do now?
-//    if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
-//    self->m_type = ScINT;
-//    self->m_value.int_value = ival;
+    
+    if (0 == _scalar_lock(handle)) {
+        _scalar_reset_unlocked(handle);
+        POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+        POOL_ITEM(handle).m_flags |= SCALAR_INT;
+        POOL_ITEM(handle).m_value.as_int = ival;
+        _scalar_unlock(handle);
+    }    
 }
 
-void scalar_set_double_value(scalar_t handle, float dval) {
+void scalar_set_float_value(scalar_t handle, float fval) {
     assert(handle != 0);
-    // FIXME what does this need to actually do now?
-//    if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
-//    self->m_type = ScDOUBLE;
-//    self->m_value.double_value = dval;
+    
+    if (0 == _scalar_lock(handle)) {
+        _scalar_reset_unlocked(handle);
+        POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+        POOL_ITEM(handle).m_flags |= SCALAR_INT;
+        POOL_ITEM(handle).m_value.as_float = fval;
+        _scalar_unlock(handle);
+    }
 }
 
 void scalar_set_string_value(scalar_t handle, const char *sval) {
     assert(handle != 0);
     assert(sval != NULL);
-    // FIXME what does this need to actually do now?
-//    if (self->m_type == ScSTRING && self->m_value.string_value != NULL)  free(self->m_value.string_value);
-//    self->m_type = ScSTRING;
-//    self->m_value.string_value = strdup(sval);
+    
+    if (0 == _scalar_lock(handle)) {
+        _scalar_reset_unlocked(handle);
+        POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+        POOL_ITEM(handle).m_flags |= SCALAR_STRING | SCALAR_FLAG_PTR;
+        POOL_ITEM(handle).m_value.as_string = strdup(sval);
+        _scalar_unlock(handle);
+    }
 }
 
 intptr_t scalar_get_int_value(scalar_t handle) {
     assert(handle != 0);
-    // FIXME what does this need to actually do now?
-//    switch(self->m_type) {
-//        case ScUNDEFINED:
-//            return 0;
-//        case ScINT:
-//            return self->m_value.int_value;
-//        case ScDOUBLE:
-//            return (intptr_t) self->m_value.double_value;
-//        case ScSTRING:
-//            return self->m_value.string_value != NULL ? strtol(self->m_value.string_value, NULL, 0) : 0;
-//        default:
-//            return 0;
-//    }
+    
+    intptr_t value;
+    
+    if (0 == _scalar_lock(handle)) {
+        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_INT:
+                value = POOL_ITEM(handle).m_value.as_int;
+                break;
+            case SCALAR_FLOAT:
+                value = (intptr_t) POOL_ITEM(handle).m_value.as_float;
+                break;
+            case SCALAR_STRING:
+                value = POOL_ITEM(handle).m_value.as_string != NULL ? strtol(POOL_ITEM(handle).m_value.as_string, NULL, 0) : 0;
+                break;
+            case SCALAR_UNDEF:
+                value = 0;
+                break;
+            default:
+                debug("unexpected type value %"PRIu32"\n", POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK);
+                value = 0;
+                break;
+        }
+        _scalar_unlock(handle);
+    }
+    
+    return value;    
 }
 
-float scalar_get_double_value(scalar_t handle) {
+float scalar_get_float_value(scalar_t handle) {
     assert(handle != 0);
-    // FIXME what does this need to actually do now?
-//    switch(self->m_type) {
-//        case ScUNDEFINED:
-//            return 0.0;
-//        case ScINT:
-//            return (double) self->m_value.int_value;
-//        case ScDOUBLE:
-//            return self->m_value.double_value;
-//        case ScSTRING:
-//            return self->m_value.string_value != NULL ? strtod(self->m_value.string_value, NULL) : 0.0;
-//        default:
-//            return 0;
-//    }    
+
+    float value;
+    
+    if (0 == _scalar_lock(handle)) {
+        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_INT:
+                value = (float) POOL_ITEM(handle).m_value.as_int;
+                break;
+            case SCALAR_FLOAT:
+                value = POOL_ITEM(handle).m_value.as_float;
+                break;
+            case SCALAR_STRING:
+                value = POOL_ITEM(handle).m_value.as_string != NULL ? strtof(POOL_ITEM(handle).m_value.as_string, NULL) : 0.0f;
+                break;
+            case SCALAR_UNDEF:
+                value = 0;
+                break;
+            default:
+                debug("unexpected type value %"PRIu32"\n", POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK);
+                value = 0;
+                break;
+        }
+        _scalar_unlock(handle);
+    }
+    
+    return value;    
 }
 
 void scalar_get_string_value(scalar_t handle, char **result) {
     assert(handle != 0);
-    // FIXME what does this need to actually do now?
-//    
-//    char buffer[100];
-//    
-//    switch(self->m_type) {
-//        case ScUNDEFINED:
-//            *result = strdup("");
-//            return;
-//        case ScINT:
-//            snprintf(buffer, sizeof(buffer), "%"PRIiPTR"", self->m_value.int_value);
-//            *result = strdup(buffer);
-//            break;
-//        case ScDOUBLE:
-//            snprintf(buffer, sizeof(buffer), "%g", self->m_value.double_value);
-//            *result = strdup(buffer);
-//            break;
-//        case ScSTRING:
-//            *result = strdup(self->m_value.string_value);
-//            break;
-//        default:
-//            ; // do nothing
-//    }
-//    
-//    return;
+
+    char numeric[100];
+    
+    if (0 == _scalar_lock(handle)) {
+        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_INT:
+                snprintf(numeric, sizeof(numeric), "%"PRIiPTR"", POOL_ITEM(handle).m_value.as_int);
+                *result = strdup(numeric);
+                break;
+            case SCALAR_FLOAT:
+                snprintf(numeric, sizeof(numeric), "%f", POOL_ITEM(handle).m_value.as_float);
+                *result = strdup(numeric);
+                break;
+            case SCALAR_STRING:
+                *result = strdup(POOL_ITEM(handle).m_value.as_string);
+                break;
+            case SCALAR_UNDEF:
+                *result = strdup("");
+                break;
+            default:
+                debug("unexpected type value %"PRIu32"\n", POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK);
+                *result = strdup("");
+                break;
+        }
+        _scalar_unlock(handle);
+    }
 }

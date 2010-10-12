@@ -23,8 +23,8 @@
 #define SCALAR_UNDEF        0xFFu
 #define SCALAR_TYPE_MASK    0xFFu
 
-#define SCALAR_FLAG_SHARED  0x40000000u
-#define SCALAR_FLAG_PTR     0x80000000u
+#define SCALAR_FLAG_PTR     0x40000000u
+#define SCALAR_FLAG_SHARED  0x80000000u
 
 typedef struct pooled_scalar_t {
     uint32_t m_flags;
@@ -57,15 +57,14 @@ void scalar_pool_release_scalar(scalar_t);
 void scalar_pool_increase_refcount(scalar_t);
 
 
-void scalar_init(scalar_t);
-void scalar_destroy(scalar_t);
+void scalar_reset(scalar_t);
 
 void scalar_set_int_value(scalar_t, intptr_t);
-void scalar_set_double_value(scalar_t, float);
+void scalar_set_float_value(scalar_t, float);
 void scalar_set_string_value(scalar_t, const char *);
 
 intptr_t scalar_get_int_value(scalar_t);
-float scalar_get_double_value(scalar_t);
+float scalar_get_float_value(scalar_t);
 void scalar_get_string_value(scalar_t, char **);
 
 
