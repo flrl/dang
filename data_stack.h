@@ -19,7 +19,6 @@ typedef struct data_stack_t {
     size_t m_allocated_count;
     size_t m_count;
     scalar_t *m_items;
-    pthread_mutex_t m_mutex;
     size_t m_subscope_count;
 } data_stack_t;
 

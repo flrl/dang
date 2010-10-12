@@ -19,7 +19,6 @@
 //    size_t m_allocated_count;
 //    size_t m_count;
 //    scalar_t *m_items;
-//    pthread_mutex_t m_mutex;
 //    size_t m_subscope_count;
 //} data_stack_t;
 
@@ -35,55 +34,31 @@ static data_stack_registry_node_t *_data_stack_registry = NULL;
 static pthread_mutex_t _data_stack_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void _data_stack_track_subscopes(data_stack_t *, int);
-int _data_stack_reserve_nonlocking(data_stack_t *, size_t);
 
 int data_stack_init(data_stack_t *self) {
     assert(self != NULL);
     
-    int status;
-    if (0 == (status = pthread_mutex_init(&self->m_mutex, NULL))) {
-        int locked = pthread_mutex_lock(&self->m_mutex);
-            assert(locked == 0);
-            if (NULL != (self->m_items = calloc(data_stack_initial_reserve_size, sizeof(scalar_t)))) {
-                self->m_parent = NULL;
-                self->m_allocated_count = data_stack_initial_reserve_size;
-                self->m_count = 0;
-                self->m_subscope_count = 0;
-                status = 0;
-            }
-            else {
-                status = -1;
-            }
-        pthread_mutex_unlock(&self->m_mutex);        
+    if (NULL != (self->m_items = calloc(data_stack_initial_reserve_size, sizeof(scalar_t)))) {
+        self->m_parent = NULL;
+        self->m_allocated_count = data_stack_initial_reserve_size;
+        self->m_count = 0;
+        self->m_subscope_count = 0;
+        return 0;
     }
-    
-    return status;
+    else {
+        return -1;
+    }
 }
 
 int data_stack_destroy(data_stack_t *self) {
     assert(self != NULL);
     
-    int locked = pthread_mutex_lock(&self->m_mutex);
-    assert(locked == 0);
-    pthread_mutex_destroy(&self->m_mutex);  // FIXME with mutex locked, or not?
-
     free(self->m_items);
     memset(self, 0, sizeof(*self));
     return 0;
 }
 
 int data_stack_reserve(data_stack_t *self, size_t new_size) {
-    assert(self != NULL);
-    
-    int status = 0;
-    int locked = pthread_mutex_lock(&self->m_mutex);
-        assert(locked == 0);
-        status = _data_stack_reserve_nonlocking(self, new_size);
-    pthread_mutex_unlock(&self->m_mutex);
-    return status;
-}
-
-int _data_stack_reserve_nonlocking(data_stack_t *self, size_t new_size) {
     assert(self != NULL);
 
     if (new_size > self->m_allocated_count) {
@@ -109,15 +84,12 @@ int data_stack_push(data_stack_t *self, const scalar_t *value) {
     assert(value != NULL);
     
     int status = 0;
-    int locked = pthread_mutex_lock(&self->m_mutex);
-        assert(locked == 0);
-        if (self->m_count == self->m_allocated_count) {
-            size_t new_size = self->m_allocated_count + data_stack_grow_size;
-            status = _data_stack_reserve_nonlocking(self, new_size);
-        }
-        
-        if (status == 0)  scalar_clone(&self->m_items[self->m_count++], value);
-    pthread_mutex_unlock(&self->m_mutex);
+    if (self->m_count == self->m_allocated_count) {
+        size_t new_size = self->m_allocated_count + data_stack_grow_size;
+        status = data_stack_reserve(self, new_size);
+    }
+    
+    if (status == 0)  scalar_clone(&self->m_items[self->m_count++], value);
     return status;
 }
 
@@ -125,22 +97,19 @@ int data_stack_pop(data_stack_t *self, scalar_t *result) {
     assert(self != NULL);
     
     int status = 0;
-    int locked = pthread_mutex_lock(&self->m_mutex);
-        assert(locked == 0);
-        if (self->m_count > 0) {
-            --self->m_count;
-            if (result != NULL) {
-                scalar_assign(result, &self->m_items[self->m_count]);
-            }
-            else {
-                scalar_destroy(&self->m_items[self->m_count]);
-            }
-            status = 0;
+    if (self->m_count > 0) {
+        --self->m_count;
+        if (result != NULL) {
+            scalar_assign(result, &self->m_items[self->m_count]);
         }
         else {
-            status = -1;
+            scalar_destroy(&self->m_items[self->m_count]);
         }
-    pthread_mutex_unlock(&self->m_mutex);
+        status = 0;
+    }
+    else {
+        status = -1;
+    }
     return status;
 }
 
@@ -149,20 +118,18 @@ int data_stack_npush(data_stack_t *self, size_t n, const scalar_t *values) {
     assert(values != NULL);
     
     int status = 0;
-    int locked = pthread_mutex_lock(&self->m_mutex);
-        assert(locked == 0);
-        if (self->m_count + n >= self->m_allocated_count) {
-            size_t new_size = self->m_allocated_count + data_stack_grow_size;
-            while (self->m_count + n >= new_size)  new_size += data_stack_grow_size;
-            status = _data_stack_reserve_nonlocking(self, new_size);
+    if (self->m_count + n >= self->m_allocated_count) {
+        size_t new_size = self->m_allocated_count + data_stack_grow_size;
+        while (self->m_count + n >= new_size)  new_size += data_stack_grow_size;
+        status = data_stack_reserve(self, new_size);
+    }
+    
+    if (status == 0) {
+        for (size_t i = n ; i > 0; i--) { // unsigned >= 0 is always true, so leave it offset by one
+            scalar_clone(&self->m_items[self->m_count++], &values[i-1]);
         }
-        
-        if (status == 0) {
-            for (size_t i = n ; i > 0; i--) { // unsigned >= 0 is always true, so leave it offset by one
-                scalar_clone(&self->m_items[self->m_count++], &values[i-1]);
-            }
-        }    
-    pthread_mutex_unlock(&self->m_mutex);
+    }    
+
     return status;
 }
 
@@ -170,20 +137,15 @@ int data_stack_npop(data_stack_t *self, size_t n, scalar_t *result) {
     assert(self != NULL);
     assert(result != NULL);
     
-    int status = 0;
-    int locked = pthread_mutex_lock(&self->m_mutex);
-        assert(locked == 0);
-        if (self->m_count >= n) {
-            for (size_t i = 0; i < n; i++) {
-                scalar_assign(&result[i], &self->m_items[--self->m_count]);
-            }
-            status = 0;
+    if (self->m_count >= n) {
+        for (size_t i = 0; i < n; i++) {
+            scalar_assign(&result[i], &self->m_items[--self->m_count]);
         }
-        else {
-            status = -1;
-        }    
-    pthread_mutex_unlock(&self->m_mutex);
-    return status;
+        return 0;
+    }
+    else {
+        return -1;
+    }    
 }
 
 
@@ -191,36 +153,26 @@ int data_stack_top(data_stack_t *self, scalar_t *result) {
     assert(self != NULL);
     assert(result != NULL);
     
-    int status = 0;
-    int locked = pthread_mutex_lock(&self->m_mutex);
-        assert(locked == 0);
-        if (self->m_count > 0) {
-            scalar_clone(result, &self->m_items[self->m_count - 1]);
-            status = 0;
-        }
-        else {
-            status = -1;
-        }
-    pthread_mutex_unlock(&self->m_mutex);
-    return status;
+    if (self->m_count > 0) {
+        scalar_clone(result, &self->m_items[self->m_count - 1]);
+        return 0;
+    }
+    else {
+        return -1;
+    }
 }
 
 int data_stack_read_index(data_stack_t *self, size_t index, scalar_t *result) {
     assert(self != NULL);
     assert(result != NULL);
     
-    int status = 0;
-    int locked = pthread_mutex_lock(&self->m_mutex);
-        assert(locked == 0);
-        if (index < self->m_count) {
-            scalar_clone(result, &self->m_items[index]);
-            status = 0;
-        }
-        else {
-            status = -1;
-        }
-    pthread_mutex_unlock(&self->m_mutex);
-    return status;
+    if (index < self->m_count) {
+        scalar_clone(result, &self->m_items[index]);
+        return 0;
+    }
+    else {
+        return -1;
+    }
 }
 
 int data_stack_write_index(data_stack_t *self, size_t index, const scalar_t *value) {
@@ -228,19 +180,16 @@ int data_stack_write_index(data_stack_t *self, size_t index, const scalar_t *val
     assert(value != NULL);
     
     int status = 0;
-    int locked = pthread_mutex_lock(&self->m_mutex);
-        assert(locked == 0);
-        if (index < self->m_count) {
-            scalar_clone(&self->m_items[index], value);
-            status = 0;
-        }
-//        else if (index == self->m_count) {
-//            ; // FIXME push it onto the end?
-//        }
-        else {
-            status = -1;
-        }
-    pthread_mutex_unlock(&self->m_mutex);
+    if (index < self->m_count) {
+        scalar_clone(&self->m_items[index], value);
+        status = 0;
+    }
+//    else if (index == self->m_count) {
+//        ; // FIXME push it onto the end?
+//    }
+    else {
+        status = -1;
+    }
     return status;
 }
 
@@ -308,13 +257,9 @@ int data_stack_end_scope(data_stack_t **data_stack_top) {
 }
 
 void _data_stack_track_subscopes(data_stack_t *self, int delta) {
-    assert(self != NULL);
-    
-    int locked = pthread_mutex_lock(&self->m_mutex);
-        assert(locked == 0);
-        assert(self->m_subscope_count > 0 || delta >= 0);
-        self->m_subscope_count += delta;
-    pthread_mutex_unlock(&self->m_mutex);
+    assert(self != NULL);    
+    assert(self->m_subscope_count > 0 || delta >= 0);
+    self->m_subscope_count += delta;
 }
 
 int data_stack_registry_reap(void) {
