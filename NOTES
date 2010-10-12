@@ -60,5 +60,7 @@ all variables stored in pools
     - if all scalar ops are contextual and variables aren't stored on the data stack, does the data stack need to be scalars, or
       can it just be intptr_t's a la forth cells?
     - might need to bring old scalar_* functions back and move current scalar_* stuff to pooled_scalar_* or similar
-        - array_t, channel_t and data_stack_t all want access to scalars that aren't memory managed
         - maybe call the basic unpooled version anon_scalar_t?
+        - array_t, channel_t and data_stack_t all want access to scalars that aren't memory managed
+            - or should array_t's members be memory managed scalars? (i.e. an array of scalar_handle_t)
+                - then you'd be able to reference individual elements, which might be useful in some loop/call constructions
