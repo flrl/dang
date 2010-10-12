@@ -59,6 +59,6 @@ all variables stored in pools
         - allow multiple pools to exist at once? how do you uniquely identify a single variable in a single pool?
     - if all scalar ops are contextual and variables aren't stored on the data stack, does the data stack need to be scalars, or
       can it just be intptr_t's a la forth cells?
-
+    - might need to bring old scalar_* functions back and move current scalar_* stuff to pooled_scalar_* or similar
 
 
