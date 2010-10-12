@@ -1,5 +1,5 @@
 /*
- *  pool.c
+ *  scalar.c
  *  dang
  *
  *  Created by Ellie on 8/10/10.
@@ -13,7 +13,7 @@
 #include <string.h>
 
 #include "debug.h"
-#include "pool.h"
+#include "scalar.h"
 
 #define POOL_ITEM(x)        g_scalar_pool.m_items[(x) - 1]
 

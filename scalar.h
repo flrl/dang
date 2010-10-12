@@ -1,5 +1,5 @@
 /*
- *  pool.h
+ *  scalar.h
  *  dang
  *
  *  Created by Ellie on 8/10/10.
@@ -8,8 +8,8 @@
  */
 
 
-#ifndef POOL_H
-#define POOL_H
+#ifndef SCALAR_H
+#define SCALAR_H
 
 #include <pthread.h>
 #include <stdint.h>
