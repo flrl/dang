@@ -36,7 +36,7 @@ all variables stored in pools
                     - i think it would need the same sort of spaghetti stack setup that the data stack uses so that nested 
                       functions/closures/coroutines can access their ancestors' locals
                         - does this mean the data stack no longer needs the spaghetti stack setup?  it still needs a parent
-                          pointer so get back to the old scope when the function returns
+                          pointer to get back to the old scope when the function returns
     - globals can be stored in the same pool.  they just don't get freed until program end.
     - each function's data stack then is only used for transient data between operations
         - which i think means its only ever accessed by the thread the function is running in
@@ -50,7 +50,7 @@ all variables stored in pools
           lock/unlock the mutex, while accesses to other scalars don't incur the overhead. 
             - all globals, and any local variables refered to by nested functions, should be created with the shared flag.  
             - any other conditions where this is needed?
-            - the get_scalar or whatever it's called function needs to take a set of flags to apply to the newly allocated scalar
+            - then get_scalar or whatever it's called function needs to take a set of flags to apply to the newly allocated scalar
     - what happens when the pool is full?  
         - reallocate its contents to a larger size? would need to lock the entire pool so nothing tries to access it during the 
           resize
@@ -60,5 +60,5 @@ all variables stored in pools
     - if all scalar ops are contextual and variables aren't stored on the data stack, does the data stack need to be scalars, or
       can it just be intptr_t's a la forth cells?
     - might need to bring old scalar_* functions back and move current scalar_* stuff to pooled_scalar_* or similar
-
-
+        - array_t, channel_t and data_stack_t all want access to scalars that aren't memory managed
+        - maybe call the basic unpooled version anon_scalar_t?
