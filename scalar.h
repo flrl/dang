@@ -27,6 +27,7 @@
 #define SCALAR_UNDEF        0xFFu
 #define SCALAR_TYPE_MASK    0xFFu
 
+#define SCALAR_FLAG_REF     0x80u
 #define SCALAR_FLAG_PTR     0x40000000u
 #define SCALAR_FLAG_SHARED  0x80000000u
 
@@ -84,11 +85,9 @@ void anon_scalar_init(anon_scalar_t *);
 void anon_scalar_destroy(anon_scalar_t *);
 void anon_scalar_clone(anon_scalar_t * restrict, const anon_scalar_t * restrict);
 void anon_scalar_assign(anon_scalar_t * restrict, const anon_scalar_t * restrict);
-
 void anon_scalar_set_int_value(anon_scalar_t *, intptr_t);
 void anon_scalar_set_float_value(anon_scalar_t *, float);
 void anon_scalar_set_string_value(anon_scalar_t *, const char *);
-
 intptr_t anon_scalar_get_int_value(const anon_scalar_t *);
 float anon_scalar_get_float_value(const anon_scalar_t *);
 void anon_scalar_get_string_value(const anon_scalar_t *, char **);
