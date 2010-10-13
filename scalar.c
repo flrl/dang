@@ -114,8 +114,14 @@ scalar_handle_t scalar_pool_allocate_scalar(uint32_t flags) {
             pthread_mutex_unlock(&g_scalar_pool.m_free_list_mutex);
         }
         
-        POOL_ITEM(handle).m_flags = SCALAR_UNDEF; // FIXME sanitise flags argument and use it, eg set up mutex for shared ones
+        POOL_ITEM(handle).m_flags = SCALAR_UNDEF;
         POOL_ITEM(handle).m_value.as_int = 0;
+
+        if ((flags & SCALAR_FLAG_SHARED)) {
+            pthread_mutex_init(POOL_ITEM(handle).m_mutex, NULL);
+            POOL_ITEM(handle).m_flags |= SCALAR_FLAG_SHARED;
+        }
+
         g_scalar_pool.m_count++;
         return handle;
     }
