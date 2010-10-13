@@ -252,6 +252,28 @@ void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
     }
 }
 
+void scalar_set_value(scalar_handle_t handle, const anon_scalar_t *val) {  // FIXME implement this
+    assert(handle != 0);
+    assert(val != NULL);
+    
+    if (0 == _scalar_lock(handle)) {
+        switch (val->m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_STRING:
+                POOL_ITEM(handle).m_value.as_string = strdup(val->m_value.as_string);
+                POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+                POOL_ITEM(handle).m_flags |= SCALAR_STRING | SCALAR_FLAG_PTR;
+                break;
+            default:
+                memcpy(&POOL_ITEM(handle).m_value, &val->m_value, sizeof(POOL_ITEM(handle).m_value));
+                POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+                POOL_ITEM(handle).m_flags |= val->m_flags & SCALAR_TYPE_MASK;
+                break;
+        }
+        _scalar_lock(handle);
+    }
+}
+
+
 intptr_t scalar_get_int_value(scalar_handle_t handle) {
     assert(handle != 0);
     
@@ -336,6 +358,27 @@ void scalar_get_string_value(scalar_handle_t handle, char **result) {
             default:
                 debug("unexpected type value %"PRIu32"\n", POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK);
                 *result = strdup("");
+                break;
+        }
+        _scalar_unlock(handle);
+    }
+}
+
+void scalar_get_value(scalar_handle_t handle, anon_scalar_t *result) {  // FIXME Implement this
+    assert(handle != 0);
+    assert(result != NULL);
+    
+    if ((result->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(result);
+    
+    if (0 == _scalar_lock(handle)) {
+        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_STRING:
+                result->m_value.as_string = strdup(POOL_ITEM(handle).m_value.as_string);
+                result->m_flags = SCALAR_STRING | SCALAR_FLAG_PTR;
+                break;
+            default:
+                memcpy(&result->m_value, &POOL_ITEM(handle).m_value, sizeof(result->m_value));
+                result->m_flags = POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK;
                 break;
         }
         _scalar_unlock(handle);
