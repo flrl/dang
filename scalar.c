@@ -252,7 +252,7 @@ void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
     }
 }
 
-void scalar_set_value(scalar_handle_t handle, const anon_scalar_t *val) {  // FIXME implement this
+void scalar_set_value(scalar_handle_t handle, const anon_scalar_t *val) {
     assert(handle != 0);
     assert(val != NULL);
     
@@ -364,7 +364,7 @@ void scalar_get_string_value(scalar_handle_t handle, char **result) {
     }
 }
 
-void scalar_get_value(scalar_handle_t handle, anon_scalar_t *result) {  // FIXME Implement this
+void scalar_get_value(scalar_handle_t handle, anon_scalar_t *result) {
     assert(handle != 0);
     assert(result != NULL);
     
