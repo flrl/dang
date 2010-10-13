@@ -16,7 +16,7 @@
 
 typedef struct channel_t {
     size_t m_bufsize;
-    scalar_t *m_ringbuf;
+    anon_scalar_t *m_ringbuf;
     size_t m_start;
     size_t m_count;
     pthread_mutex_t m_mutex;
@@ -27,10 +27,10 @@ typedef struct channel_t {
 int channel_init(channel_t *, size_t);
 int channel_destroy(channel_t *);
 
-int channel_read(channel_t *, scalar_t *);
-int channel_tryread(channel_t *, scalar_t *);
+int channel_read(channel_t *, anon_scalar_t *);
+int channel_tryread(channel_t *, anon_scalar_t *);
 
-int channel_write(channel_t *, const scalar_t *);
+int channel_write(channel_t *, const anon_scalar_t *);
 
 int channel_grow_buffer(channel_t *, size_t);
 int channel_shrink_buffer(channel_t *, size_t);

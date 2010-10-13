@@ -32,7 +32,7 @@ int instruction_call(const uint8_t *instruction_ptr, size_t instruction_index, d
     const size_t jump_dest = *(const size_t *) (instruction_ptr + 1 + sizeof(uint8_t));
     
     // pop and stash the params off the caller's stack
-    scalar_t *argv = calloc(argc, sizeof(scalar_t));
+    anon_scalar_t *argv = calloc(argc, sizeof(anon_scalar_t));
     assert(argv != NULL);
     data_stack_npop(*data_stack, argc, argv);
     
@@ -44,7 +44,7 @@ int instruction_call(const uint8_t *instruction_ptr, size_t instruction_index, d
     
     // clean up the stash
     for (size_t i = 0; i < argc; i++) {
-        scalar_destroy(&argv[i]);
+        anon_scalar_destroy(&argv[i]);
     }
     free(argv);
     
@@ -58,7 +58,7 @@ int instruction_return(const uint8_t *instruction_ptr, size_t instruction_index,
     const size_t resultc = *(const uint8_t *)(instruction_ptr + 1);
 
     // pop and stash the result from the returning stack
-    scalar_t *resultv = calloc(resultc, sizeof(scalar_t));
+    anon_scalar_t *resultv = calloc(resultc, sizeof(anon_scalar_t));
     assert(resultv != NULL);
     data_stack_npop(*data_stack, resultc, resultv);
 
@@ -70,7 +70,7 @@ int instruction_return(const uint8_t *instruction_ptr, size_t instruction_index,
 
     // clean up the stash
     for (size_t i = 0; i < resultc; i++) {
-        scalar_destroy(&resultv[i]);
+        anon_scalar_destroy(&resultv[i]);
     }
     free(resultv);
     
@@ -88,22 +88,22 @@ int instruction_drop(const uint8_t *instruction_ptr, size_t instruction_index, d
 
 // ( a b -- b a )
 int instruction_swap(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    scalar_t a, b;
+    anon_scalar_t a, b;
     data_stack_pop(*data_stack, &b);
     data_stack_pop(*data_stack, &a);
     data_stack_push(*data_stack, &b);
     data_stack_push(*data_stack, &b);
-    scalar_destroy(&a);
-    scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&b);
     return 1;
 }
 
 // ( a -- a a )
 int instruction_dup(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    scalar_t a;
+    anon_scalar_t a;
     data_stack_top(*data_stack, &a);
     data_stack_push(*data_stack, &a);
-    scalar_destroy(&a);
+    anon_scalar_destroy(&a);
     return 1;
 }
 
@@ -111,11 +111,11 @@ int instruction_dup(const uint8_t *instruction_ptr, size_t instruction_index, da
 int instruction_intlit(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
     const intptr_t lit = *(const intptr_t *)(instruction_ptr + 1);
 
-    scalar_t a;
-    scalar_init(&a);
-    scalar_set_int_value(&a, lit);
+    anon_scalar_t a;
+    anon_scalar_init(&a);
+    anon_scalar_set_int_value(&a, lit);
     data_stack_push(*data_stack, &a);
-    scalar_destroy(&a);
+    anon_scalar_destroy(&a);
     
     return 1 + sizeof(intptr_t);
 }
@@ -131,10 +131,10 @@ int instruction_0branch(const uint8_t *instruction_ptr, size_t instruction_index
     const intptr_t branch_offset = *(const intptr_t *)(instruction_ptr + 1);
     int incr = 0;
 
-    scalar_t a;
+    anon_scalar_t a;
     data_stack_pop(*data_stack, &a);
 
-    if (scalar_get_int_value(&a) == 0) {
+    if (anon_scalar_get_int_value(&a) == 0) {
         // branch by offset
         incr = branch_offset;
     }
@@ -143,84 +143,84 @@ int instruction_0branch(const uint8_t *instruction_ptr, size_t instruction_index
         incr = 1 + sizeof(intptr_t);
     }
     
-    scalar_destroy(&a);
+    anon_scalar_destroy(&a);
     return incr;
 }
 
 // ( a b -- a+b )
 int instruction_intadd(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    scalar_t a, b;
+    anon_scalar_t a, b;
     data_stack_pop(*data_stack, &b);
     data_stack_pop(*data_stack, &a);
 
-    scalar_t c;
-    scalar_init(&c);
-    scalar_set_int_value(&c, scalar_get_int_value(&a) + scalar_get_int_value(&b));
+    anon_scalar_t c;
+    anon_scalar_init(&c);
+    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) + anon_scalar_get_int_value(&b));
     data_stack_push(*data_stack, &c);
-    debug("%ld + %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
-    scalar_destroy(&a);
-    scalar_destroy(&b);
-    scalar_destroy(&c);
+    debug("%ld + %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&c);
     return 1;
 }
 
 // ( a b -- a-b )
 int instruction_intsubt(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    scalar_t a, b;
+    anon_scalar_t a, b;
     data_stack_pop(*data_stack, &b);
     data_stack_pop(*data_stack, &a);
     
-    scalar_t c;
-    scalar_init(&c);
-    scalar_set_int_value(&c, scalar_get_int_value(&a) - scalar_get_int_value(&b));
+    anon_scalar_t c;
+    anon_scalar_init(&c);
+    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) - anon_scalar_get_int_value(&b));
     data_stack_push(*data_stack, &c);
-    debug("%ld - %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
-    scalar_destroy(&c);
+    debug("%ld - %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
+    anon_scalar_destroy(&c);
     return 1;
 }
 
 // ( a b -- a*b )
 int instruction_intmult(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    scalar_t a, b;
+    anon_scalar_t a, b;
     data_stack_pop(*data_stack, &b);
     data_stack_pop(*data_stack, &a);
 
-    scalar_t c;
-    scalar_init(&c);
-    scalar_set_int_value(&c, scalar_get_int_value(&a) * scalar_get_int_value(&b));
+    anon_scalar_t c;
+    anon_scalar_init(&c);
+    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) * anon_scalar_get_int_value(&b));
     data_stack_push(*data_stack, &c);
-    debug("%ld * %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
-    scalar_destroy(&c);    
+    debug("%ld * %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
+    anon_scalar_destroy(&c);    
     return 1;
 }
 
 // ( a b -- a/b )
 int instruction_intdiv(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    scalar_t a, b;
+    anon_scalar_t a, b;
     data_stack_pop(*data_stack, &b);
     data_stack_pop(*data_stack, &a);
     
-    scalar_t c;
-    scalar_init(&c);
-    scalar_set_int_value(&c, scalar_get_int_value(&a) / scalar_get_int_value(&b));
+    anon_scalar_t c;
+    anon_scalar_init(&c);
+    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) / anon_scalar_get_int_value(&b));
     data_stack_push(*data_stack, &c);
-    debug("%ld / %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
-    scalar_destroy(&c);    
+    debug("%ld / %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
+    anon_scalar_destroy(&c);    
     return 1;
 }
 
 // ( a b -- a%b )
 int instruction_intmod(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    scalar_t a, b;
+    anon_scalar_t a, b;
     data_stack_pop(*data_stack, &b);
     data_stack_pop(*data_stack, &a);
     
-    scalar_t c;
-    scalar_init(&c);
-    scalar_set_int_value(&c, scalar_get_int_value(&a) % scalar_get_int_value(&b));
+    anon_scalar_t c;
+    anon_scalar_init(&c);
+    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) % anon_scalar_get_int_value(&b));
     data_stack_push(*data_stack, &c);
-    debug("%ld %% %ld = %ld\n", scalar_get_int_value(&a), scalar_get_int_value(&b), scalar_get_int_value(&c));
-    scalar_destroy(&c);
+    debug("%ld %% %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
+    anon_scalar_destroy(&c);
     return 1;
 }
 

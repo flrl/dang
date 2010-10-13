@@ -18,20 +18,20 @@ typedef struct data_stack_t {
     struct data_stack_t *m_parent;
     size_t m_allocated_count;
     size_t m_count;
-    scalar_t *m_items;
+    anon_scalar_t *m_items;
     size_t m_subscope_count;
 } data_stack_t;
 
 int data_stack_init(data_stack_t *);
 int data_stack_destroy(data_stack_t *);
 int data_stack_reserve(data_stack_t *, size_t);
-int data_stack_push(data_stack_t *, const scalar_t *);
-int data_stack_pop(data_stack_t *, scalar_t *);
-int data_stack_top(data_stack_t *, scalar_t *);
-int data_stack_read_index(data_stack_t *, size_t, scalar_t *);
-int data_stack_write_index(data_stack_t *, size_t, const scalar_t *);
-int data_stack_npush(data_stack_t *, size_t, const scalar_t *);
-int data_stack_npop(data_stack_t *, size_t, scalar_t *);
+int data_stack_push(data_stack_t *, const anon_scalar_t *);
+int data_stack_pop(data_stack_t *, anon_scalar_t *);
+int data_stack_top(data_stack_t *, anon_scalar_t *);
+int data_stack_read_index(data_stack_t *, size_t, anon_scalar_t *);
+int data_stack_write_index(data_stack_t *, size_t, const anon_scalar_t *);
+int data_stack_npush(data_stack_t *, size_t, const anon_scalar_t *);
+int data_stack_npop(data_stack_t *, size_t, anon_scalar_t *);
 
 int data_stack_start_scope(data_stack_t **);
 int data_stack_end_scope(data_stack_t **);

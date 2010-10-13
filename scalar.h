@@ -30,25 +30,21 @@
 #define SCALAR_FLAG_PTR     0x40000000u
 #define SCALAR_FLAG_SHARED  0x80000000u
 
+#define SCALAR_GUTS             \
+    uint32_t m_flags;           \
+    union {                     \
+        intptr_t as_int;        \
+        float    as_float;      \
+        char     *as_string;    \
+        intptr_t next_free;     \
+    } m_value
 
 typedef struct scalar_t {
-    uint32_t m_flags;
-    union {
-        intptr_t as_int;
-        float    as_float;
-        char     *as_string;
-        intptr_t next_free;
-    } m_value;    
+    SCALAR_GUTS;
 } anon_scalar_t;
 
 typedef struct pooled_scalar_t {
-    uint32_t m_flags;
-    union {
-        intptr_t as_int;
-        float    as_float;
-        char     *as_string;
-        intptr_t next_free;
-    } m_value;
+    SCALAR_GUTS;
     uint32_t m_references;
     pthread_mutex_t *m_mutex;
 } pooled_scalar_t;
@@ -77,11 +73,25 @@ void scalar_reset(scalar_handle_t);
 void scalar_set_int_value(scalar_handle_t, intptr_t);
 void scalar_set_float_value(scalar_handle_t, float);
 void scalar_set_string_value(scalar_handle_t, const char *);
+void scalar_set_value(scalar_handle_t, const anon_scalar_t *);
 intptr_t scalar_get_int_value(scalar_handle_t);
 float scalar_get_float_value(scalar_handle_t);
 void scalar_get_string_value(scalar_handle_t, char **);
+void scalar_get_value(scalar_handle_t, anon_scalar_t *);
 
 // anon scalar functions
-// FIXME put these here
+void anon_scalar_init(anon_scalar_t *);
+void anon_scalar_destroy(anon_scalar_t *);
+void anon_scalar_clone(anon_scalar_t * restrict, const anon_scalar_t * restrict);
+void anon_scalar_assign(anon_scalar_t * restrict, const anon_scalar_t * restrict);
+
+void anon_scalar_set_int_value(anon_scalar_t *, intptr_t);
+void anon_scalar_set_float_value(anon_scalar_t *, float);
+void anon_scalar_set_string_value(anon_scalar_t *, const char *);
+
+intptr_t anon_scalar_get_int_value(const anon_scalar_t *);
+float anon_scalar_get_float_value(const anon_scalar_t *);
+void anon_scalar_get_string_value(const anon_scalar_t *, char **);
+
 
 #endif

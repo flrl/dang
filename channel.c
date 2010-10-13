@@ -32,7 +32,7 @@ int channel_init(channel_t *self, size_t bufsize) {
         if (0 == pthread_mutex_lock(&self->m_mutex)) {
             if (0 == pthread_cond_init(&self->m_has_items, NULL)) {
                 if (0 == pthread_cond_init(&self->m_has_space, NULL)) {
-                    if (NULL != (self->m_ringbuf = calloc(bufsize, sizeof(scalar_t)))) {
+                    if (NULL != (self->m_ringbuf = calloc(bufsize, sizeof(anon_scalar_t)))) {
                         self->m_bufsize = bufsize;
                         self->m_start = 0;
                         self->m_count = 0;
@@ -52,7 +52,7 @@ int channel_destroy(channel_t *self) { // FIXME implement this
     return 0;
 }
 
-int channel_read(channel_t *self, scalar_t *result) {
+int channel_read(channel_t *self, anon_scalar_t *result) {
     assert(self != NULL);
     assert(result != NULL);
     static const struct timespec wait_timeout = { 10, 0 };
@@ -71,7 +71,7 @@ int channel_read(channel_t *self, scalar_t *result) {
                 }
             }
         }
-        scalar_assign(result, &self->m_ringbuf[self->m_start]);
+        anon_scalar_assign(result, &self->m_ringbuf[self->m_start]);
         self->m_start = (self->m_start + 1) % self->m_bufsize;
         self->m_count--;
     pthread_mutex_unlock(&self->m_mutex);        
@@ -81,7 +81,7 @@ int channel_read(channel_t *self, scalar_t *result) {
     return 0;
 }
 
-int channel_tryread(channel_t *self, scalar_t *result) {
+int channel_tryread(channel_t *self, anon_scalar_t *result) {
     assert(self != NULL);
     assert(result != NULL);
 
@@ -89,7 +89,7 @@ int channel_tryread(channel_t *self, scalar_t *result) {
     int locked = pthread_mutex_lock(&self->m_mutex);
         assert(locked == 0);
         if (self->m_count > 0) {
-            scalar_assign(result, &self->m_ringbuf[self->m_start]);
+            anon_scalar_assign(result, &self->m_ringbuf[self->m_start]);
             self->m_start = (self->m_start + 1) % self->m_bufsize;
             self->m_count--;
             status = 0;
@@ -102,7 +102,7 @@ int channel_tryread(channel_t *self, scalar_t *result) {
     return status;
 }
 
-int channel_write(channel_t *self, const scalar_t *value) {
+int channel_write(channel_t *self, const anon_scalar_t *value) {
     assert(self != NULL);
     static const struct timespec wait_timeout = { 0, 250000 };
 
@@ -121,7 +121,7 @@ int channel_write(channel_t *self, const scalar_t *value) {
             }
         }
         size_t index = (self->m_start + self->m_count) % self->m_bufsize;
-        scalar_clone(&self->m_ringbuf[index], value);
+        anon_scalar_clone(&self->m_ringbuf[index], value);
         self->m_count++;
     pthread_mutex_unlock(&self->m_mutex);
 
@@ -187,12 +187,12 @@ static int _channel_resize_nonlocking(channel_t *self, size_t new_size) {
     assert(new_size <= MAX_BUFSIZE);
     
     int status = 0;    
-    scalar_t *new_ringbuf = calloc(new_size, sizeof(scalar_t));
+    anon_scalar_t *new_ringbuf = calloc(new_size, sizeof(anon_scalar_t));
     if (NULL != new_ringbuf) {
         size_t straight_count = self->m_bufsize - self->m_start > self->m_count ? self->m_count : self->m_bufsize - self->m_start;
         size_t rotated_count = self->m_count - straight_count;
-        memcpy(&new_ringbuf[0], &self->m_ringbuf[self->m_start], straight_count * sizeof(scalar_t));
-        memcpy(&new_ringbuf[straight_count], &self->m_ringbuf[0], rotated_count * sizeof(scalar_t));
+        memcpy(&new_ringbuf[0], &self->m_ringbuf[self->m_start], straight_count * sizeof(anon_scalar_t));
+        memcpy(&new_ringbuf[straight_count], &self->m_ringbuf[0], rotated_count * sizeof(anon_scalar_t));
         free(self->m_ringbuf);
         self->m_bufsize = new_size;
         self->m_ringbuf = new_ringbuf;

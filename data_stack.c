@@ -18,7 +18,7 @@
 //    struct data_stack_t *m_parent;
 //    size_t m_allocated_count;
 //    size_t m_count;
-//    scalar_t *m_items;
+//    anon_scalar_t *m_items;
 //    size_t m_subscope_count;
 //} data_stack_t;
 
@@ -38,7 +38,7 @@ void _data_stack_track_subscopes(data_stack_t *, int);
 int data_stack_init(data_stack_t *self) {
     assert(self != NULL);
     
-    if (NULL != (self->m_items = calloc(data_stack_initial_reserve_size, sizeof(scalar_t)))) {
+    if (NULL != (self->m_items = calloc(data_stack_initial_reserve_size, sizeof(anon_scalar_t)))) {
         self->m_parent = NULL;
         self->m_allocated_count = data_stack_initial_reserve_size;
         self->m_count = 0;
@@ -62,10 +62,10 @@ int data_stack_reserve(data_stack_t *self, size_t new_size) {
     assert(self != NULL);
 
     if (new_size > self->m_allocated_count) {
-        scalar_t *tmp = self->m_items;
-        if (NULL != (self->m_items = calloc(new_size, sizeof(scalar_t)))) {
+        anon_scalar_t *tmp = self->m_items;
+        if (NULL != (self->m_items = calloc(new_size, sizeof(anon_scalar_t)))) {
             self->m_allocated_count = new_size;
-            memcpy(self->m_items, tmp, self->m_count * sizeof(scalar_t));
+            memcpy(self->m_items, tmp, self->m_count * sizeof(anon_scalar_t));
             free(tmp);
             return 0;
         }
@@ -79,7 +79,7 @@ int data_stack_reserve(data_stack_t *self, size_t new_size) {
     }
 }
 
-int data_stack_push(data_stack_t *self, const scalar_t *value) {
+int data_stack_push(data_stack_t *self, const anon_scalar_t *value) {
     assert(self != NULL);
     assert(value != NULL);
     
@@ -89,21 +89,21 @@ int data_stack_push(data_stack_t *self, const scalar_t *value) {
         status = data_stack_reserve(self, new_size);
     }
     
-    if (status == 0)  scalar_clone(&self->m_items[self->m_count++], value);
+    if (status == 0)  anon_scalar_clone(&self->m_items[self->m_count++], value);
     return status;
 }
 
-int data_stack_pop(data_stack_t *self, scalar_t *result) {
+int data_stack_pop(data_stack_t *self, anon_scalar_t *result) {
     assert(self != NULL);
     
     int status = 0;
     if (self->m_count > 0) {
         --self->m_count;
         if (result != NULL) {
-            scalar_assign(result, &self->m_items[self->m_count]);
+            anon_scalar_assign(result, &self->m_items[self->m_count]);
         }
         else {
-            scalar_destroy(&self->m_items[self->m_count]);
+            anon_scalar_destroy(&self->m_items[self->m_count]);
         }
         status = 0;
     }
@@ -113,7 +113,7 @@ int data_stack_pop(data_stack_t *self, scalar_t *result) {
     return status;
 }
 
-int data_stack_npush(data_stack_t *self, size_t n, const scalar_t *values) {
+int data_stack_npush(data_stack_t *self, size_t n, const anon_scalar_t *values) {
     assert(self != NULL);
     assert(values != NULL);
     
@@ -126,20 +126,20 @@ int data_stack_npush(data_stack_t *self, size_t n, const scalar_t *values) {
     
     if (status == 0) {
         for (size_t i = n ; i > 0; i--) { // unsigned >= 0 is always true, so leave it offset by one
-            scalar_clone(&self->m_items[self->m_count++], &values[i-1]);
+            anon_scalar_clone(&self->m_items[self->m_count++], &values[i-1]);
         }
     }    
 
     return status;
 }
 
-int data_stack_npop(data_stack_t *self, size_t n, scalar_t *result) {
+int data_stack_npop(data_stack_t *self, size_t n, anon_scalar_t *result) {
     assert(self != NULL);
     assert(result != NULL);
     
     if (self->m_count >= n) {
         for (size_t i = 0; i < n; i++) {
-            scalar_assign(&result[i], &self->m_items[--self->m_count]);
+            anon_scalar_assign(&result[i], &self->m_items[--self->m_count]);
         }
         return 0;
     }
@@ -149,12 +149,12 @@ int data_stack_npop(data_stack_t *self, size_t n, scalar_t *result) {
 }
 
 
-int data_stack_top(data_stack_t *self, scalar_t *result) {
+int data_stack_top(data_stack_t *self, anon_scalar_t *result) {
     assert(self != NULL);
     assert(result != NULL);
     
     if (self->m_count > 0) {
-        scalar_clone(result, &self->m_items[self->m_count - 1]);
+        anon_scalar_clone(result, &self->m_items[self->m_count - 1]);
         return 0;
     }
     else {
@@ -162,12 +162,12 @@ int data_stack_top(data_stack_t *self, scalar_t *result) {
     }
 }
 
-int data_stack_read_index(data_stack_t *self, size_t index, scalar_t *result) {
+int data_stack_read_index(data_stack_t *self, size_t index, anon_scalar_t *result) {
     assert(self != NULL);
     assert(result != NULL);
     
     if (index < self->m_count) {
-        scalar_clone(result, &self->m_items[index]);
+        anon_scalar_clone(result, &self->m_items[index]);
         return 0;
     }
     else {
@@ -175,13 +175,13 @@ int data_stack_read_index(data_stack_t *self, size_t index, scalar_t *result) {
     }
 }
 
-int data_stack_write_index(data_stack_t *self, size_t index, const scalar_t *value) {
+int data_stack_write_index(data_stack_t *self, size_t index, const anon_scalar_t *value) {
     assert(self != NULL);
     assert(value != NULL);
     
     int status = 0;
     if (index < self->m_count) {
-        scalar_clone(&self->m_items[index], value);
+        anon_scalar_clone(&self->m_items[index], value);
         status = 0;
     }
 //    else if (index == self->m_count) {

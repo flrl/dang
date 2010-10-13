@@ -341,3 +341,163 @@ void scalar_get_string_value(scalar_handle_t handle, char **result) {
         _scalar_unlock(handle);
     }
 }
+
+// anon scalar functions
+void anon_scalar_init(anon_scalar_t *self) {
+    assert(self != NULL);
+    self->m_flags = SCALAR_UNDEF;
+    self->m_value.as_int = 0;
+}
+
+void anon_scalar_destroy(anon_scalar_t *self) {
+    assert(self != NULL);
+    if (self->m_flags & SCALAR_FLAG_PTR) {
+        switch (self->m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_STRING:
+                if (self->m_value.as_string)  free(self->m_value.as_string);
+                break;
+            default:
+                debug("unexpected anon scalar type: %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
+                break;
+        }
+    }
+    // FIXME other cleanup stuff
+    self->m_flags = SCALAR_UNDEF;
+    self->m_value.as_int = 0;
+}
+
+void anon_scalar_clone(anon_scalar_t * restrict self, const anon_scalar_t * restrict other) {
+    assert(self != NULL);
+    assert(other != NULL);
+    
+    if (self == other)  return;
+    
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+    
+    switch(other->m_flags & SCALAR_TYPE_MASK) {
+        case SCALAR_STRING:
+            self->m_flags = SCALAR_FLAG_PTR | SCALAR_STRING;
+            self->m_value.as_string = strdup(other->m_value.as_string);
+            break;
+        // FIXME other setup stuff
+        default:
+            memcpy(self, other, sizeof(*self));
+    }
+}
+
+void anon_scalar_assign(anon_scalar_t * restrict self, const anon_scalar_t * restrict other) {
+    assert(self != NULL);
+    assert(other != NULL);
+    
+    if (self == other)  return;
+    
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+    
+    memcpy(self, other, sizeof(anon_scalar_t));
+}
+
+void anon_scalar_set_int_value(anon_scalar_t *self, intptr_t ival) {
+    assert(self != NULL);
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+
+    self->m_flags = SCALAR_INT;
+    self->m_value.as_int = ival;
+}
+
+void anon_scalar_set_float_value(anon_scalar_t *self, float fval) {
+    assert(self != NULL);
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+
+    self->m_flags = SCALAR_FLOAT;
+    self->m_value.as_float = fval;
+}
+
+void anon_scalar_set_string_value(anon_scalar_t *self, const char *sval) {
+    assert(self != NULL);
+    assert(sval != NULL);
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+
+    self->m_flags = SCALAR_FLAG_PTR | SCALAR_STRING;
+    self->m_value.as_string = strdup(sval);
+}
+
+intptr_t anon_scalar_get_int_value(const anon_scalar_t *self) {
+    assert(self != NULL);
+    intptr_t value;
+    switch(self->m_flags & SCALAR_TYPE_MASK) {
+        case SCALAR_INT:
+            value = self->m_value.as_int;
+            break;
+        case SCALAR_FLOAT:
+            value = (intptr_t) self->m_value.as_float;
+            break;
+        case SCALAR_STRING:
+            value = self->m_value.as_string != NULL ? strtol(self->m_value.as_string, NULL, 0) : 0;
+            break;
+        case SCALAR_UNDEF:
+            value = 0;
+            break;
+        default:
+            debug("unexpected type value %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
+            value = 0;
+            break;
+    }
+    return value;
+}
+
+float anon_scalar_get_float_value(const anon_scalar_t *self) {
+    assert(self != NULL);
+    float value;
+    
+    switch(self->m_flags & SCALAR_TYPE_MASK) {
+        case SCALAR_INT:
+            value = (float) self->m_value.as_int;
+            break;
+        case SCALAR_FLOAT:
+            value = self->m_value.as_float;
+            break;
+        case SCALAR_STRING:
+            value = self->m_value.as_string != NULL ? strtof(self->m_value.as_string, NULL) : 0.0f;
+            break;
+        case SCALAR_UNDEF:
+            value = 0;
+            break;
+        default:
+            debug("unexpected type value %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
+            value = 0;
+            break;
+    }
+    
+    return value;    
+}
+
+void anon_scalar_get_string_value(const anon_scalar_t *self, char **result) {
+    assert(self != NULL);
+    
+    char numeric[100];
+    
+    switch(self->m_flags & SCALAR_TYPE_MASK) {
+        case SCALAR_INT:
+            snprintf(numeric, sizeof(numeric), "%"PRIiPTR"", self->m_value.as_int);
+            *result = strdup(numeric);
+            break;
+        case SCALAR_FLOAT:
+            snprintf(numeric, sizeof(numeric), "%f", self->m_value.as_float);
+            *result = strdup(numeric);
+            break;
+        case SCALAR_STRING:
+            *result = strdup(self->m_value.as_string);
+            break;
+        case SCALAR_UNDEF:
+            *result = strdup("");
+            break;
+        default:
+            debug("unexpected type value %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
+            *result = strdup("");
+            break;
+    }
+
+    return;
+}
+
+
