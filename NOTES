@@ -64,3 +64,14 @@ all variables stored in pools
         - array_t, channel_t and data_stack_t all want access to scalars that aren't memory managed
             - or should array_t's members be memory managed scalars? (i.e. an array of scalar_handle_t)
                 - then you'd be able to reference individual elements, which might be useful in some loop/call constructions
+
+symbol table
+    - needs to map int identifiers to int values (which in turn are pool indexes)
+    - needs to be growable?
+        - does it need to be shrinkable?
+    - quick lookup of identifiers
+    - can it really just be an array?
+        - no, because identifiers need to be globally unique
+    - newer identifiers would generally be higher than older ones, which would lead to less than optimal binary tree 
+      performance... unless the compiler allocates them randomly
+
