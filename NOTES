@@ -74,4 +74,8 @@ symbol table
         - no, because identifiers need to be globally unique
     - newer identifiers would generally be higher than older ones, which would lead to less than optimal binary tree 
       performance... unless the compiler allocates them randomly
-
+    - should this just be part of the data stack -- turn the whole shebang into a "context" sorta thing and have both the
+      transient data stack and the symbol table as part of the same unit?  since everywhere one is used the other is too, and they
+      both seem to need the spaghetti/registry stuff too, so it would save writing a lot of the same code twice.
+        - how does return stack fit into that?
+        - does the data stack actually need all that scoping shenanigans now that there's a symbol table for locals?
