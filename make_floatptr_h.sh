@@ -18,7 +18,7 @@ int main(int argc, char **argv) {
                sizeof(float) <= sizeof(intptr_t) ? "float" : "float /*fallback*/");
     puts("#ifndef FLOATPTR_T");
     puts("#define FLOATPTR_T");
-    printf("typedef %s floatptr_t\n", t);
+    printf("typedef %s floatptr_t;\n", t);
     puts("#endif");
     return 0;
 }
