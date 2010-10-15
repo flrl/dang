@@ -59,7 +59,32 @@ static inline int _vm_rs_reserve(vm_context_t *context, size_t new_size) {
     return 0;
 }
 
-int vm_execute(const uint8_t *bytecode, size_t bytecode_length, size_t start_index, data_stack_t *data_stack) {
+void *vm_execute(void *ptr) {
+    vm_context_t *context = ptr;
+    assert(context != NULL);
+    
+    int incr;
+    while (context->m_counter < context->m_bytecode_length) {
+        uint8_t instruction = context->m_bytecode[context->m_counter];
+        assert(instruction < i__MAX);
+        switch (instruction) {
+            case iEND:
+                return NULL;
+            case iNOOP:
+                context->m_counter++;
+                break;
+            default:
+                incr = instruction_table[instruction](context);
+                assert(incr != 0);
+                context->m_counter += incr;
+                break;
+        }
+    }
+    
+    return NULL;
+}
+
+int vm_execute_old(const uint8_t *bytecode, size_t bytecode_length, size_t start_index, data_stack_t *data_stack) {
     size_t counter = start_index;
     int incr;
 
