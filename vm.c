@@ -125,7 +125,9 @@ int vm_context_destroy(vm_context_t *self) {
     free(self->m_data_stack);
     free(self->m_return_stack);
     
-    return -1;  // FIXME walk the symbol table and clean that up too?
+    vm_symboltable_destroy(self->m_symboltable);
+    
+    return 0;
 }
 
 
@@ -294,4 +296,21 @@ int vm_symbol_destroy(vm_symbol_t *self) {
     scalar_pool_release_scalar(self->m_referent.as_scalar);  // FIXME handle different types of symbol table entry
     
     return 0;
+}
+
+int vm_symboltable_registry_reap(void) {
+    if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {
+        while (_vm_symboltable_registry != NULL) {
+            vm_symboltable_registry_node_t *tmp = _vm_symboltable_registry;
+            _vm_symboltable_registry = _vm_symboltable_registry->m_next;
+            vm_symboltable_destroy(tmp->m_table);
+            free(tmp->m_table);
+            free(tmp);
+        }
+        pthread_mutex_unlock(&_vm_symboltable_registry_mutex);
+        return 0;
+    }
+    else {
+        return -1;
+    }
 }

@@ -164,12 +164,12 @@ int vm_symbol_init(vm_symbol_t *);
 int vm_symbol_destroy(vm_symbol_t *);
 
 /*
-=item vm_context_registry_reap
+=item vm_symboltable_registry_reap()
 
-Garbage collects persistent contexts.  Intended for use immediately before exit.
+Garbage collects persistent symbol tables.  Intended for use immediately before exit.
 =cut
  */
-int vm_context_registry_reap(void);
+int vm_symboltable_registry_reap(void);
 
 
 #endif
