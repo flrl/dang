@@ -84,34 +84,6 @@ void *vm_execute(void *ptr) {
     return NULL;
 }
 
-int vm_execute_old(const uint8_t *bytecode, size_t bytecode_length, size_t start_index, data_stack_t *data_stack) {
-    size_t counter = start_index;
-    int incr;
-
-    return_stack_t return_stack;
-    return_stack_init(&return_stack);
-    
-    while (counter < bytecode_length) {
-        uint8_t instruction = bytecode[counter];
-        assert(instruction < i__MAX);
-        switch(instruction) {
-            case iEND:
-                return 0;
-            case iNOOP:
-                ++counter;
-                break;
-            default:
-                incr = instruction_table[instruction](&bytecode[counter], counter, &data_stack, &return_stack);
-                assert(incr != 0);
-                counter += incr;
-                break;
-        }
-    }
-    return_stack_destroy(&return_stack);
-    
-    return 0;
-}
-
 int vm_context_init(vm_context_t *self) {
     assert(self != NULL);
     memset(self, 0, sizeof(*self));
