@@ -15,25 +15,6 @@
 #include "bytecode.h"
 #include "vm.h"
 
-//typedef struct vm_context_t {
-//    uint8_t *m_bytecode;
-//    size_t  m_bytecode_length;
-//    size_t  m_counter;
-//    size_t  m_data_stack_alloc_count;
-//    size_t  m_data_stack_count;
-//    anon_scalar_t *m_data_stack;
-//    size_t  m_return_stack_alloc_count;
-//    size_t  m_return_stack_count;
-//    size_t  *m_return_stack;
-//    vm_symboltable_t *m_symboltable;
-//} vm_context_t;
-//
-
-//typedef struct data_stack_registry_node_t {
-//    struct data_stack_registry_node_t *m_next;
-//    data_stack_t *m_scope;
-//} data_stack_registry_node_t;
-
 typedef struct vm_symboltable_registry_node_t {
     struct vm_symboltable_registry_node_t *m_next;
     vm_symboltable_t *m_table;
@@ -125,7 +106,9 @@ int vm_context_destroy(vm_context_t *self) {
     free(self->m_data_stack);
     free(self->m_return_stack);
     
-    vm_symboltable_destroy(self->m_symboltable);
+    if (self->m_symboltable->m_subscope_count == 0) {
+        vm_symboltable_destroy(self->m_symboltable);        
+    }
     
     return 0;
 }
