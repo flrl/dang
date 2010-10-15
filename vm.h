@@ -139,6 +139,29 @@ Scope management functions
 int vm_start_scope(vm_context_t *);
 int vm_end_scope(vm_context_t *);
 
+/*
+=item vm_symboltable_init(symboltable) 
+
+=item vm_symboltable_destroy(symboltable)
+
+Setup and teardown functions for vm_symboltable_t objects
+
+=cut
+ */
+int vm_symboltable_init(vm_symboltable_t *);
+int vm_symboltable_destroy(vm_symboltable_t *);
+
+/*
+=item vm_symbol_init(symbol)
+
+=item vm_symbol_destroy(symbol)
+
+Setup and teardown functions for vm_symbol_t objects
+
+=cut
+ */
+int vm_symbol_init(vm_symbol_t *);
+int vm_symbol_destroy(vm_symbol_t *);
 
 /*
 =item vm_context_registry_reap

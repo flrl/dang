@@ -10,6 +10,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <pthread.h>
 
 #include "bytecode.h"
 #include "vm.h"
@@ -27,6 +28,19 @@
 //    vm_symboltable_t *m_symboltable;
 //} vm_context_t;
 //
+
+//typedef struct data_stack_registry_node_t {
+//    struct data_stack_registry_node_t *m_next;
+//    data_stack_t *m_scope;
+//} data_stack_registry_node_t;
+
+typedef struct vm_symboltable_registry_node_t {
+    struct vm_symboltable_registry_node_t *m_next;
+    vm_symboltable_t *m_table;
+} vm_symboltable_registry_node_t;
+
+static vm_symboltable_registry_node_t *_vm_symboltable_registry = NULL;
+static pthread_mutex_t _vm_symboltable_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 static const size_t _vm_context_initial_ds_count = 16;
 static const size_t _vm_context_initial_rs_count = 16;
@@ -197,7 +211,15 @@ int vm_start_scope(vm_context_t *context) {
     vm_symboltable_t *new_table = calloc(1, sizeof(*new_table));
     if (new_table == NULL)  return -1;
     
-    // FIXME set up a registry of these
+    vm_symboltable_registry_node_t *reg_entry;
+    if (NULL != (reg_entry = calloc(1, sizeof(*reg_entry)))) {
+        if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {
+            reg_entry->m_table = new_table;
+            reg_entry->m_next = _vm_symboltable_registry;
+            _vm_symboltable_registry = reg_entry;
+            pthread_mutex_unlock(&_vm_symboltable_registry_mutex);
+        }
+    }
     
     context->m_symboltable->m_subscope_count++;
     new_table->m_parent = context->m_symboltable;
@@ -207,14 +229,69 @@ int vm_start_scope(vm_context_t *context) {
 
 int vm_end_scope(vm_context_t *context) {
     assert(context != NULL);
+    assert(context->m_symboltable != NULL);
     
     vm_symboltable_t *old_table = context->m_symboltable;
-    context->m_symboltable = context->m_symboltable->m_parent;    // FIXME deal with NULL somehow
+    context->m_symboltable = context->m_symboltable->m_parent;
     
     if (old_table->m_subscope_count == 0) {
-        // FIXME walk the table and clean it up, then free it
+        if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {
+            for (vm_symboltable_registry_node_t *i = _vm_symboltable_registry; i != NULL && i->m_next != NULL; i = i->m_next) {
+                if (i->m_next->m_table == old_table) {
+                    vm_symboltable_registry_node_t *tmp = i->m_next;
+                    i->m_next = i->m_next->m_next;
+                    free(tmp);                    
+                }
+            }
+            pthread_mutex_unlock(&_vm_symboltable_registry_mutex);
+        }
+
+        vm_symboltable_destroy(old_table);
+        free(old_table);    
     }
     
     return 0;
 }
 
+int vm_symboltable_init(vm_symboltable_t *self) {
+    assert(self != NULL);
+    memset(self, 0, sizeof(*self));
+    return 0;
+}
+
+int vm_symboltable_destroy(vm_symboltable_t *self) {
+    assert(self != NULL);
+    if (self->m_parent != NULL) {
+        --self->m_parent->m_subscope_count;
+    }
+    
+    if (self->m_symbols != NULL) {
+        vm_symbol_destroy(self->m_symbols);
+        free(self->m_symbols);
+    }
+    
+    memset(self, 0, sizeof(*self));
+    return 0;
+}
+
+int vm_symbol_init(vm_symbol_t *self) {
+    assert(self != NULL);
+    memset(self, 0, sizeof(*self));
+    return 0;
+}
+
+int vm_symbol_destroy(vm_symbol_t *self) {
+    assert(self != NULL);
+    if (self->m_left_child != NULL) {
+        vm_symbol_destroy(self->m_left_child);
+        free(self->m_left_child);
+    }
+    if (self->m_right_child != NULL) {
+        vm_symbol_destroy(self->m_right_child);
+        free(self->m_right_child);
+    }
+    
+    scalar_pool_release_scalar(self->m_referent.as_scalar);  // FIXME handle different types of symbol table entry
+    
+    return 0;
+}
