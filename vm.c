@@ -264,6 +264,7 @@ int vm_symboltable_init(vm_symboltable_t *self) {
 int vm_symboltable_destroy(vm_symboltable_t *self) {
     assert(self != NULL);
     if (self->m_parent != NULL) {
+        assert(self->m_parent->m_subscope_count > 0);
         --self->m_parent->m_subscope_count;
     }
     
