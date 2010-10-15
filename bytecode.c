@@ -14,128 +14,93 @@
 #include "debug.h"
 #include "scalar.h"
 
+#define NEXT_BYTE(x) (const uint8_t*)(&(x)->m_bytecode[(x)->m_counter + 1])
+
 // dummy function for lookup table -- should not be executed!
-int instruction_exit(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+int instruction_exit(vm_context_t *context) {
     assert("should not get here" == 0);
     return 0;
 }
 
 // dummy function for lookup table -- should not be executed!
-int instruction_noop(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+int instruction_noop(vm_context_t *context) {
     assert("should not get here" == 0);
     return 0;
 }
 
 // ( [params] -- ) ( -- addr )
-// FIXME if function scopes don't have their own stack, then this doesn't need to do any data stack shenanigans and doesn't need
-// FIXME a parameter for how many items to move to its own stack.  all it needs to do is start a new symbol scope and push the
-// FIXME return address.
-int instruction_call(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    const size_t argc = *(const uint8_t *)(instruction_ptr + 1);
-    const size_t jump_dest = *(const size_t *) (instruction_ptr + 1 + sizeof(uint8_t));
+int instruction_call(vm_context_t *context) {
+    const size_t jump_dest = *(const size_t *) NEXT_BYTE(context);
     
-    // pop and stash the params off the caller's stack
-    anon_scalar_t *argv = calloc(argc, sizeof(anon_scalar_t));
-    assert(argv != NULL);
-    data_stack_npop(*data_stack, argc, argv);
-    
-    // push a new stack for the callee
-    data_stack_start_scope(data_stack);
+    vm_start_scope(context);
 
-    // push the stashed params onto the callee's stack
-    data_stack_npush(*data_stack, argc, argv);
-    
-    // clean up the stash
-    for (size_t i = 0; i < argc; i++) {
-        anon_scalar_destroy(&argv[i]);
-    }
-    free(argv);
-    
-    // hook up return stack
-    return_stack_push(return_stack, instruction_index + 1 + sizeof(uint8_t) + sizeof(size_t));
-    return jump_dest - instruction_index;
+    vm_rs_push(context, context->m_counter + 1 + sizeof(size_t));
+    return jump_dest - context->m_counter;
 }
 
 // ( -- [results] ) ( addr -- )
-int instruction_return(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    const size_t resultc = *(const uint8_t *)(instruction_ptr + 1);
-
-    // pop and stash the result from the returning stack
-    anon_scalar_t *resultv = calloc(resultc, sizeof(anon_scalar_t));
-    assert(resultv != NULL);
-    data_stack_npop(*data_stack, resultc, resultv);
-
-    // pop the returning scope
-    data_stack_end_scope(data_stack);
-
-    // push the stashed results onto the caller's stack
-    data_stack_npush(*data_stack, resultc, resultv);
-
-    // clean up the stash
-    for (size_t i = 0; i < resultc; i++) {
-        anon_scalar_destroy(&resultv[i]);
-    }
-    free(resultv);
-    
-    // unhook return stack
+int instruction_return(vm_context_t *context) {
     size_t jump_dest;
-    return_stack_pop(return_stack, &jump_dest);
-    return jump_dest - instruction_index;
+    
+    vm_end_scope(context);
+    
+    vm_rs_pop(context, &jump_dest);
+    return jump_dest - context->m_counter;    
 }
 
 // ( a -- )
-int instruction_drop(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    data_stack_pop(*data_stack, NULL);
+int instruction_drop(vm_context_t *context) {
+    vm_ds_pop(context, NULL);
     return 1;
 }
 
 // ( a b -- b a )
-int instruction_swap(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+int instruction_swap(vm_context_t *context) {
     anon_scalar_t a, b;
-    data_stack_pop(*data_stack, &b);
-    data_stack_pop(*data_stack, &a);
-    data_stack_push(*data_stack, &b);
-    data_stack_push(*data_stack, &b);
+    vm_ds_pop(context, &b);
+    vm_ds_pop(context, &a);
+    vm_ds_push(context, &b);
+    vm_ds_push(context, &b);
     anon_scalar_destroy(&a);
     anon_scalar_destroy(&b);
     return 1;
 }
 
 // ( a -- a a )
-int instruction_dup(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+int instruction_dup(vm_context_t *context) {
     anon_scalar_t a;
-    data_stack_top(*data_stack, &a);
-    data_stack_push(*data_stack, &a);
+    vm_ds_top(context, &a);
+    vm_ds_push(context, &a);
     anon_scalar_destroy(&a);
     return 1;
 }
 
 // ( -- a ) 
-int instruction_intlit(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    const intptr_t lit = *(const intptr_t *)(instruction_ptr + 1);
+int instruction_intlit(vm_context_t *context) {
+    const intptr_t lit = *(const intptr_t *) NEXT_BYTE(context);
 
     anon_scalar_t a;
     anon_scalar_init(&a);
     anon_scalar_set_int_value(&a, lit);
-    data_stack_push(*data_stack, &a);
+    vm_ds_push(context, &a);
     anon_scalar_destroy(&a);
     
     return 1 + sizeof(intptr_t);
 }
 
 // ( -- )
-int instruction_branch(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    const intptr_t offset = *(const intptr_t *)(instruction_ptr + 1);
+int instruction_branch(vm_context_t *context) {
+    const intptr_t offset = *(const intptr_t *) NEXT_BYTE(context);
     return offset;
 }
 
 // ( a -- )
-int instruction_0branch(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
-    const intptr_t branch_offset = *(const intptr_t *)(instruction_ptr + 1);
+int instruction_0branch(vm_context_t *context) {
+    const intptr_t branch_offset = *(const intptr_t *) NEXT_BYTE(context);
     int incr = 0;
 
     anon_scalar_t a;
-    data_stack_pop(*data_stack, &a);
+    vm_ds_pop(context, &a);
 
     if (anon_scalar_get_int_value(&a) == 0) {
         // branch by offset
@@ -151,15 +116,16 @@ int instruction_0branch(const uint8_t *instruction_ptr, size_t instruction_index
 }
 
 // ( a b -- a+b )
-int instruction_intadd(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+int instruction_intadd(vm_context_t *context) {
     anon_scalar_t a, b;
-    data_stack_pop(*data_stack, &b);
-    data_stack_pop(*data_stack, &a);
+    vm_ds_pop(context, &b);
+    vm_ds_pop(context, &a);
 
     anon_scalar_t c;
     anon_scalar_init(&c);
     anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) + anon_scalar_get_int_value(&b));
-    data_stack_push(*data_stack, &c);
+    vm_ds_push(context, &c);
+
     debug("%ld + %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
     anon_scalar_destroy(&a);
     anon_scalar_destroy(&b);
@@ -168,60 +134,64 @@ int instruction_intadd(const uint8_t *instruction_ptr, size_t instruction_index,
 }
 
 // ( a b -- a-b )
-int instruction_intsubt(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+int instruction_intsubt(vm_context_t *context) {
     anon_scalar_t a, b;
-    data_stack_pop(*data_stack, &b);
-    data_stack_pop(*data_stack, &a);
+    vm_ds_pop(context, &b);
+    vm_ds_pop(context, &a);
     
     anon_scalar_t c;
     anon_scalar_init(&c);
     anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) - anon_scalar_get_int_value(&b));
-    data_stack_push(*data_stack, &c);
+    vm_ds_push(context, &c);
+
     debug("%ld - %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
     anon_scalar_destroy(&c);
     return 1;
 }
 
 // ( a b -- a*b )
-int instruction_intmult(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+int instruction_intmult(vm_context_t *context) {
     anon_scalar_t a, b;
-    data_stack_pop(*data_stack, &b);
-    data_stack_pop(*data_stack, &a);
+    vm_ds_pop(context, &b);
+    vm_ds_pop(context, &a);
 
     anon_scalar_t c;
     anon_scalar_init(&c);
     anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) * anon_scalar_get_int_value(&b));
-    data_stack_push(*data_stack, &c);
+    vm_ds_push(context, &c);
+    
     debug("%ld * %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
     anon_scalar_destroy(&c);    
     return 1;
 }
 
 // ( a b -- a/b )
-int instruction_intdiv(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+int instruction_intdiv(vm_context_t *context) {
     anon_scalar_t a, b;
-    data_stack_pop(*data_stack, &b);
-    data_stack_pop(*data_stack, &a);
+    vm_ds_pop(context, &b);
+    vm_ds_pop(context, &a);
     
     anon_scalar_t c;
     anon_scalar_init(&c);
     anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) / anon_scalar_get_int_value(&b));
-    data_stack_push(*data_stack, &c);
+    vm_ds_push(context, &c);
+    
     debug("%ld / %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
     anon_scalar_destroy(&c);    
     return 1;
 }
 
 // ( a b -- a%b )
-int instruction_intmod(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
+int instruction_intmod(vm_context_t *context) {
     anon_scalar_t a, b;
-    data_stack_pop(*data_stack, &b);
-    data_stack_pop(*data_stack, &a);
+    vm_ds_pop(context, &b);
+    vm_ds_pop(context, &a);
     
     anon_scalar_t c;
     anon_scalar_init(&c);
     anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) % anon_scalar_get_int_value(&b));
-    data_stack_push(*data_stack, &c);
+    vm_ds_push(context, &c);
+    
     debug("%ld %% %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
     anon_scalar_destroy(&c);
     return 1;

@@ -12,10 +12,9 @@
 
 #include <stdint.h>
 
-#include "data_stack.h"
-#include "return_stack.h"
+#include "vm.h"
 
-typedef int(*instruction_func)(const uint8_t *, size_t, data_stack_t **, return_stack_t *);
+typedef int(*instruction_func)(vm_context_t *);
 extern const instruction_func instruction_table[];
 
 typedef enum instruction_t {
