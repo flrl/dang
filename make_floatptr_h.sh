@@ -1,12 +1,14 @@
-/*
- *  floatptr_t.c
- *  dang
- *
- *  Created by Ellie on 14/10/10.
- *  Copyright 2010 Ellie. All rights reserved.
- *
- */
+#!/bin/sh
+#
+# make_floatptr_h.sh
+# dang
+# 
+# Created by Ellie on 15/10/10.
+# Copyright 2010 Ellie. All rights reserved.
+#
 
+NOW=`date +%F_%T`
+$CC -o $NOW-make_floatptr_h.out -xc - <<'END'
 #include <stdint.h>
 #include <stdio.h>
 
@@ -20,3 +22,7 @@ int main(int argc, char **argv) {
     puts("#endif");
     return 0;
 }
+END
+test 0 -eq $? && 
+./$NOW-make_floatptr_h.out > floatptr_t.h &&
+rm ./$NOW-make_floatptr_h.out
