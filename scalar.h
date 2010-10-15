@@ -63,36 +63,146 @@ typedef struct scalar_pool_t {
 
 typedef uintptr_t scalar_handle_t;
 
+/*
+=head1 scalar.h
 
-// scalar pool functions
+=over
+ 
+=item scalar_pool_init()
+
+=item scalar_pool_destroy()
+
+Scalar pool setup and teardown functions
+
+=cut
+ */
 int scalar_pool_init(void);
 int scalar_pool_destroy(void);
+
+/*
+=item handle scalar_pool_allocate_scalar(int flags)
+
+=item scalar_pool_release_scalar(handle)
+
+=item scalar_pool_increase_refcount(handle)
+
+Functions for managing allocation of scalars
+
+=cut
+ */
 scalar_handle_t scalar_pool_allocate_scalar(uint32_t);
 void scalar_pool_release_scalar(scalar_handle_t);
 void scalar_pool_increase_refcount(scalar_handle_t);
 
-// pooled scalar functions
+/*
+=item scalar_reset(handle)
+
+Resets pooled scalar back to "undefined" state
+
+=cut
+ */
 void scalar_reset(scalar_handle_t);
+
+/*
+=item scalar_set_int_value(handle, value)
+ 
+=item scalar_set_float_value(handle, value)
+
+=item scalar_set_string_value(handle, value)
+
+=item scalar_set_value(handle, value)
+
+Functions for setting values on a pooled scalar
+
+=cut
+ */
 void scalar_set_int_value(scalar_handle_t, intptr_t);
 void scalar_set_float_value(scalar_handle_t, floatptr_t);
 void scalar_set_string_value(scalar_handle_t, const char *);
 void scalar_set_value(scalar_handle_t, const anon_scalar_t *);
+
+/*
+=item scalar_get_int_value(handle)
+
+=item scalar_get_float_value(handle)
+ 
+=item scalar_get_string_value(handle, result)
+
+=item scalar_get_value(handle, result)
+
+Functions for getting values from a pooled scalar
+
+=cut
+ */
 intptr_t scalar_get_int_value(scalar_handle_t);
 floatptr_t scalar_get_float_value(scalar_handle_t);
 void scalar_get_string_value(scalar_handle_t, char **);
 void scalar_get_value(scalar_handle_t, anon_scalar_t *);
 
-// anon scalar functions
+/*
+=item anon_scalar_init(anon_scalar)
+
+=item anon_scalar_destroy(anon_scalar)
+ 
+Setup and teardown functions for anon_scalar_t objects
+
+=cut
+ */
 void anon_scalar_init(anon_scalar_t *);
 void anon_scalar_destroy(anon_scalar_t *);
+
+/*
+=item anon_scalar_clone(clone, original)
+
+Deep-copy clone of an anon_scalar_t object.  The resulting clone needs to be destroyed independently of the original.
+
+=cut
+ */
 void anon_scalar_clone(anon_scalar_t * restrict, const anon_scalar_t * restrict);
+
+/*
+=item anon_scalar_assign(dest, original)
+
+Shallow-copy of an anon_scalar_t object.  Only one of dest and original should be destroyed.
+
+=cut
+ */
 void anon_scalar_assign(anon_scalar_t * restrict, const anon_scalar_t * restrict);
+
+/*
+=item anon_scalar_set_int_value(anon_scalar, value)
+
+=item anon_scalar_set_float_value(anon_scalar, value)
+ 
+=item anon_scalar_set_string_value(anon_scalar, value)
+
+Functions for setting the value of anon_scalar_t objects
+ 
+=cut
+ */
 void anon_scalar_set_int_value(anon_scalar_t *, intptr_t);
 void anon_scalar_set_float_value(anon_scalar_t *, floatptr_t);
 void anon_scalar_set_string_value(anon_scalar_t *, const char *);
+
+/*
+=item anon_scalar_get_int_value(anon_scalar)
+ 
+=item anon_scalar_get_float_value(anon_scalar)
+ 
+=item anon_scalar_get_string_value(anon_scalar, result)
+
+Functions for getting values from anon_scalar_t objects
+
+=cut
+ */
 intptr_t anon_scalar_get_int_value(const anon_scalar_t *);
 floatptr_t anon_scalar_get_float_value(const anon_scalar_t *);
 void anon_scalar_get_string_value(const anon_scalar_t *, char **);
 
 
 #endif
+/*
+=back
+
+=cut
+ */
