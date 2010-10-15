@@ -12,31 +12,6 @@
 
 #include "scalar.h"
 
-//typedef struct data_stack_t {
-//    struct data_stack_t *m_parent;
-//    size_t m_allocated_count;
-//    size_t m_count;
-//    anon_scalar_t *m_items;
-//    size_t m_subscope_count;
-//} data_stack_t;
-//
-//typedef struct symbol_table_node_t {
-//    struct symbol_table_node_t *m_parent;
-//    struct symbol_table_node_t *m_left_child;
-//    struct symbol_table_node_t *m_right_child;
-//    uint32_t m_flags;
-//    identifier_t m_identifier;
-//    union {
-//        scalar_handle_t as_scalar;
-//    } m_referent;
-//} symbol_table_node_t;
-//
-//typedef struct return_stack_t {
-//    size_t m_allocated_count;
-//    size_t m_count;
-//    size_t *m_items;
-//} return_stack_t;
-
 typedef uintptr_t identifier_t;
 
 typedef struct vm_symbol_t {
@@ -69,7 +44,6 @@ typedef struct vm_context_t {
     vm_symboltable_t *m_symboltable;
 } vm_context_t;
 
-
 /*
 =head1 vm.h
 
@@ -98,11 +72,11 @@ int vm_context_init(vm_context_t *);
 int vm_context_destroy(vm_context_t *);
 
 /*
-=item vm_ds_push
+=item vm_ds_push(context, val)
 
-=item vm_ds_pop
+=item vm_ds_pop(context, result)
 
-=item vm_ds_top
+=item vm_ds_top(context, result)
 
 Data stack management functions
 
@@ -113,11 +87,11 @@ int vm_ds_pop(vm_context_t *, anon_scalar_t *);
 int vm_ds_top(vm_context_t *, anon_scalar_t *);
 
 /*
-=item vm_rs_push
+=item vm_rs_push(context, val)
 
-=item vm_rs_pop
+=item vm_rs_pop(context, result)
 
-=item vm_rs_top
+=item vm_rs_top(context, result)
 
 Return stack management functions
 
