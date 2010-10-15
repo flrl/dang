@@ -15,6 +15,8 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "floatptr_t.h"
+
 #define SCALAR_UNALLOC      0x00u
 #define SCALAR_INT          0x01u
 #define SCALAR_FLOAT        0x02u
@@ -35,7 +37,7 @@
     uint32_t m_flags;           \
     union {                     \
         intptr_t as_int;        \
-        float    as_float;      \
+        floatptr_t as_float;    \
         char     *as_string;    \
         intptr_t next_free;     \
     } m_value
@@ -72,11 +74,11 @@ void scalar_pool_increase_refcount(scalar_handle_t);
 // pooled scalar functions
 void scalar_reset(scalar_handle_t);
 void scalar_set_int_value(scalar_handle_t, intptr_t);
-void scalar_set_float_value(scalar_handle_t, float);
+void scalar_set_float_value(scalar_handle_t, floatptr_t);
 void scalar_set_string_value(scalar_handle_t, const char *);
 void scalar_set_value(scalar_handle_t, const anon_scalar_t *);
 intptr_t scalar_get_int_value(scalar_handle_t);
-float scalar_get_float_value(scalar_handle_t);
+floatptr_t scalar_get_float_value(scalar_handle_t);
 void scalar_get_string_value(scalar_handle_t, char **);
 void scalar_get_value(scalar_handle_t, anon_scalar_t *);
 
@@ -86,10 +88,10 @@ void anon_scalar_destroy(anon_scalar_t *);
 void anon_scalar_clone(anon_scalar_t * restrict, const anon_scalar_t * restrict);
 void anon_scalar_assign(anon_scalar_t * restrict, const anon_scalar_t * restrict);
 void anon_scalar_set_int_value(anon_scalar_t *, intptr_t);
-void anon_scalar_set_float_value(anon_scalar_t *, float);
+void anon_scalar_set_float_value(anon_scalar_t *, floatptr_t);
 void anon_scalar_set_string_value(anon_scalar_t *, const char *);
 intptr_t anon_scalar_get_int_value(const anon_scalar_t *);
-float anon_scalar_get_float_value(const anon_scalar_t *);
+floatptr_t anon_scalar_get_float_value(const anon_scalar_t *);
 void anon_scalar_get_string_value(const anon_scalar_t *, char **);
 
 

@@ -237,7 +237,7 @@ void scalar_set_int_value(scalar_handle_t handle, intptr_t ival) {
     }    
 }
 
-void scalar_set_float_value(scalar_handle_t handle, float fval) {
+void scalar_set_float_value(scalar_handle_t handle, floatptr_t fval) {
     assert(handle != 0);
     
     if (0 == _scalar_lock(handle)) {
@@ -314,15 +314,15 @@ intptr_t scalar_get_int_value(scalar_handle_t handle) {
     return value;    
 }
 
-float scalar_get_float_value(scalar_handle_t handle) {
+floatptr_t scalar_get_float_value(scalar_handle_t handle) {
     assert(handle != 0);
 
-    float value;
+    floatptr_t value;
     
     if (0 == _scalar_lock(handle)) {
         switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
             case SCALAR_INT:
-                value = (float) POOL_ITEM(handle).m_value.as_int;
+                value = (floatptr_t) POOL_ITEM(handle).m_value.as_int;
                 break;
             case SCALAR_FLOAT:
                 value = POOL_ITEM(handle).m_value.as_float;
@@ -457,7 +457,7 @@ void anon_scalar_set_int_value(anon_scalar_t *self, intptr_t ival) {
     self->m_value.as_int = ival;
 }
 
-void anon_scalar_set_float_value(anon_scalar_t *self, float fval) {
+void anon_scalar_set_float_value(anon_scalar_t *self, floatptr_t fval) {
     assert(self != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
 
@@ -498,13 +498,13 @@ intptr_t anon_scalar_get_int_value(const anon_scalar_t *self) {
     return value;
 }
 
-float anon_scalar_get_float_value(const anon_scalar_t *self) {
+floatptr_t anon_scalar_get_float_value(const anon_scalar_t *self) {
     assert(self != NULL);
-    float value;
+    floatptr_t value;
     
     switch(self->m_flags & SCALAR_TYPE_MASK) {
         case SCALAR_INT:
-            value = (float) self->m_value.as_int;
+            value = (floatptr_t) self->m_value.as_int;
             break;
         case SCALAR_FLOAT:
             value = self->m_value.as_float;
