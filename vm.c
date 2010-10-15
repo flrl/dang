@@ -15,7 +15,6 @@
 #include "vm.h"
 
 //typedef struct vm_context_t {
-//    vm_context_t *m_parent;
 //    uint8_t *m_bytecode;
 //    size_t  m_bytecode_length;
 //    size_t  m_counter;
@@ -25,8 +24,9 @@
 //    size_t  m_return_stack_alloc_count;
 //    size_t  m_return_stack_count;
 //    size_t  *m_return_stack;
-//    vm_symbol_t *m_symbols;
+//    vm_symboltable_t *m_symboltable;
 //} vm_context_t;
+//
 
 static const size_t _vm_context_initial_ds_count = 16;
 static const size_t _vm_context_initial_rs_count = 16;
@@ -114,7 +114,7 @@ int vm_context_destroy(vm_context_t *self) {
     free(self->m_data_stack);
     free(self->m_return_stack);
     
-    return -1;  // FIXME walk the symbol table and clean that up too
+    return -1;  // FIXME walk the symbol table and clean that up too?
 }
 
 
@@ -191,6 +191,33 @@ int vm_rs_top(vm_context_t *context, size_t *result) {
     assert(result != NULL);
     
     *result = context->m_return_stack[context->m_return_stack_count - 1];
+    return 0;
+}
+
+int vm_start_scope(vm_context_t *context) {
+    assert(context != NULL);
+    
+    vm_symboltable_t *new_table = calloc(1, sizeof(*new_table));
+    if (new_table == NULL)  return -1;
+    
+    // FIXME set up a registry of these
+    
+    context->m_symboltable->m_subscope_count++;
+    new_table->m_parent = context->m_symboltable;
+    context->m_symboltable = new_table;
+    return 0;
+}
+
+int vm_end_scope(vm_context_t *context) {
+    assert(context != NULL);
+    
+    vm_symboltable_t *old_table = context->m_symboltable;
+    context->m_symboltable = context->m_symboltable->m_parent;    // FIXME deal with NULL somehow
+    
+    if (old_table->m_subscope_count == 0) {
+        // FIXME walk the table and clean it up, then free it
+    }
+    
     return 0;
 }
 

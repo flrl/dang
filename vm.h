@@ -50,8 +50,13 @@ typedef struct vm_symbol_t {
     } m_referent;
 } vm_symbol_t;
 
+typedef struct vm_symboltable_t {
+    struct vm_symboltable_t *m_parent;
+    vm_symbol_t *m_symbols;
+    size_t m_subscope_count;
+} vm_symboltable_t;
+
 typedef struct vm_context_t {
-    struct vm_context_t *m_parent;
     uint8_t *m_bytecode;
     size_t  m_bytecode_length;
     size_t  m_counter;
@@ -61,7 +66,7 @@ typedef struct vm_context_t {
     size_t  m_return_stack_alloc_count;
     size_t  m_return_stack_count;
     size_t  *m_return_stack;
-    vm_symbol_t *m_symbols;
+    vm_symboltable_t *m_symboltable;
 } vm_context_t;
 
 
