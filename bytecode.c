@@ -27,6 +27,9 @@ int instruction_noop(const uint8_t *instruction_ptr, size_t instruction_index, d
 }
 
 // ( [params] -- ) ( -- addr )
+// FIXME if function scopes don't have their own stack, then this doesn't need to do any data stack shenanigans and doesn't need
+// FIXME a parameter for how many items to move to its own stack.  all it needs to do is start a new symbol scope and push the
+// FIXME return address.
 int instruction_call(const uint8_t *instruction_ptr, size_t instruction_index, data_stack_t **data_stack, return_stack_t *return_stack) {
     const size_t argc = *(const uint8_t *)(instruction_ptr + 1);
     const size_t jump_dest = *(const size_t *) (instruction_ptr + 1 + sizeof(uint8_t));
