@@ -3,8 +3,6 @@
 use warnings;
 use strict;
 
-use Data::Dumper;
-
 my $output = shift @ARGV;
 print "Usage: $0 outfile [ files... ]\n" and exit 1 if not $output;
 
@@ -14,7 +12,6 @@ my $process_flag = 0;
 while (<>) {
     $process_flag = 1, next if m{^\s*/\*-- INSTRUCTIONS START --\*/\s*$};
     $process_flag = 0, next if m{^\s*/\*-- INSTRUCTIONS END --\*/\s*$};
-#    print "$process_flag: $_";
     next if not $process_flag;
 
     chomp;
@@ -24,9 +21,6 @@ while (<>) {
     # FIXME handle values
     push @instructions, $instruction;
 }
-
-#print Dumper \@instructions;
-#__END__
 
 my $instruction;
 
