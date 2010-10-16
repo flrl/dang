@@ -20,8 +20,8 @@ MACHINE := $(shell uname -s)
 floatptr_t.h : make_floatptr_h.sh
 	env CC=$(CC) sh make_floatptr_h.sh
 
-instruction_table.h instruction_table.c : make_instructiontable.pl bytecode.h
-	perl make_instructiontable.pl instruction_table < bytecode.h
+instruction_table.h instruction_table.c : make_instruction_table.pl bytecode.h
+	perl make_instruction_table.pl instruction_table < bytecode.h
 
 $(TARGET) : $(OBJS)
 	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LDFLAGS)
