@@ -28,7 +28,7 @@ typedef struct vm_symbol_t {
 typedef struct vm_symboltable_t {
     struct vm_symboltable_t *m_parent;
     vm_symbol_t *m_symbols;
-    size_t m_subscope_count;
+    size_t m_references;
 } vm_symboltable_t;
 
 typedef struct vm_context_t {
@@ -122,7 +122,7 @@ Setup and teardown functions for vm_symboltable_t objects
 
 =cut
  */
-int vm_symboltable_init(vm_symboltable_t *);
+int vm_symboltable_init(vm_symboltable_t *restrict, vm_symboltable_t *restrict);
 int vm_symboltable_destroy(vm_symboltable_t *);
 
 /*
@@ -162,12 +162,12 @@ int vm_symbol_undefine(vm_context_t *, identifier_t);
 
 
 /*
-=item vm_symboltable_registry_reap()
+=item vm_symboltable_garbage_collect()
 
-Garbage collects persistent symbol tables.  Intended for use immediately before exit.
+Garbage collects symboltables that are no longer referred from anywhere
 =cut
  */
-int vm_symboltable_registry_reap(void);
+int vm_symboltable_garbage_collect(void);
 
 
 #endif

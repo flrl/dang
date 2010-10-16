@@ -108,8 +108,8 @@ int vm_context_destroy(vm_context_t *self) {
     free(self->m_data_stack);
     free(self->m_return_stack);
     
-    if (self->m_symboltable->m_subscope_count == 0) {
-        vm_symboltable_destroy(self->m_symboltable);        
+    if (0 == vm_symboltable_destroy(self->m_symboltable)) {
+        free(self->m_symboltable);
     }
     
     return 0;
@@ -198,19 +198,9 @@ int vm_start_scope(vm_context_t *context) {
     vm_symboltable_t *new_table = calloc(1, sizeof(*new_table));
     if (new_table == NULL)  return -1;
     
-    vm_symboltable_registry_node_t *reg_entry;
-    if (NULL != (reg_entry = calloc(1, sizeof(*reg_entry)))) {
-        if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {
-            reg_entry->m_table = new_table;
-            reg_entry->m_next = _vm_symboltable_registry;
-            _vm_symboltable_registry = reg_entry;
-            pthread_mutex_unlock(&_vm_symboltable_registry_mutex);
-        }
-    }
-    
-    context->m_symboltable->m_subscope_count++;
-    new_table->m_parent = context->m_symboltable;
+    vm_symboltable_init(new_table, context->m_symboltable);
     context->m_symboltable = new_table;
+    
     return 0;
 }
 
@@ -221,45 +211,64 @@ int vm_end_scope(vm_context_t *context) {
     vm_symboltable_t *old_table = context->m_symboltable;
     context->m_symboltable = context->m_symboltable->m_parent;
     
-    if (old_table->m_subscope_count == 0) {
-        if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {
-            for (vm_symboltable_registry_node_t *i = _vm_symboltable_registry; i != NULL && i->m_next != NULL; i = i->m_next) {
-                if (i->m_next->m_table == old_table) {
-                    vm_symboltable_registry_node_t *tmp = i->m_next;
-                    i->m_next = i->m_next->m_next;
-                    free(tmp);                    
-                }
-            }
-            pthread_mutex_unlock(&_vm_symboltable_registry_mutex);
-        }
-
-        vm_symboltable_destroy(old_table);
-        free(old_table);    
+    if (0 == vm_symboltable_destroy(old_table)) {
+        free(old_table);
     }
     
     return 0;
 }
 
-int vm_symboltable_init(vm_symboltable_t *self) {
+int vm_symboltable_init(vm_symboltable_t *restrict self, vm_symboltable_t *restrict parent) {
     assert(self != NULL);
-    memset(self, 0, sizeof(*self));
+    assert(self != parent);
+    
+    self->m_references = 1;
+    self->m_symbols = NULL;
+    self->m_parent = parent;
+    if (self->m_parent != NULL)  ++self->m_parent->m_references;
+    
+    vm_symboltable_registry_node_t *reg_entry;
+    if (NULL != (reg_entry = calloc(1, sizeof(*reg_entry)))) {
+        if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {
+            reg_entry->m_table = self;
+            reg_entry->m_next = _vm_symboltable_registry;
+            _vm_symboltable_registry = reg_entry;
+            pthread_mutex_unlock(&_vm_symboltable_registry_mutex);
+        }
+    }
+        
     return 0;
 }
 
 int vm_symboltable_destroy(vm_symboltable_t *self) {
     assert(self != NULL);
-    if (self->m_parent != NULL) {
-        assert(self->m_parent->m_subscope_count > 0);
-        --self->m_parent->m_subscope_count;
-    }
+    assert(self->m_references > 0);
     
-    if (self->m_symbols != NULL) {
-        vm_symbol_reap(self->m_symbols);
-        free(self->m_symbols);
+    if (--self->m_references == 0) {
+        if (self->m_parent != NULL)  --self->m_parent->m_references;
+        if (self->m_symbols != NULL) {
+            vm_symbol_reap(self->m_symbols);
+            free(self->m_symbols);
+        } 
+            
+        if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {
+            for (vm_symboltable_registry_node_t *i = _vm_symboltable_registry; i != NULL && i->m_next != NULL; i = i->m_next) {
+                if (i->m_next->m_table == self) {
+                    vm_symboltable_registry_node_t *reg = i->m_next;
+                    i->m_next = i->m_next->m_next;
+                    free(reg);
+                }
+            }
+            
+            pthread_mutex_unlock(&_vm_symboltable_registry_mutex);
+        }
+        
+        memset(self, 0, sizeof(*self));
+        return 0;
     }
-    
-    memset(self, 0, sizeof(*self));
-    return 0;
+    else {
+        return -1;
+    }
 }
 
 int vm_symbol_init(vm_symbol_t *self) {
@@ -455,14 +464,30 @@ int vm_symbol_undefine(vm_context_t *context, identifier_t identifier) {
     }
 }
 
-int vm_symboltable_registry_reap(void) {
+int vm_symboltable_garbage_collect(void) {
     if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {
         while (_vm_symboltable_registry != NULL) {
-            vm_symboltable_registry_node_t *tmp = _vm_symboltable_registry;
-            _vm_symboltable_registry = _vm_symboltable_registry->m_next;
-            vm_symboltable_destroy(tmp->m_table);
-            free(tmp->m_table);
-            free(tmp);
+            assert(_vm_symboltable_registry->m_table != NULL);
+            if (_vm_symboltable_registry->m_table->m_references > 0) {
+                break;  
+            } 
+            else {
+                vm_symboltable_registry_node_t *old_reg = _vm_symboltable_registry;
+                _vm_symboltable_registry = _vm_symboltable_registry->m_next;
+                
+                vm_symboltable_t *old_table = old_reg->m_table;
+                memset(old_reg, 0, sizeof(*old_reg));
+                free(old_reg);
+                
+                if (old_table->m_parent != NULL)  --old_table->m_parent->m_references;
+                if (old_table->m_symbols != NULL) {
+                    vm_symbol_reap(old_table->m_symbols);
+                    free(old_table->m_symbols);
+                }
+                
+                memset(old_table, 0, sizeof(*old_table));
+                free(old_table);
+            }
         }
         pthread_mutex_unlock(&_vm_symboltable_registry_mutex);
         return 0;
