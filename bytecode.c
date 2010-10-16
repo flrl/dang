@@ -14,6 +14,7 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "bytecode.h"
 #include "debug.h"
@@ -395,4 +396,41 @@ int inst_INTMOD(vm_context_t *context) {
     debug("%ld %% %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
     anon_scalar_destroy(&c);
     return 1;
+}
+
+/*
+=item STRLIT ( -- s )
+
+Reads a length followed by a string of length bytes from the following bytecode, and pushes the string value to the data stack.
+
+If a zero byte occurs within the string, the resulting string will be terminated at this byte.  However, the full length will
+always be consumed from the bytecode.
+
+If length is zero, an empty string value will be pushed to the data stack, and no additional bytes will be consumed from the 
+bytecode.
+ 
+=cut
+ */
+int inst_STRLIT(struct vm_context_t *context) {
+    const uint16_t len = *(uint16_t *) (&context->m_bytecode[context->m_counter + 1]);
+    const char *str = (const char *) (&context->m_bytecode[context->m_counter + 1 + sizeof(len)]);
+    
+    anon_scalar_t s;
+    anon_scalar_init(&s);
+    
+    if (len > 0) {
+        char *buf = calloc(len + 1, sizeof(*buf));
+        assert(buf != NULL);
+        strncpy(buf, str, len);
+        anon_scalar_set_string_value(&s, buf);
+        free(buf);
+    }
+    else {
+        anon_scalar_set_string_value(&s, "");
+    }
+
+    vm_ds_push(context, &s);
+    anon_scalar_destroy(&s);
+    
+    return 1 + sizeof(len) + len;
 }

@@ -35,6 +35,7 @@ typedef enum instruction_t {
     i_INTMULT,
     i_INTDIV,
     i_INTMOD,
+    i_STRLIT,
 /*-- INSTRUCTIONS END --*/
     i_SRLOAD,
     i_SRSTORE,
