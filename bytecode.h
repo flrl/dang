@@ -24,6 +24,11 @@ typedef enum instruction_t {
     i_DUP,
     i_BRANCH,
     i_0BRANCH,
+    i_SYMDEF,
+    i_SYMFIND,
+    i_SYMUNDEF,
+    i_SLOAD,
+    i_SSTORE,
     i_INTLIT,
     i_INTADD,
     i_INTSUBT,
@@ -31,6 +36,8 @@ typedef enum instruction_t {
     i_INTDIV,
     i_INTMOD,
 /*-- INSTRUCTIONS END --*/
+    i_SRLOAD,
+    i_SRSTORE,
     
 //    iOVER,
 //    iTUCK,

@@ -5,6 +5,11 @@
  *  Created by Ellie on 3/10/10.
  *  Copyright 2010 Ellie. All rights reserved.
  *
+=head1 bytecode
+
+=over
+
+=cut 
  */
 
 #include <assert.h>
@@ -17,19 +22,40 @@
 
 #define NEXT_BYTE(x) (const uint8_t*)(&(x)->m_bytecode[(x)->m_counter + 1])
 
-// dummy function for lookup table -- should not be executed!
+/*
+=item END
+ 
+Indicates the end of the bytecode stream.
+ 
+=cut
+ */
 int inst_END(vm_context_t *context) {
+    // dummy function for lookup table -- should not be executed!
     assert("should not get here" == 0);
     return 0;
 }
 
-// dummy function for lookup table -- should not be executed!
+/*
+=item NOOP
+
+Does nothing.  Used to pad the bytecode when alignment is important.
+
+=cut
+ */
 int inst_NOOP(vm_context_t *context) {
+    // dummy function for lookup table -- should not be executed!
     assert("should not get here" == 0);
     return 0;
 }
 
-// ( [params] -- ) ( -- addr )
+/*
+=item CALL ( [params] -- ) ( -- addr )
+
+Reads a jump destination from the following bytecode.  Pushes the location of the bytecode following the jump destination
+to the return stack, starts a new symbol table scope, then transfers execution control to the jump destination.
+ 
+=cut
+ */
 int inst_CALL(vm_context_t *context) {
     const size_t jump_dest = *(const size_t *) NEXT_BYTE(context);
     
@@ -39,7 +65,13 @@ int inst_CALL(vm_context_t *context) {
     return jump_dest - context->m_counter;
 }
 
-// ( -- [results] ) ( addr -- )
+/*
+=item RETURN ( -- [results] ) ( addr -- )
+
+Ends the current symbol table scope.  Pops a return destination from the return stack, and transfers execution control to it.
+
+=cut
+ */
 int inst_RETURN(vm_context_t *context) {
     size_t jump_dest;
     
@@ -49,13 +81,25 @@ int inst_RETURN(vm_context_t *context) {
     return jump_dest - context->m_counter;    
 }
 
-// ( a -- )
+/*
+=item DROP ( a -- )
+ 
+Drops an item from the data stack
+ 
+=cut
+ */
 int inst_DROP(vm_context_t *context) {
     vm_ds_pop(context, NULL);
     return 1;
 }
 
-// ( a b -- b a )
+/*
+=item SWAP ( a b -- b a )
+
+Swaps the two items at the top of the data stack
+
+=cut
+ */
 int inst_SWAP(vm_context_t *context) {
     anon_scalar_t a, b;
     vm_ds_pop(context, &b);
@@ -67,7 +111,13 @@ int inst_SWAP(vm_context_t *context) {
     return 1;
 }
 
-// ( a -- a a )
+/*
+=item DUP ( a -- a a )
+
+Duplicates the item on the top of the data stack
+ 
+=cut
+ */
 int inst_DUP(vm_context_t *context) {
     anon_scalar_t a;
     vm_ds_top(context, &a);
@@ -76,7 +126,14 @@ int inst_DUP(vm_context_t *context) {
     return 1;
 }
 
-// ( -- a ) 
+/*
+=item INTLIT ( -- a ) 
+
+Reads an integer value from the following bytecode and pushes it onto the data stack.  Transfers execution control to the 
+bytecode following the integer value.
+ 
+=cut
+ */
 int inst_INTLIT(vm_context_t *context) {
     const intptr_t lit = *(const intptr_t *) NEXT_BYTE(context);
 
@@ -89,13 +146,26 @@ int inst_INTLIT(vm_context_t *context) {
     return 1 + sizeof(intptr_t);
 }
 
-// ( -- )
+/*
+=item BRANCH ( -- )
+ 
+Reads a jump destination from the following bytecode and transfers execution control to it.
+ 
+=cut
+ */
 int inst_BRANCH(vm_context_t *context) {
     const intptr_t offset = *(const intptr_t *) NEXT_BYTE(context);
     return offset;
 }
 
-// ( a -- )
+/*
+=item 0BRANCH ( a -- )
+
+Reads a jump destination from the following bytecode.  Pops a value from the data stack.  If the value popped is zero, transfers
+execution control to the jump destination.  Otherwise, transfers execution control to the next instruction.
+ 
+=cut
+ */
 int inst_0BRANCH(vm_context_t *context) {
     const intptr_t branch_offset = *(const intptr_t *) NEXT_BYTE(context);
     int incr = 0;
@@ -116,7 +186,112 @@ int inst_0BRANCH(vm_context_t *context) {
     return incr;
 }
 
-// ( a b -- a+b )
+/*
+=item SYMDEF ( -- )
+
+Reads flags and an identifier from the following bytecode.  Defines a new symbol in the current scope with the requested 
+identifier.
+ 
+=cut
+ */
+int inst_SYMDEF(struct vm_context_t *context) {
+    const uint32_t flags = *(const uint32_t *) (&context->m_bytecode[context->m_counter + 1]);
+    const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1 + sizeof(flags)]);
+    
+    vm_symbol_define(context, identifier, flags);
+    
+    return 1 + sizeof(flags) + sizeof(identifier);
+}
+
+/*
+=item SYMFIND ( -- handle )
+
+Reads an identifier from the following bytecode.  Looks up the identifier in the symbol table, and pushes its handle to the
+data stack, or 0 if the identifier was not found.
+ 
+=cut
+ */
+int inst_SYMFIND(struct vm_context_t *context) {
+    const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1]);
+    
+    const vm_symbol_t *symbol = vm_symbol_lookup(context, identifier);
+
+    anon_scalar_t handle;
+    anon_scalar_init(&handle);    
+    anon_scalar_set_int_value(&handle, symbol ? symbol->m_referent.as_scalar : 0);
+    vm_ds_push(context, &handle);
+    anon_scalar_destroy(&handle);
+    
+    return 1 + sizeof(identifier);
+}
+
+/*
+=item SYMUNDEF ( -- )
+ 
+Reads an identifier from the following bytecode.  Removes the identifier from the symbol table in the current scope.
+
+=cut
+ */
+int inst_SYMUNDEF(struct vm_context_t *context) {
+    const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1]);
+    
+    vm_symbol_undefine(context, identifier);
+    
+    return 1 + sizeof(identifier);
+}
+
+/*
+=item SLOAD ( handle -- a )
+
+Pops a scalar handle from the data stack.  Pushes the value of the scalar matching the handle.
+ 
+=cut
+ */
+int inst_SLOAD(struct vm_context_t *context) {
+    anon_scalar_t handle, a;
+    anon_scalar_init(&handle);
+    anon_scalar_init(&a);
+
+    vm_ds_pop(context, &handle);
+    scalar_get_value((scalar_handle_t) anon_scalar_get_int_value(&handle), &a);
+    vm_ds_push(context, &a);
+    
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&handle);
+    
+    return 1;
+}
+
+/*
+=item SSTORE ( a handle -- )
+
+Pops a scalar handle and a scalar value from the data stack.  Stores the value in the scalar matching the handle.
+ 
+=cut
+ */
+int inst_SSTORE(struct vm_context_t *context) {
+    anon_scalar_t handle, a;
+    
+    anon_scalar_init(&handle);
+    anon_scalar_init(&a);
+    
+    vm_ds_pop(context, &handle);
+    vm_ds_pop(context, &a);
+    scalar_set_value((scalar_handle_t) anon_scalar_get_int_value(&handle), &a);
+    
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&handle);
+    
+    return 1;
+}
+
+/*
+=item INTADD ( a b -- a+b )
+
+Pops two values from the data stack, and pushes back their integer sum.
+ 
+=cut
+ */
 int inst_INTADD(vm_context_t *context) {
     anon_scalar_t a, b;
     vm_ds_pop(context, &b);
@@ -134,7 +309,13 @@ int inst_INTADD(vm_context_t *context) {
     return 1;
 }
 
-// ( a b -- a-b )
+/*
+=item INTSUBT ( a b -- a-b )
+
+Pops two values from the data stack, and pushes back their integer difference.
+
+=cut
+ */
 int inst_INTSUBT(vm_context_t *context) {
     anon_scalar_t a, b;
     vm_ds_pop(context, &b);
@@ -150,7 +331,13 @@ int inst_INTSUBT(vm_context_t *context) {
     return 1;
 }
 
-// ( a b -- a*b )
+/*
+=item INTMULT ( a b -- a*b )
+
+Pops two values from the data stack, and pushes back their integer product.
+
+=cut
+ */
 int inst_INTMULT(vm_context_t *context) {
     anon_scalar_t a, b;
     vm_ds_pop(context, &b);
@@ -166,7 +353,13 @@ int inst_INTMULT(vm_context_t *context) {
     return 1;
 }
 
-// ( a b -- a/b )
+/*
+=item INTDIV ( a b -- a/b )
+
+Pops two values from the data stack, and pushes back their integer quotient.
+
+=cut
+ */
 int inst_INTDIV(vm_context_t *context) {
     anon_scalar_t a, b;
     vm_ds_pop(context, &b);
@@ -182,7 +375,13 @@ int inst_INTDIV(vm_context_t *context) {
     return 1;
 }
 
-// ( a b -- a%b )
+/*
+=item INTMOD ( a b -- a%b )
+
+Pops two values from the data stack, and pushes back their integer remainder.
+ 
+=cut
+ */
 int inst_INTMOD(vm_context_t *context) {
     anon_scalar_t a, b;
     vm_ds_pop(context, &b);
