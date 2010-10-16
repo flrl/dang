@@ -4,9 +4,9 @@ all : $(TARGET)
 CSRCS := $(wildcard *.c)
 CXXSRCS := $(wildcard *.cpp)
 SRCS := $(CSRCS) $(CXXSRCS)
-OBJS := $(CSRCS:.c=.o) $(CXXSRCS:.cpp=.o)
+OBJS := $(CSRCS:.c=.o) $(CXXSRCS:.cpp=.o) 
 DEPS := $(CSRCS:.c=.d) $(CXXSRCS:.cpp=.d)
-GENS := floatptr_t.h
+GENS := floatptr_t.h instruction_table.h instruction_table.c
 
 CFLAGS += --std=c99 -g -Wall -Wno-unknown-pragmas
 CXXFLAGS += -g -Wall -Wno-unknown-pragmas
@@ -19,6 +19,9 @@ MACHINE := $(shell uname -s)
 
 floatptr_t.h : make_floatptr_h.sh
 	env CC=$(CC) sh make_floatptr_h.sh
+
+instruction_table.h instruction_table.c : make_instructiontable.pl bytecode.h
+	perl make_instructiontable.pl instruction_table < bytecode.h
 
 $(TARGET) : $(OBJS)
 	$(CC) -o $@ $(OBJS) $(CFLAGS) $(LDFLAGS)
