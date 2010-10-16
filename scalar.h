@@ -48,7 +48,7 @@ typedef struct scalar_t {
 
 typedef struct pooled_scalar_t {
     SCALAR_GUTS;
-    uint32_t m_references;
+    size_t m_references;
     pthread_mutex_t *m_mutex;
 } pooled_scalar_t;
 
