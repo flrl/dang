@@ -65,9 +65,9 @@ void *vm_execute(void *ptr) {
         uint8_t instruction = context->m_bytecode[context->m_counter];
         assert(instruction < i__MAX);
         switch (instruction) {
-            case iEND:
+            case i_END:
                 return NULL;
-            case iNOOP:
+            case i_NOOP:
                 context->m_counter++;
                 break;
             default:

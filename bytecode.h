@@ -10,30 +10,27 @@
 #ifndef BYTECODE_H
 #define BYTECODE_H
 
-#include <stdint.h>
-
-#include "vm.h"
-
-typedef int(*instruction_func)(vm_context_t *);
-extern const instruction_func instruction_table[];
+#include "instruction_table.h"
 
 typedef enum instruction_t {
     i__MIN = 0,
-    iEND = 0,
-    iNOOP = 1,
-    iCALL,
-    iRETURN,
-    iDROP,
-    iSWAP,
-    iDUP,
-    iBRANCH,
-    i0BRANCH,
-    iINTLIT,
-    iINTADD,
-    iINTSUBT,
-    iINTMULT,
-    iINTDIV,
-    iINTMOD,
+/*-- INSTRUCTIONS START --*/
+    i_END = 0,
+    i_NOOP = 1,
+    i_CALL,
+    i_RETURN,
+    i_DROP,
+    i_SWAP,
+    i_DUP,
+    i_BRANCH,
+    i_0BRANCH,
+    i_INTLIT,
+    i_INTADD,
+    i_INTSUBT,
+    i_INTMULT,
+    i_INTDIV,
+    i_INTMOD,
+/*-- INSTRUCTIONS END --*/
     
 //    iOVER,
 //    iTUCK,
