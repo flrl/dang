@@ -15,24 +15,55 @@
 #include "scalar.h"
 
 typedef struct channel_t {
-    size_t m_bufsize;
-    anon_scalar_t *m_ringbuf;
-    size_t m_start;
+    size_t m_allocated_count;
     size_t m_count;
+    anon_scalar_t *m_items;
+    size_t m_start;
     pthread_mutex_t m_mutex;
     pthread_cond_t m_has_items;
     pthread_cond_t m_has_space;
 } channel_t;
 
-int channel_init(channel_t *, size_t);
+/*
+=head1 channel.h
+
+=over
+
+=item channel_init()
+
+=item channel_destroy()
+
+Setup and teardown functions for channel_t objects
+ 
+=cut
+ */
+int channel_init(channel_t *);
 int channel_destroy(channel_t *);
 
+/*
+=item channel_read()
+ 
+=item channel_tryread()
+
+Functions for reading from a channel
+
+=cut
+ */
 int channel_read(channel_t *, anon_scalar_t *);
 int channel_tryread(channel_t *, anon_scalar_t *);
 
+/*
+=item channel_write()
+
+Write to a channel
+
+=cut
+ */
 int channel_write(channel_t *, const anon_scalar_t *);
 
-int channel_grow_buffer(channel_t *, size_t);
-int channel_shrink_buffer(channel_t *, size_t);
-
 #endif
+/*
+=back
+
+=cut
+*/
