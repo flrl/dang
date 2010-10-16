@@ -110,13 +110,13 @@ void scalar_pool_release_scalar(scalar_handle_t);
 void scalar_pool_increase_refcount(scalar_handle_t);
 
 /*
-=item scalar_reset(handle)
+=item scalar_set_undef(handle)
 
 Resets pooled scalar back to "undefined" state
 
 =cut
  */
-void scalar_reset(scalar_handle_t);
+void scalar_set_undef(scalar_handle_t);
 
 /*
 =item scalar_set_int_value(handle, value)

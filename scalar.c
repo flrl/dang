@@ -42,7 +42,7 @@ static inline int _scalar_unlock(scalar_handle_t handle) {
     }
 }
 
-static inline void _scalar_reset_unlocked(scalar_handle_t handle) {
+static inline void _scalar_set_undef_unlocked(scalar_handle_t handle) {
     assert(handle != 0);
     
     // clean up allocated memory, if anything
@@ -205,7 +205,7 @@ void scalar_pool_release_scalar(scalar_handle_t handle) {
                 POOL_ITEM(handle).m_mutex = NULL;
                 POOL_ITEM(handle).m_flags &= ~SCALAR_FLAG_SHARED;
             }
-            _scalar_reset_unlocked(handle);
+            _scalar_set_undef_unlocked(handle);
             _scalar_pool_add_to_free_list(handle);        
             g_scalar_pool.m_count--;
         }
@@ -214,11 +214,11 @@ void scalar_pool_release_scalar(scalar_handle_t handle) {
 }
 
 
-void scalar_reset(scalar_handle_t handle) {
+void scalar_set_undef(scalar_handle_t handle) {
     assert(handle != 0);
     assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     if (0 == _scalar_lock(handle)) {
-        _scalar_reset_unlocked(handle);
+        _scalar_set_undef_unlocked(handle);
         _scalar_unlock(handle);
     }
 }
@@ -228,8 +228,7 @@ void scalar_set_int_value(scalar_handle_t handle, intptr_t ival) {
     assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     
     if (0 == _scalar_lock(handle)) {
-        _scalar_reset_unlocked(handle);
-        POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+        _scalar_set_undef_unlocked(handle);
         POOL_ITEM(handle).m_flags |= SCALAR_INT;
         POOL_ITEM(handle).m_value.as_int = ival;
         _scalar_unlock(handle);
@@ -241,8 +240,7 @@ void scalar_set_float_value(scalar_handle_t handle, floatptr_t fval) {
     assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     
     if (0 == _scalar_lock(handle)) {
-        _scalar_reset_unlocked(handle);
-        POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+        _scalar_set_undef_unlocked(handle);
         POOL_ITEM(handle).m_flags |= SCALAR_INT;
         POOL_ITEM(handle).m_value.as_float = fval;
         _scalar_unlock(handle);
@@ -255,8 +253,7 @@ void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
     assert(sval != NULL);
     
     if (0 == _scalar_lock(handle)) {
-        _scalar_reset_unlocked(handle);
-        POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+        _scalar_set_undef_unlocked(handle);
         POOL_ITEM(handle).m_flags |= SCALAR_STRING | SCALAR_FLAG_PTR;
         POOL_ITEM(handle).m_value.as_string = strdup(sval);
         _scalar_unlock(handle);
@@ -293,24 +290,7 @@ intptr_t scalar_get_int_value(scalar_handle_t handle) {
     intptr_t value;
     
     if (0 == _scalar_lock(handle)) {
-        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
-            case SCALAR_INT:
-                value = POOL_ITEM(handle).m_value.as_int;
-                break;
-            case SCALAR_FLOAT:
-                value = (intptr_t) POOL_ITEM(handle).m_value.as_float;
-                break;
-            case SCALAR_STRING:
-                value = POOL_ITEM(handle).m_value.as_string != NULL ? strtol(POOL_ITEM(handle).m_value.as_string, NULL, 0) : 0;
-                break;
-            case SCALAR_UNDEF:
-                value = 0;
-                break;
-            default:
-                debug("unexpected type value %"PRIu32"\n", POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK);
-                value = 0;
-                break;
-        }
+        value = anon_scalar_get_int_value((anon_scalar_t *) &POOL_ITEM(handle));
         _scalar_unlock(handle);
     }
     
@@ -324,24 +304,7 @@ floatptr_t scalar_get_float_value(scalar_handle_t handle) {
     floatptr_t value;
     
     if (0 == _scalar_lock(handle)) {
-        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
-            case SCALAR_INT:
-                value = (floatptr_t) POOL_ITEM(handle).m_value.as_int;
-                break;
-            case SCALAR_FLOAT:
-                value = POOL_ITEM(handle).m_value.as_float;
-                break;
-            case SCALAR_STRING:
-                value = POOL_ITEM(handle).m_value.as_string != NULL ? strtof(POOL_ITEM(handle).m_value.as_string, NULL) : 0.0f;
-                break;
-            case SCALAR_UNDEF:
-                value = 0;
-                break;
-            default:
-                debug("unexpected type value %"PRIu32"\n", POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK);
-                value = 0;
-                break;
-        }
+        value = anon_scalar_get_float_value((anon_scalar_t *) &POOL_ITEM(handle));
         _scalar_unlock(handle);
     }
     
@@ -352,29 +315,8 @@ void scalar_get_string_value(scalar_handle_t handle, char **result) {
     assert(handle != 0);
     assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
 
-    char numeric[100];
-    
     if (0 == _scalar_lock(handle)) {
-        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
-            case SCALAR_INT:
-                snprintf(numeric, sizeof(numeric), "%"PRIiPTR"", POOL_ITEM(handle).m_value.as_int);
-                *result = strdup(numeric);
-                break;
-            case SCALAR_FLOAT:
-                snprintf(numeric, sizeof(numeric), "%f", POOL_ITEM(handle).m_value.as_float);
-                *result = strdup(numeric);
-                break;
-            case SCALAR_STRING:
-                *result = strdup(POOL_ITEM(handle).m_value.as_string);
-                break;
-            case SCALAR_UNDEF:
-                *result = strdup("");
-                break;
-            default:
-                debug("unexpected type value %"PRIu32"\n", POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK);
-                *result = strdup("");
-                break;
-        }
+        anon_scalar_get_string_value((anon_scalar_t *) &POOL_ITEM(handle), result);
         _scalar_unlock(handle);
     }
 }
@@ -401,7 +343,7 @@ void scalar_get_value(scalar_handle_t handle, anon_scalar_t *result) {
     }
 }
 
-// anon scalar functions
+
 void anon_scalar_init(anon_scalar_t *self) {
     assert(self != NULL);
     self->m_flags = SCALAR_UNDEF;
