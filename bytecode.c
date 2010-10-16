@@ -434,3 +434,43 @@ int inst_STRLIT(struct vm_context_t *context) {
     
     return 1 + sizeof(len) + len;
 }
+
+/*
+=item STRCAT ( a b -- ab )
+
+Pops two strings from the stack, and pushes back their concatenation.
+ 
+=cut
+ */
+int inst_STRCAT(struct vm_context_t *context) {
+    anon_scalar_t a, b, c;
+    char *str_a, *str_b, *str_c;
+
+    anon_scalar_init(&a);
+    anon_scalar_init(&b);
+    anon_scalar_init(&c);
+
+    vm_ds_pop(context, &b);
+    vm_ds_pop(context, &a);
+    
+    anon_scalar_get_string_value(&a, &str_a);
+    anon_scalar_get_string_value(&b, &str_b);
+    
+    str_c = calloc(1 + strlen(str_a) + strlen(str_b), sizeof(*str_c));
+    assert(str_c != NULL);
+    strcpy(str_c, str_a);
+    strcat(str_c, str_b);
+    free(str_a);
+    free(str_b);
+    
+    anon_scalar_set_string_value(&c, str_c);
+    free(str_c);
+    
+    vm_ds_push(context, &c);
+    
+    anon_scalar_destroy(&c);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    
+    return 1;
+}
