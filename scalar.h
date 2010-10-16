@@ -112,7 +112,7 @@ void scalar_pool_increase_refcount(scalar_handle_t);
 /*
 =item scalar_set_undef(handle)
 
-Resets pooled scalar back to "undefined" state
+Sets pooled scalar's value back to undefined, without altering unrelated flags.
 
 =cut
  */
