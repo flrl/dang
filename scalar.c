@@ -69,7 +69,7 @@ void _scalar_pool_add_to_free_list(scalar_handle_t handle) {
     scalar_handle_t prev = handle;
     
     if (0 == pthread_mutex_lock(&g_scalar_pool.m_free_list_mutex)) {
-        for ( ; prev > 0 && SCALAR_UNALLOC != (POOL_ITEM(prev).m_flags & SCALAR_TYPE_MASK); --prev) ;
+        for ( ; prev > 0 && !(POOL_ITEM(prev).m_flags & SCALAR_FLAG_INUSE); --prev) ;
         
         if (prev > 0) {
             POOL_ITEM(handle).m_value.next_free = POOL_ITEM(prev).m_value.next_free;
@@ -80,7 +80,7 @@ void _scalar_pool_add_to_free_list(scalar_handle_t handle) {
             g_scalar_pool.m_free_list_head = handle;
         }
         
-        POOL_ITEM(handle).m_flags = SCALAR_UNALLOC;
+        POOL_ITEM(handle).m_flags = 0;
         g_scalar_pool.m_free_count++;
         
         pthread_mutex_unlock(&g_scalar_pool.m_free_list_mutex);
@@ -126,7 +126,7 @@ int scalar_pool_destroy(void) {
 void scalar_pool_increase_refcount(scalar_handle_t handle) {
     assert(handle != 0);
     assert(handle <= g_scalar_pool.m_allocated_count);
-    assert(SCALAR_UNALLOC != (POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK));
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     assert(POOL_ITEM(handle).m_references > 0);
 
     const uint32_t shared = POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED;
@@ -178,7 +178,7 @@ scalar_handle_t scalar_pool_allocate_scalar(uint32_t flags) {
             pthread_mutex_unlock(&g_scalar_pool.m_free_list_mutex);
         }
         
-        POOL_ITEM(handle).m_flags = SCALAR_UNDEF;
+        POOL_ITEM(handle).m_flags = SCALAR_FLAG_INUSE | SCALAR_UNDEF;
         POOL_ITEM(handle).m_value.as_int = 0;
 
         if ((flags & SCALAR_FLAG_SHARED)) {
@@ -199,6 +199,7 @@ scalar_handle_t scalar_pool_allocate_scalar(uint32_t flags) {
 void scalar_pool_release_scalar(scalar_handle_t handle) {
     assert(handle != 0);
     assert(handle <= g_scalar_pool.m_allocated_count);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     assert(POOL_ITEM(handle).m_references > 0);
     
     if (0 == _scalar_lock(handle)) {
@@ -219,6 +220,8 @@ void scalar_pool_release_scalar(scalar_handle_t handle) {
 
 
 void scalar_reset(scalar_handle_t handle) {
+    assert(handle != 0);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     if (0 == _scalar_lock(handle)) {
         _scalar_reset_unlocked(handle);
         _scalar_unlock(handle);
@@ -227,6 +230,7 @@ void scalar_reset(scalar_handle_t handle) {
 
 void scalar_set_int_value(scalar_handle_t handle, intptr_t ival) {
     assert(handle != 0);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     
     if (0 == _scalar_lock(handle)) {
         _scalar_reset_unlocked(handle);
@@ -239,6 +243,7 @@ void scalar_set_int_value(scalar_handle_t handle, intptr_t ival) {
 
 void scalar_set_float_value(scalar_handle_t handle, floatptr_t fval) {
     assert(handle != 0);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     
     if (0 == _scalar_lock(handle)) {
         _scalar_reset_unlocked(handle);
@@ -251,6 +256,7 @@ void scalar_set_float_value(scalar_handle_t handle, floatptr_t fval) {
 
 void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
     assert(handle != 0);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     assert(sval != NULL);
     
     if (0 == _scalar_lock(handle)) {
@@ -264,6 +270,7 @@ void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
 
 void scalar_set_value(scalar_handle_t handle, const anon_scalar_t *val) {
     assert(handle != 0);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     assert(val != NULL);
     
     if (0 == _scalar_lock(handle)) {
@@ -279,14 +286,15 @@ void scalar_set_value(scalar_handle_t handle, const anon_scalar_t *val) {
                 POOL_ITEM(handle).m_flags |= val->m_flags & SCALAR_TYPE_MASK;
                 break;
         }
-        _scalar_lock(handle);
+        _scalar_unlock(handle);
     }
 }
 
 
 intptr_t scalar_get_int_value(scalar_handle_t handle) {
     assert(handle != 0);
-    
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
+
     intptr_t value;
     
     if (0 == _scalar_lock(handle)) {
@@ -316,6 +324,7 @@ intptr_t scalar_get_int_value(scalar_handle_t handle) {
 
 floatptr_t scalar_get_float_value(scalar_handle_t handle) {
     assert(handle != 0);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
 
     floatptr_t value;
     
@@ -346,6 +355,7 @@ floatptr_t scalar_get_float_value(scalar_handle_t handle) {
 
 void scalar_get_string_value(scalar_handle_t handle, char **result) {
     assert(handle != 0);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
 
     char numeric[100];
     
@@ -376,6 +386,7 @@ void scalar_get_string_value(scalar_handle_t handle, char **result) {
 
 void scalar_get_value(scalar_handle_t handle, anon_scalar_t *result) {
     assert(handle != 0);
+    assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     assert(result != NULL);
     
     if ((result->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(result);
@@ -510,7 +521,7 @@ floatptr_t anon_scalar_get_float_value(const anon_scalar_t *self) {
             value = self->m_value.as_float;
             break;
         case SCALAR_STRING:
-            value = self->m_value.as_string != NULL ? strtof(self->m_value.as_string, NULL) : 0.0f;
+            value = self->m_value.as_string != NULL ? strtof(self->m_value.as_string, NULL) : 0.0;
             break;
         case SCALAR_UNDEF:
             value = 0;

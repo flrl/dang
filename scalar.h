@@ -17,21 +17,35 @@
 
 #include "floatptr_t.h"
 
-#define SCALAR_UNALLOC      0x00u
+#define SCALAR_UNDEF        0x00u
 #define SCALAR_INT          0x01u
 #define SCALAR_FLOAT        0x02u
 #define SCALAR_STRING       0x03u
+#define SCALAR_FILEHANDLE   0x04u
+#define SCALAR_CHANNEL      0x05u
 // ...
-#define SCALAR_SCAREF       0x81u
-#define SCALAR_ARRREF       0x82u
-#define SCALAR_HASHREF      0x83u
+#define SCALAR_SCAREF       0x11u
+#define SCALAR_ARRREF       0x12u
+#define SCALAR_HASHREF      0x13u
 
-#define SCALAR_UNDEF        0xFFu
-#define SCALAR_TYPE_MASK    0xFFu
+#define SCALAR_TYPE_MASK    0x1Fu
 
-#define SCALAR_FLAG_REF     0x80u
-#define SCALAR_FLAG_PTR     0x40000000u
-#define SCALAR_FLAG_SHARED  0x80000000u
+#define SCALAR_FLAG_REF     0x00000010u
+// ...
+#define SCALAR_FLAG_PTR     0x20000000u
+#define SCALAR_FLAG_SHARED  0x40000000u
+#define SCALAR_FLAG_INUSE   0x80000000u
+
+#define SCALAR_VALID_FLAGS  0xE000001Fu /* keep this up to date */
+
+/*
+ 1100 0000  0000 0000  0000 0000  0001 1111
+ |||                                 | ''''-- basic types
+ |||                                 '------- value is a reference
+ ||'----------------------------------------- value is a malloc'd pointer, make sure to free it
+ |'------------------------------------------ scalar is shared, lock the mutex
+ '------------------------------------------- scalar is in use
+ */
 
 #define SCALAR_GUTS             \
     uint32_t m_flags;           \
