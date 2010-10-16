@@ -37,6 +37,12 @@ typedef enum instruction_t {
     i_INTMOD,
     i_STRLIT,
     i_STRCAT,
+    i_FLTLIT,
+    i_FLTADD,
+    i_FLTSUBT,
+    i_FLTMULT,
+    i_FLTDIV,
+    i_FLTMOD,
 /*-- INSTRUCTIONS END --*/
     i_SRLOAD,
     i_SRSTORE,
