@@ -24,6 +24,22 @@
 
 #define NEXT_BYTE(x) (const uint8_t*)(&(x)->m_bytecode[(x)->m_counter + 1])
 
+#define BYTECODE_NUMERIC_OP(type, op) do {                                          \
+    anon_scalar_t a, b, c;                                                          \
+    anon_scalar_init(&a);                                                           \
+    anon_scalar_init(&b);                                                           \
+    anon_scalar_init(&c);                                                           \
+    vm_ds_pop(context, &b);                                                         \
+    vm_ds_pop(context, &b);                                                         \
+    anon_scalar_set_##type##_value(&c,                                              \
+        anon_scalar_get_##type##_value(&a) op anon_scalar_get_##type##_value(&b));  \
+    vm_ds_push(context, &c);                                                        \
+    anon_scalar_destroy(&c);                                                        \
+    anon_scalar_destroy(&b);                                                        \
+    anon_scalar_destroy(&a);                                                        \
+} while (0)
+
+
 /*
 =item END
  
@@ -295,19 +311,7 @@ Pops two values from the data stack, and pushes back their integer sum.
 =cut
  */
 int inst_INTADD(vm_context_t *context) {
-    anon_scalar_t a, b;
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-
-    anon_scalar_t c;
-    anon_scalar_init(&c);
-    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) + anon_scalar_get_int_value(&b));
-    vm_ds_push(context, &c);
-
-    debug("%ld + %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
-    anon_scalar_destroy(&a);
-    anon_scalar_destroy(&b);
-    anon_scalar_destroy(&c);
+    BYTECODE_NUMERIC_OP(int, +);
     return 1;
 }
 
@@ -319,17 +323,7 @@ Pops two values from the data stack, and pushes back their integer difference.
 =cut
  */
 int inst_INTSUBT(vm_context_t *context) {
-    anon_scalar_t a, b;
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-    
-    anon_scalar_t c;
-    anon_scalar_init(&c);
-    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) - anon_scalar_get_int_value(&b));
-    vm_ds_push(context, &c);
-
-    debug("%ld - %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
-    anon_scalar_destroy(&c);
+    BYTECODE_NUMERIC_OP(int, -);
     return 1;
 }
 
@@ -341,17 +335,7 @@ Pops two values from the data stack, and pushes back their integer product.
 =cut
  */
 int inst_INTMULT(vm_context_t *context) {
-    anon_scalar_t a, b;
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-
-    anon_scalar_t c;
-    anon_scalar_init(&c);
-    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) * anon_scalar_get_int_value(&b));
-    vm_ds_push(context, &c);
-    
-    debug("%ld * %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
-    anon_scalar_destroy(&c);    
+    BYTECODE_NUMERIC_OP(int, *);
     return 1;
 }
 
@@ -363,17 +347,7 @@ Pops two values from the data stack, and pushes back their integer quotient.
 =cut
  */
 int inst_INTDIV(vm_context_t *context) {
-    anon_scalar_t a, b;
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-    
-    anon_scalar_t c;
-    anon_scalar_init(&c);
-    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) / anon_scalar_get_int_value(&b));
-    vm_ds_push(context, &c);
-    
-    debug("%ld / %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
-    anon_scalar_destroy(&c);    
+    BYTECODE_NUMERIC_OP(int, /);
     return 1;
 }
 
@@ -385,17 +359,7 @@ Pops two values from the data stack, and pushes back their integer remainder.
 =cut
  */
 int inst_INTMOD(vm_context_t *context) {
-    anon_scalar_t a, b;
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-    
-    anon_scalar_t c;
-    anon_scalar_init(&c);
-    anon_scalar_set_int_value(&c, anon_scalar_get_int_value(&a) % anon_scalar_get_int_value(&b));
-    vm_ds_push(context, &c);
-    
-    debug("%ld %% %ld = %ld\n", anon_scalar_get_int_value(&a), anon_scalar_get_int_value(&b), anon_scalar_get_int_value(&c));
-    anon_scalar_destroy(&c);
+    BYTECODE_NUMERIC_OP(int, %);
     return 1;
 }
 
@@ -503,21 +467,7 @@ Pops two floating point values from the data stack and pushes back their sum
 =cut
  */
 int inst_FLTADD(struct vm_context_t *context) {
-    anon_scalar_t a, b, c;
-    
-    anon_scalar_init(&a);
-    anon_scalar_init(&b);
-    anon_scalar_init(&c);
-    
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-    anon_scalar_set_float_value(&c, anon_scalar_get_float_value(&a) + anon_scalar_get_float_value(&b));
-    vm_ds_push(context, &c);
-    
-    anon_scalar_destroy(&c);
-    anon_scalar_destroy(&b);
-    anon_scalar_destroy(&a);
-    
+    BYTECODE_NUMERIC_OP(float, +);
     return 1;
 }
 
@@ -529,21 +479,7 @@ Pops two floating point values from the data stack and pushes back their differe
 =cut
  */
 int inst_FLTSUBT(struct vm_context_t *context) {
-    anon_scalar_t a, b, c;
-    
-    anon_scalar_init(&a);
-    anon_scalar_init(&b);
-    anon_scalar_init(&c);
-    
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-    anon_scalar_set_float_value(&c, anon_scalar_get_float_value(&a) - anon_scalar_get_float_value(&b));
-    vm_ds_push(context, &c);
-    
-    anon_scalar_destroy(&c);
-    anon_scalar_destroy(&b);
-    anon_scalar_destroy(&a);
-    
+    BYTECODE_NUMERIC_OP(float, -);
     return 1;    
 }
 
@@ -555,21 +491,7 @@ Pops two floating point values from the data stack and pushes back their product
 =cut
  */
 int inst_FLTMULT(struct vm_context_t *context) {
-    anon_scalar_t a, b, c;
-    
-    anon_scalar_init(&a);
-    anon_scalar_init(&b);
-    anon_scalar_init(&c);
-    
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-    anon_scalar_set_float_value(&c, anon_scalar_get_float_value(&a) * anon_scalar_get_float_value(&b));
-    vm_ds_push(context, &c);
-    
-    anon_scalar_destroy(&c);
-    anon_scalar_destroy(&b);
-    anon_scalar_destroy(&a);
-    
+    BYTECODE_NUMERIC_OP(float, *);
     return 1;    
 }
 
@@ -581,21 +503,7 @@ Pops two floating point values from the data stack and pushes back their quotien
 =cut
  */
 int inst_FLTDIV(struct vm_context_t *context) {
-    anon_scalar_t a, b, c;
-    
-    anon_scalar_init(&a);
-    anon_scalar_init(&b);
-    anon_scalar_init(&c);
-    
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-    anon_scalar_set_float_value(&c, anon_scalar_get_float_value(&a) / anon_scalar_get_float_value(&b));
-    vm_ds_push(context, &c);
-    
-    anon_scalar_destroy(&c);
-    anon_scalar_destroy(&b);
-    anon_scalar_destroy(&a);
-    
+    BYTECODE_NUMERIC_OP(float, /);
     return 1;    
 }
 
