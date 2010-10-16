@@ -254,7 +254,7 @@ int vm_symboltable_destroy(vm_symboltable_t *self) {
     }
     
     if (self->m_symbols != NULL) {
-        vm_symbol_destroy(self->m_symbols);
+        vm_symbol_reap(self->m_symbols);
         free(self->m_symbols);
     }
     
@@ -270,18 +270,22 @@ int vm_symbol_init(vm_symbol_t *self) {
 
 int vm_symbol_destroy(vm_symbol_t *self) {
     assert(self != NULL);
+    scalar_pool_release_scalar(self->m_referent.as_scalar);  // FIXME handle different types of symbol table entry
+    memset(self, 0, sizeof(*self));
+    return 0;
+}
+
+int vm_symbol_reap(vm_symbol_t *self) {
+    assert(self != NULL);
     if (self->m_left_child != NULL) {
-        vm_symbol_destroy(self->m_left_child);
+        vm_symbol_reap(self->m_left_child);
         free(self->m_left_child);
     }
     if (self->m_right_child != NULL) {
-        vm_symbol_destroy(self->m_right_child);
+        vm_symbol_reap(self->m_right_child);
         free(self->m_right_child);
     }
-    
-    scalar_pool_release_scalar(self->m_referent.as_scalar);  // FIXME handle different types of symbol table entry
-    
-    return 0;
+    return vm_symbol_destroy(self);
 }
 
 int vm_symbol_define(vm_context_t *context, identifier_t identifier, uint32_t flags) {
@@ -302,6 +306,7 @@ int vm_symbol_define(vm_context_t *context, identifier_t identifier, uint32_t fl
             if (identifier < parent->m_identifier) {
                 if (parent->m_left_child == NULL) {
                     parent->m_left_child = symbol;
+                    symbol->m_parent = parent;
                     return 0;
                 }
                 else {
@@ -311,6 +316,7 @@ int vm_symbol_define(vm_context_t *context, identifier_t identifier, uint32_t fl
             else if (identifier > parent->m_identifier) {
                 if (parent->m_right_child == NULL) {
                     parent->m_right_child = symbol;
+                    symbol->m_parent = parent;
                     return 0;
                 }
                 else {
@@ -351,6 +357,103 @@ const vm_symbol_t *vm_symbol_lookup(vm_context_t *context, identifier_t identifi
     return NULL;
 }
 
+
+int vm_symbol_undefine(vm_context_t *context, identifier_t identifier) {
+    assert(context != NULL);
+    
+    vm_symbol_t *symbol = (vm_symbol_t *) vm_symbol_lookup(context, identifier);
+    if (symbol == NULL)  return 0;
+    
+    if (symbol->m_left_child != NULL) {
+        if (symbol->m_right_child != NULL) {
+            // FIXME two child nodes - tricky bit goes here
+            vm_symbol_t *replacement = symbol;
+            vm_symbol_t *join;
+            if (rand() & 0x4000) {
+                // reconnect from left
+                replacement = symbol->m_left_child;
+                while (replacement != NULL && replacement->m_right_child != NULL)  replacement = replacement->m_right_child;
+                join = replacement->m_parent;
+                join->m_right_child = replacement->m_left_child;
+                join->m_right_child->m_parent = join;
+
+            }
+            else {
+                // reconnect from right
+                replacement = symbol->m_right_child;
+                while (replacement != NULL && replacement->m_left_child != NULL)  replacement = replacement->m_left_child;
+                join = replacement->m_parent;
+                join->m_left_child = replacement->m_right_child;
+                join->m_left_child->m_parent = join;
+            }
+            
+            replacement->m_left_child = symbol->m_left_child;
+            if (replacement->m_left_child != NULL)  replacement->m_left_child->m_parent = replacement;
+            replacement->m_right_child = symbol->m_right_child;
+            if (replacement->m_right_child != NULL)  replacement->m_right_child->m_parent = replacement;
+
+            replacement->m_parent = symbol->m_parent;
+            if (replacement->m_parent == NULL) {
+                context->m_symboltable->m_symbols = replacement;   
+            }
+            else if (replacement->m_parent->m_left_child == symbol) {
+                replacement->m_parent->m_left_child = replacement;
+            }
+            else if (replacement->m_parent->m_right_child == symbol) {
+                replacement->m_parent->m_right_child = replacement;
+            }
+            else {
+                debug("symbol's parent doesn't claim it as a child\n");
+            }
+            
+            vm_symbol_destroy(symbol);
+            free(symbol);
+            return 0;                
+        }
+        else {
+            if (symbol->m_parent->m_left_child == symbol) {
+                symbol->m_parent->m_left_child = symbol->m_left_child;
+            }
+            else if (symbol->m_parent->m_right_child == symbol) {
+                symbol->m_parent->m_right_child = symbol->m_left_child;
+            }
+            else {
+                debug("symbol's parent doesn't claim it as a child\n");
+            }
+            vm_symbol_destroy(symbol);
+            free(symbol);
+            return 0;
+        }
+    }
+    else if (symbol->m_right_child != NULL) {
+        if (symbol->m_parent->m_left_child == symbol) {
+            symbol->m_parent->m_left_child = symbol->m_right_child;
+        }
+        else if (symbol->m_parent->m_right_child == symbol) {
+            symbol->m_parent->m_right_child = symbol->m_right_child;
+        }
+        else {
+            debug("symbol's parent doesn't claim it as a child\n");
+        }
+        vm_symbol_destroy(symbol);
+        free(symbol);
+        return 0;
+    }
+    else {
+        if (symbol->m_parent->m_left_child == symbol) {
+            symbol->m_parent->m_left_child = NULL;
+        }
+        else if (symbol->m_parent->m_right_child == symbol) {
+            symbol->m_parent->m_right_child = NULL;
+        }
+        else {
+            debug("symbol's parent doesn't claim it as a child\n");
+        }
+        vm_symbol_destroy(symbol);
+        free(symbol);
+        return 0;
+    }
+}
 
 int vm_symboltable_registry_reap(void) {
     if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {

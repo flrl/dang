@@ -138,9 +138,19 @@ int vm_symbol_init(vm_symbol_t *);
 int vm_symbol_destroy(vm_symbol_t *);
 
 /*
+=item vm_symbol_reap(symbol)
+ 
+Recursively destroy a vm_symbol_t object and any child nodes
+=cut
+ */
+int vm_symbol_reap(vm_symbol_t *);
+
+/*
 =item vm_symbol_define()
  
 =item vm_symbol_lookup()
+ 
+=item vm_symbol_undefine()
 
 Functions for working with a context's symbols
 
@@ -148,6 +158,8 @@ Functions for working with a context's symbols
  */
 int vm_symbol_define(vm_context_t *, identifier_t, uint32_t);
 const vm_symbol_t *vm_symbol_lookup(vm_context_t *, identifier_t);
+int vm_symbol_undefine(vm_context_t *, identifier_t);
+
 
 /*
 =item vm_symboltable_registry_reap()
