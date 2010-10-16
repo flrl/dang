@@ -129,15 +129,10 @@ void scalar_pool_increase_refcount(scalar_handle_t handle) {
     assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
     assert(POOL_ITEM(handle).m_references > 0);
 
-    const uint32_t shared = POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED;
-    if (shared) {
-        assert(POOL_ITEM(handle).m_mutex != NULL);
-        pthread_mutex_lock(POOL_ITEM(handle).m_mutex);
+    if (0 == _scalar_lock(handle)) {
+        ++POOL_ITEM(handle).m_references;
+        _scalar_unlock(handle);
     }
-
-    ++POOL_ITEM(handle).m_references;
-
-    if (shared)  pthread_mutex_unlock(POOL_ITEM(handle).m_mutex);
 }
 
 scalar_handle_t scalar_pool_allocate_scalar(uint32_t flags) {
