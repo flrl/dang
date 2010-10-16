@@ -304,6 +304,8 @@ int vm_symbol_define(vm_context_t *context, identifier_t identifier, uint32_t fl
     symbol->m_identifier = identifier;
     symbol->m_flags = flags;  // FIXME validate this
     symbol->m_referent.as_scalar = scalar_pool_allocate_scalar(flags);
+    // FIXME need two sets of flags here: one set for the symbol (to say whether it's a scalar, array, etc), and one set
+    // FIXME for the thing being defined (to say whether it's shared, etc)
     
     if (context->m_symboltable->m_symbols == NULL) {
         context->m_symboltable->m_symbols = symbol;
