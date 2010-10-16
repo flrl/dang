@@ -8,11 +8,13 @@
  */
 
 #include <assert.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
 
 #include "bytecode.h"
+#include "debug.h"
 #include "vm.h"
 
 typedef struct vm_symboltable_registry_node_t {
@@ -281,6 +283,74 @@ int vm_symbol_destroy(vm_symbol_t *self) {
     
     return 0;
 }
+
+int vm_symbol_define(vm_context_t *context, identifier_t identifier, uint32_t flags) {
+    assert(context != NULL);
+    vm_symbol_t *symbol = calloc(1, sizeof(*symbol));
+    vm_symbol_init(symbol);
+    symbol->m_identifier = identifier;
+    symbol->m_flags = flags;  // FIXME validate this
+    symbol->m_referent.as_scalar = scalar_pool_allocate_scalar(flags);
+    
+    if (context->m_symboltable->m_symbols == NULL) {
+        context->m_symboltable->m_symbols = symbol;
+        return 0;
+    }
+    else {
+        vm_symbol_t *parent = context->m_symboltable->m_symbols;
+        do {
+            if (identifier < parent->m_identifier) {
+                if (parent->m_left_child == NULL) {
+                    parent->m_left_child = symbol;
+                    return 0;
+                }
+                else {
+                    parent = parent->m_left_child;
+                }
+            }
+            else if (identifier > parent->m_identifier) {
+                if (parent->m_right_child == NULL) {
+                    parent->m_right_child = symbol;
+                    return 0;
+                }
+                else {
+                    parent = parent->m_right_child;
+                }
+            }
+            else {
+                debug("identifier %"PRIuPTR" is already defined in current scope\n", identifier);
+                vm_symbol_destroy(symbol);
+                free(symbol);
+                return -1;
+            }
+        } while (parent != NULL);
+        
+        debug("not supposed to get here\n");
+        return -1;
+    }
+}
+
+const vm_symbol_t *vm_symbol_lookup(vm_context_t *context, identifier_t identifier) {
+    assert(context != NULL);
+    vm_symboltable_t *scope = context->m_symboltable;
+    while (scope != NULL) {
+        vm_symbol_t *symbol = scope->m_symbols;
+        while (symbol != NULL) {
+            if (identifier < symbol->m_identifier) {
+                symbol = symbol->m_left_child;
+            }
+            else if (identifier >  symbol->m_identifier) {
+                symbol = symbol->m_right_child;
+            }
+            else {
+                return symbol;
+            }
+        }
+        scope = scope->m_parent;
+    }
+    return NULL;
+}
+
 
 int vm_symboltable_registry_reap(void) {
     if (0 == pthread_mutex_lock(&_vm_symboltable_registry_mutex)) {

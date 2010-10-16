@@ -18,8 +18,8 @@ typedef struct vm_symbol_t {
     struct vm_symbol_t *m_parent;
     struct vm_symbol_t *m_left_child;
     struct vm_symbol_t *m_right_child;
-    uint32_t m_flags;
     identifier_t m_identifier;
+    uint32_t m_flags;
     union {
         scalar_handle_t as_scalar;
     } m_referent;
@@ -136,6 +136,18 @@ Setup and teardown functions for vm_symbol_t objects
  */
 int vm_symbol_init(vm_symbol_t *);
 int vm_symbol_destroy(vm_symbol_t *);
+
+/*
+=item vm_symbol_define()
+ 
+=item vm_symbol_lookup()
+
+Functions for working with a context's symbols
+
+=cut
+ */
+int vm_symbol_define(vm_context_t *, identifier_t, uint32_t);
+const vm_symbol_t *vm_symbol_lookup(vm_context_t *, identifier_t);
 
 /*
 =item vm_symboltable_registry_reap()
