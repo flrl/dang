@@ -96,11 +96,11 @@ floatptr_t scalar_get_float_value(scalar_handle_t);
 void scalar_get_string_value(scalar_handle_t, char **);
 void scalar_get_value(scalar_handle_t, anon_scalar_t *);
 
-void anon_scalar_init(anon_scalar_t *);
-void anon_scalar_destroy(anon_scalar_t *);
+int anon_scalar_init(anon_scalar_t *);
+int anon_scalar_destroy(anon_scalar_t *);
 
-void anon_scalar_clone(anon_scalar_t * restrict, const anon_scalar_t * restrict);
-void anon_scalar_assign(anon_scalar_t * restrict, const anon_scalar_t * restrict);
+int anon_scalar_clone(anon_scalar_t * restrict, const anon_scalar_t * restrict);
+int anon_scalar_assign(anon_scalar_t * restrict, const anon_scalar_t * restrict);
 
 void anon_scalar_set_int_value(anon_scalar_t *, intptr_t);
 void anon_scalar_set_float_value(anon_scalar_t *, floatptr_t);

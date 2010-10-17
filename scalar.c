@@ -376,13 +376,14 @@ Setup and teardown functions for anon_scalar_t objects
 
 =cut
 */
-void anon_scalar_init(anon_scalar_t *self) {
+int anon_scalar_init(anon_scalar_t *self) {
     assert(self != NULL);
     self->m_flags = SCALAR_UNDEF;
     self->m_value.as_int = 0;
+    return 0;
 }
 
-void anon_scalar_destroy(anon_scalar_t *self) {
+int anon_scalar_destroy(anon_scalar_t *self) {
     assert(self != NULL);
     if (self->m_flags & SCALAR_FLAG_PTR) {
         switch (self->m_flags & SCALAR_TYPE_MASK) {
@@ -397,6 +398,7 @@ void anon_scalar_destroy(anon_scalar_t *self) {
     // FIXME other cleanup stuff
     self->m_flags = SCALAR_UNDEF;
     self->m_value.as_int = 0;
+    return 0;
 }
 
 /*
@@ -406,11 +408,11 @@ Deep-copy clone of an anon_scalar_t object.  The resulting clone needs to be des
 
 =cut
 */
-void anon_scalar_clone(anon_scalar_t * restrict self, const anon_scalar_t * restrict other) {
+int anon_scalar_clone(anon_scalar_t * restrict self, const anon_scalar_t * restrict other) {
     assert(self != NULL);
     assert(other != NULL);
     
-    if (self == other)  return;
+    if (self == other)  return 0;
     
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
@@ -423,6 +425,7 @@ void anon_scalar_clone(anon_scalar_t * restrict self, const anon_scalar_t * rest
         default:
             memcpy(self, other, sizeof(*self));
     }
+    return 0;
 }
 
 /*
@@ -432,15 +435,16 @@ Shallow-copy of an anon_scalar_t object.  Only one of dest and original should b
 
 =cut
 */
-void anon_scalar_assign(anon_scalar_t * restrict self, const anon_scalar_t * restrict other) {
+int anon_scalar_assign(anon_scalar_t * restrict self, const anon_scalar_t * restrict other) {
     assert(self != NULL);
     assert(other != NULL);
     
-    if (self == other)  return;
+    if (self == other)  return 0;
     
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
     memcpy(self, other, sizeof(anon_scalar_t));
+    return 0;
 }
 
 /*
