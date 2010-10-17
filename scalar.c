@@ -15,7 +15,7 @@
 #include "debug.h"
 #include "scalar.h"
 
-#define POOL_ITEM(x)        g_scalar_pool.m_items[(x) - 1]
+#define POOL_ITEM(handle)        g_scalar_pool.m_items[(handle) - 1]
 
 const size_t _scalar_pool_initial_size = 1024;   // FIXME arbitrary number
 const size_t _scalar_pool_grow_size = 1024;      // FIXME arbitrary number
