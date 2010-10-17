@@ -1,4 +1,11 @@
 #!/usr/bin/env perl
+#
+# make_instruction_table.pl
+# dang
+# 
+# Created by Ellie on 15/10/10.
+# Copyright 2010 Ellie. All rights reserved.
+#
 
 use warnings;
 use strict;
