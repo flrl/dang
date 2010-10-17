@@ -23,6 +23,6 @@ int main(int argc, char **argv) {
     return 0;
 }
 END
-test 0 -eq $? && 
+test 0 -eq "$?" && 
 ./$NOW-make_floatptr_h.out > floatptr_t.h &&
 rm ./$NOW-make_floatptr_h.out
