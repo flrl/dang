@@ -45,7 +45,6 @@
  functions required by the inline stack functions, suitable for use with primitive
  types.
  */
-
 #define STACK_basic_init(x)         (0)
 #define STACK_basic_dest(x)         (0)
 #define STACK_basic_clone(x, y)     ((*(x) = *(y)), 0)
