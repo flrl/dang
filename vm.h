@@ -44,135 +44,33 @@ typedef struct vm_context_t {
     vm_symboltable_t *m_symboltable;
 } vm_context_t;
 
-/*
-=head1 vm.h
-
-=over 
- 
-=item vm_execute(context)
- 
-Executes the given context
- 
-=cut
- */
 void *vm_execute(void *);
-//int vm_execute(const uint8_t *, size_t, size_t, data_stack_t *);
 
-
-/* 
-=item vm_context_init(context)
-
-=item vm_context_destroy(context)
-
-Setup and teardown functions for vm_context_t objects
- 
-=cut
- */
-int vm_context_init(vm_context_t *);
-int vm_context_destroy(vm_context_t *);
-
-/*
-=item vm_ds_push(context, val)
-
-=item vm_ds_pop(context, result)
-
-=item vm_ds_top(context, result)
-
-Data stack management functions
-
-=cut
- */
 int vm_ds_push(vm_context_t *, const anon_scalar_t *);
 int vm_ds_pop(vm_context_t *, anon_scalar_t *);
 int vm_ds_top(vm_context_t *, anon_scalar_t *);
 
-/*
-=item vm_rs_push(context, val)
-
-=item vm_rs_pop(context, result)
-
-=item vm_rs_top(context, result)
-
-Return stack management functions
-
-=cut
- */
 int vm_rs_push(vm_context_t *, size_t);
 int vm_rs_pop(vm_context_t *, size_t *);
 int vm_rs_top(vm_context_t *, size_t *);
 
-/*
-=item vm_start_scope(context)
-
-=item vm_end_scope(context)
-
-Scope management functions
-
-=cut
- */
 int vm_start_scope(vm_context_t *);
 int vm_end_scope(vm_context_t *);
 
-/*
-=item vm_symboltable_init(symboltable) 
+int vm_context_init(vm_context_t *);
+int vm_context_destroy(vm_context_t *);
 
-=item vm_symboltable_destroy(symboltable)
-
-Setup and teardown functions for vm_symboltable_t objects
-
-=cut
- */
 int vm_symboltable_init(vm_symboltable_t *restrict, vm_symboltable_t *restrict);
 int vm_symboltable_destroy(vm_symboltable_t *);
+int vm_symboltable_garbage_collect(void);
 
-/*
-=item vm_symbol_init(symbol)
-
-=item vm_symbol_destroy(symbol)
-
-Setup and teardown functions for vm_symbol_t objects
-
-=cut
- */
 int vm_symbol_init(vm_symbol_t *);
 int vm_symbol_destroy(vm_symbol_t *);
-
-/*
-=item vm_symbol_reap(symbol)
- 
-Recursively destroy a vm_symbol_t object and any child nodes
-=cut
- */
 int vm_symbol_reap(vm_symbol_t *);
 
-/*
-=item vm_symbol_define()
- 
-=item vm_symbol_lookup()
- 
-=item vm_symbol_undefine()
-
-Functions for working with a context's symbols
-
-=cut
- */
 int vm_symbol_define(vm_context_t *, identifier_t, uint32_t);
 const vm_symbol_t *vm_symbol_lookup(vm_context_t *, identifier_t);
 int vm_symbol_undefine(vm_context_t *, identifier_t);
 
 
-/*
-=item vm_symboltable_garbage_collect()
-
-Garbage collects symboltables that are no longer referred from anywhere
-=cut
- */
-int vm_symboltable_garbage_collect(void);
-
-
 #endif
-/*
- =back
- 
- =cut
- */
