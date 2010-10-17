@@ -1,8 +1,13 @@
 
+IMPLEMENTATION NOTES
 
-memory management and things
+arrays and channels
+    - these needs pools and handles like what i've done for scalars
+    - likewise for hashes
+    - does it make sense for a scalar to contain a channel reference?
+    
 
-local variables stored on data stack
+local variables stored on data stack -- no
     - this is re-entrant, since each invocation of the function has its own data stack
     - if scope is based on functions (not arbitrary blocks) then don't need to worry about needing to access a parent scope's 
       locals
