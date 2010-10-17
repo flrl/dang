@@ -70,6 +70,7 @@ static inline int type##_STACK_INIT(struct type##_STACK *stack) {               
     if (stack->m_items != NULL) {                                                       \
         stack->m_allocated_count = STACK_INITIAL_SIZE;                                  \
         stack->m_count = 0;                                                             \
+        return 0;                                                                       \
     }                                                                                   \
     else {                                                                              \
         return -1;                                                                      \
