@@ -14,6 +14,9 @@
 #ifndef STACK_H
 #define STACK_H
 
+#include <assert.h>
+#include <stdlib.h>
+
 /* 
  This macro expands to the struct type for stacks of type "type" 
  */
