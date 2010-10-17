@@ -15,7 +15,11 @@
 
 #include "bytecode.h"
 #include "debug.h"
+#include "stack.h"
 #include "vm.h"
+
+STACK_DEFINITIONS(anon_scalar_t, anon_scalar_init, anon_scalar_destroy, anon_scalar_clone, anon_scalar_assign);
+STACK_DEFINITIONS(size_t, STACK_basic_init, STACK_basic_dest, STACK_basic_clone, STACK_basic_ass);
 
 typedef struct vm_symboltable_registry_node_t {
     struct vm_symboltable_registry_node_t *m_next;
@@ -24,37 +28,6 @@ typedef struct vm_symboltable_registry_node_t {
 
 static vm_symboltable_registry_node_t *_vm_symboltable_registry = NULL;
 static pthread_mutex_t _vm_symboltable_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-static const size_t _vm_context_initial_ds_count = 16;
-static const size_t _vm_context_initial_rs_count = 16;
-
-static inline int _vm_ds_reserve(vm_context_t *context, size_t new_size) {
-    assert(context != NULL);
-    
-    if (context->m_data_stack_alloc_count >= new_size)  return 0;
-
-    anon_scalar_t *tmp = calloc(new_size, sizeof(*tmp));
-    if (tmp == NULL)  return -1;
-    
-    memcpy(tmp, context->m_data_stack, context->m_data_stack_count);
-    free(context->m_data_stack);
-    context->m_data_stack = tmp;
-    return 0;
-}
-
-static inline int _vm_rs_reserve(vm_context_t *context, size_t new_size) {
-    assert(context != NULL);
-    
-    if (context->m_return_stack_alloc_count >= new_size)  return 0;
-    
-    size_t *tmp = calloc(new_size, sizeof(*tmp));
-    if (tmp == NULL)  return -1;
-    
-    memcpy(tmp, context->m_return_stack, context->m_return_stack_count);
-    free(context->m_return_stack);
-    context->m_return_stack = tmp;
-    return 0;
-}
 
 void *vm_execute(void *ptr) {
     vm_context_t *context = ptr;
@@ -85,15 +58,12 @@ int vm_context_init(vm_context_t *self) {
     assert(self != NULL);
     memset(self, 0, sizeof(*self));
 
-    if (NULL != (self->m_data_stack = calloc(_vm_context_initial_ds_count, sizeof(*self->m_data_stack)))) {
-        self->m_data_stack_alloc_count = _vm_context_initial_ds_count;
-        
-        if (NULL != (self->m_return_stack = calloc(_vm_context_initial_rs_count, sizeof(*self->m_return_stack)))) {
-            self->m_return_stack_alloc_count = _vm_context_initial_rs_count;
+    if (0 == STACK_INIT(anon_scalar_t, &self->m_data_stack)) {
+        if (0 == STACK_INIT(size_t, &self->m_return_stack)) {
             return 0;
         }
         else {
-            free(self->m_data_stack);
+            STACK_DESTROY(anon_scalar_t, &self->m_data_stack);
             return -1;
         }
     }
@@ -105,8 +75,8 @@ int vm_context_init(vm_context_t *self) {
 int vm_context_destroy(vm_context_t *self) {
     assert(self != NULL);
         
-    free(self->m_data_stack);
-    free(self->m_return_stack);
+    STACK_DESTROY(anon_scalar_t, &self->m_data_stack);
+    STACK_DESTROY(size_t, &self->m_return_stack);
     
     if (0 == vm_symboltable_destroy(self->m_symboltable)) {
         free(self->m_symboltable);
@@ -120,76 +90,40 @@ int vm_ds_push(vm_context_t *context, const anon_scalar_t *value) {
     assert(context != NULL);
     assert(value != NULL);
     
-    int status = 0;
-    if (context->m_data_stack_count == context->m_data_stack_alloc_count) {
-        status = _vm_ds_reserve(context, context->m_data_stack_alloc_count * 2);
-    }
-
-    if (status == 0) {
-        anon_scalar_clone(&context->m_data_stack[context->m_data_stack_count++], value);
-    }
-    
-    return status;
+    return STACK_PUSH(anon_scalar_t, &context->m_data_stack, value);
 }
 
 int vm_ds_pop(vm_context_t *context, anon_scalar_t *result) {
     assert(context != NULL);
     
-    int status = 0;
-    if (result != NULL) {
-        anon_scalar_assign(result, &context->m_data_stack[--context->m_data_stack_count]);
-    }
-    else {
-        anon_scalar_destroy(&context->m_data_stack[--context->m_data_stack_count]);
-    }
-    
-    return status;
+    return STACK_POP(anon_scalar_t, &context->m_data_stack, result);
 }
 
 int vm_ds_top(vm_context_t *context, anon_scalar_t *result) {
     assert(context != NULL);
     assert(result != NULL);
     
-    anon_scalar_clone(result, &context->m_data_stack[context->m_data_stack_count - 1]);
-    
-    return 0;
+    return STACK_TOP(anon_scalar_t, &context->m_data_stack, result);
 }
 
 
 int vm_rs_push(vm_context_t *context, size_t value) {
     assert(context != NULL);
     
-    int status = 0;
-    if (context->m_return_stack_count == context->m_return_stack_alloc_count) {
-        status = _vm_rs_reserve(context, context->m_return_stack_alloc_count * 2);
-    }
-    
-    if (status == 0) {
-        context->m_return_stack[context->m_return_stack_count++] = value;
-    }
-    
-    return status;
+    return STACK_PUSH(size_t, &context->m_return_stack, &value);
 }
 
 int vm_rs_pop(vm_context_t *context, size_t *result) {
     assert(context != NULL);
     
-    int status = 0;
-    if (result != NULL) {
-        *result = context->m_return_stack[--context->m_return_stack_count];
-    }
-    else {
-        --context->m_return_stack_count;
-    }
-    return status;
+    return STACK_POP(size_t, &context->m_return_stack, result);
 }
 
 int vm_rs_top(vm_context_t *context, size_t *result) {
     assert(context != NULL);
     assert(result != NULL);
     
-    *result = context->m_return_stack[context->m_return_stack_count - 1];
-    return 0;
+    return STACK_TOP(size_t, &context->m_return_stack, result);
 }
 
 int vm_start_scope(vm_context_t *context) {

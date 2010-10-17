@@ -11,8 +11,12 @@
 #define VM_H
 
 #include "scalar.h"
+#include "stack.h"
 
 typedef uintptr_t identifier_t;
+
+typedef STACK_STRUCT(anon_scalar_t) data_stack_t;
+typedef STACK_STRUCT(size_t) return_stack_t;
 
 typedef struct vm_symbol_t {
     struct vm_symbol_t *m_parent;
@@ -35,12 +39,8 @@ typedef struct vm_context_t {
     uint8_t *m_bytecode;
     size_t  m_bytecode_length;
     size_t  m_counter;
-    size_t  m_data_stack_alloc_count;
-    size_t  m_data_stack_count;
-    anon_scalar_t *m_data_stack;
-    size_t  m_return_stack_alloc_count;
-    size_t  m_return_stack_count;
-    size_t  *m_return_stack;
+    data_stack_t m_data_stack;
+    return_stack_t m_return_stack;
     vm_symboltable_t *m_symboltable;
 } vm_context_t;
 
