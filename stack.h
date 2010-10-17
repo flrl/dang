@@ -15,9 +15,18 @@
 #define STACK_H
 
 /* 
- This macro declares a stack structure for elements of type "type" 
+ This macro expands to the struct type for stacks of type "type" 
  */
-#define STACK_DECLARE(type)  struct type##_STACK
+#define STACK_TYPE(type)    struct type##_STACK
+
+/*
+ This macro expands to the struct definition for stacks of type "type"
+ */
+#define STACK_STRUCT(type)  struct type##_STACK {                                       \
+    size_t m_allocated_count;                                                           \
+    size_t m_count;                                                                     \
+    type *m_items;                                                                      \
+}
 
 /*
  These macros wrap calls to inline functions to do the actual work, defined below.
@@ -54,12 +63,6 @@
  in order to then be able to use these stack functions.
  */
 #define STACK_DEFINITIONS(type, init_func, dest_func, clone_func, ass_func)             \
-struct type##_STACK {                                                                   \
-    size_t m_allocated_count;                                                           \
-    size_t m_count;                                                                     \
-    type *m_items;                                                                      \
-}                                                                                       \
-                                                                                        \
 static inline int type##_STACK_INIT(struct type##_STACK *stack) {                       \
     assert(stack != NULL);                                                              \
                                                                                         \
@@ -73,7 +76,7 @@ static inline int type##_STACK_INIT(struct type##_STACK *stack) {               
     }                                                                                   \
 }                                                                                       \
                                                                                         \
-static inline int type##_STACK_DESTROY(struct type##_STACK *strack) {                   \
+static inline int type##_STACK_DESTROY(struct type##_STACK *stack) {                    \
     assert(stack != NULL);                                                              \
                                                                                         \
     free(stack->m_items);                                                               \
@@ -95,7 +98,7 @@ static inline int type##_STACK_RESERVE(struct type##_STACK *stack, size_t new_si
     return 0;                                                                           \
 }                                                                                       \
                                                                                         \
-static inline int type##_STACK_PUSH(struct type##_STACK *stack, const type *value {     \
+static inline int type##_STACK_PUSH(struct type##_STACK *stack, const type *value) {    \
     assert(stack != NULL);                                                              \
     assert(value != NULL);                                                              \
                                                                                         \
@@ -105,7 +108,7 @@ static inline int type##_STACK_PUSH(struct type##_STACK *stack, const type *valu
     }                                                                                   \
                                                                                         \
     if (status == 0) {                                                                  \
-        status = clone_func(&stack->m_items[stack-m_count++], value);                   \
+        status = clone_func(&stack->m_items[stack->m_count++], value);                  \
     }                                                                                   \
                                                                                         \
     return status;                                                                      \
@@ -115,13 +118,11 @@ static inline int type##_STACK_POP(struct type##_STACK *stack, type *result) {  
     assert(stack != NULL);                                                              \
                                                                                         \
     if (result != NULL) {                                                               \
-        status = ass_func(result, &stack->m_items[--stack->m_count]);                   \
+        return ass_func(result, &stack->m_items[--stack->m_count]);                     \
     }                                                                                   \
     else {                                                                              \
-        status = dest_func(&stack->m_items[--stack->m_count]);                          \
+        return dest_func(&stack->m_items[--stack->m_count]);                            \
     }                                                                                   \
-                                                                                        \
-    return status;                                                                      \
 }                                                                                       \
                                                                                         \
 static inline int type##_STACK_TOP(struct type##_STACK *stack, type *result) {          \
