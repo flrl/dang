@@ -17,80 +17,20 @@
 
 #define POOL_ITEM(x)        g_scalar_pool.m_items[(x) - 1]
 
+const size_t _scalar_pool_initial_size = 1024;   // FIXME arbitrary number
+const size_t _scalar_pool_grow_size = 1024;      // FIXME arbitrary number
+
 static scalar_pool_t g_scalar_pool;
 
-const size_t scalar_pool_initial_size = 1024;   // FIXME arbitrary number
-const size_t scalar_pool_grow_size = 1024;      // FIXME arbitrary number
+static inline int _scalar_lock(scalar_handle_t);
+static inline int _scalar_unlock(scalar_handle_t);
+static inline void _scalar_set_undef_unlocked(scalar_handle_t);
 
 void _scalar_pool_add_to_free_list(scalar_handle_t);
 
-static inline int _scalar_lock(scalar_handle_t handle) {
-    if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
-        return pthread_mutex_lock(POOL_ITEM(handle).m_mutex);
-    }
-    else {
-        return 0;
-    }
-}
-
-static inline int _scalar_unlock(scalar_handle_t handle) {
-    if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
-        return pthread_mutex_unlock(POOL_ITEM(handle).m_mutex);
-    }
-    else {
-        return 0;
-    }
-}
-
-static inline void _scalar_set_undef_unlocked(scalar_handle_t handle) {
-    assert(handle != 0);
-    
-    // clean up allocated memory, if anything
-    if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_PTR) {
-        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
-            case SCALAR_STRING:
-                free(POOL_ITEM(handle).m_value.as_string);
-                POOL_ITEM(handle).m_flags &= ~SCALAR_FLAG_PTR;
-                break;
-        }
-    }
-    
-    // FIXME if it was a reference type, decrease ref counts on referenced object here
-    
-    // set up default values
-    POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
-    POOL_ITEM(handle).m_flags |= SCALAR_UNDEF;
-    POOL_ITEM(handle).m_value.as_int = 0;    
-}
-
-void _scalar_pool_add_to_free_list(scalar_handle_t handle) {
-    assert(handle != 0);
-    
-    scalar_handle_t prev = handle;
-    
-    if (0 == pthread_mutex_lock(&g_scalar_pool.m_free_list_mutex)) {
-        for ( ; prev > 0 && !(POOL_ITEM(prev).m_flags & SCALAR_FLAG_INUSE); --prev) ;
-        
-        if (prev > 0) {
-            POOL_ITEM(handle).m_value.next_free = POOL_ITEM(prev).m_value.next_free;
-            POOL_ITEM(prev).m_value.next_free = handle;
-        }
-        else {
-            POOL_ITEM(handle).m_value.next_free = g_scalar_pool.m_free_list_head;
-            g_scalar_pool.m_free_list_head = handle;
-        }
-        
-        POOL_ITEM(handle).m_flags = 0;
-        g_scalar_pool.m_free_count++;
-        
-        pthread_mutex_unlock(&g_scalar_pool.m_free_list_mutex);
-    }
-}
-
-
 int scalar_pool_init(void) {
-    if (NULL != (g_scalar_pool.m_items = calloc(scalar_pool_initial_size, sizeof(g_scalar_pool.m_items[0])))) {
-        g_scalar_pool.m_allocated_count = g_scalar_pool.m_free_count = scalar_pool_initial_size;
+    if (NULL != (g_scalar_pool.m_items = calloc(_scalar_pool_initial_size, sizeof(g_scalar_pool.m_items[0])))) {
+        g_scalar_pool.m_allocated_count = g_scalar_pool.m_free_count = _scalar_pool_initial_size;
         g_scalar_pool.m_count = 0;
         if (0 == pthread_mutex_init(&g_scalar_pool.m_free_list_mutex, NULL)) {
             g_scalar_pool.m_free_list_head = 1;
@@ -152,7 +92,7 @@ scalar_handle_t scalar_pool_allocate_scalar(uint32_t flags) {
             // grow the pool and allocate a new one from the increased free list
             handle = g_scalar_pool.m_allocated_count + 1;
             
-            size_t new_size = g_scalar_pool.m_allocated_count + scalar_pool_grow_size;
+            size_t new_size = g_scalar_pool.m_allocated_count + _scalar_pool_grow_size;
             pooled_scalar_t *tmp = calloc(new_size, sizeof(pooled_scalar_t));
             if (tmp != NULL)  {
                 pthread_mutex_unlock(&g_scalar_pool.m_free_list_mutex);
@@ -168,7 +108,7 @@ scalar_handle_t scalar_pool_allocate_scalar(uint32_t flags) {
                 POOL_ITEM(i).m_value.next_free = i;
             }
             g_scalar_pool.m_items[new_size - 1].m_value.next_free = 0;
-            g_scalar_pool.m_free_count = scalar_pool_grow_size - 1;
+            g_scalar_pool.m_free_count = _scalar_pool_grow_size - 1;
             
             pthread_mutex_unlock(&g_scalar_pool.m_free_list_mutex);
         }
@@ -293,6 +233,9 @@ intptr_t scalar_get_int_value(scalar_handle_t handle) {
         value = anon_scalar_get_int_value((anon_scalar_t *) &POOL_ITEM(handle));
         _scalar_unlock(handle);
     }
+    else {
+        value = 0;
+    }
     
     return value;    
 }
@@ -306,6 +249,9 @@ floatptr_t scalar_get_float_value(scalar_handle_t handle) {
     if (0 == _scalar_lock(handle)) {
         value = anon_scalar_get_float_value((anon_scalar_t *) &POOL_ITEM(handle));
         _scalar_unlock(handle);
+    }
+    else {
+        value = 0.0;
     }
     
     return value;    
@@ -502,3 +448,65 @@ void anon_scalar_get_string_value(const anon_scalar_t *self, char **result) {
 }
 
 
+static inline int _scalar_lock(scalar_handle_t handle) {
+    if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
+        return pthread_mutex_lock(POOL_ITEM(handle).m_mutex);
+    }
+    else {
+        return 0;
+    }
+}
+
+static inline int _scalar_unlock(scalar_handle_t handle) {
+    if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
+        return pthread_mutex_unlock(POOL_ITEM(handle).m_mutex);
+    }
+    else {
+        return 0;
+    }
+}
+
+static inline void _scalar_set_undef_unlocked(scalar_handle_t handle) {
+    assert(handle != 0);
+    
+    // clean up allocated memory, if anything
+    if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_PTR) {
+        switch(POOL_ITEM(handle).m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_STRING:
+                free(POOL_ITEM(handle).m_value.as_string);
+                POOL_ITEM(handle).m_flags &= ~SCALAR_FLAG_PTR;
+                break;
+        }
+    }
+    
+    // FIXME if it was a reference type, decrease ref counts on referenced object here
+    
+    // set up default values
+    POOL_ITEM(handle).m_flags &= ~SCALAR_TYPE_MASK;
+    POOL_ITEM(handle).m_flags |= SCALAR_UNDEF;
+    POOL_ITEM(handle).m_value.as_int = 0;    
+}
+
+void _scalar_pool_add_to_free_list(scalar_handle_t handle) {
+    assert(handle != 0);
+    
+    scalar_handle_t prev = handle;
+    
+    if (0 == pthread_mutex_lock(&g_scalar_pool.m_free_list_mutex)) {
+        for ( ; prev > 0 && !(POOL_ITEM(prev).m_flags & SCALAR_FLAG_INUSE); --prev) ;
+        
+        if (prev > 0) {
+            POOL_ITEM(handle).m_value.next_free = POOL_ITEM(prev).m_value.next_free;
+            POOL_ITEM(prev).m_value.next_free = handle;
+        }
+        else {
+            POOL_ITEM(handle).m_value.next_free = g_scalar_pool.m_free_list_head;
+            g_scalar_pool.m_free_list_head = handle;
+        }
+        
+        POOL_ITEM(handle).m_flags = 0;
+        g_scalar_pool.m_free_count++;
+        
+        pthread_mutex_unlock(&g_scalar_pool.m_free_list_mutex);
+    }
+}
