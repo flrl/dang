@@ -19,7 +19,7 @@
 #include "vm.h"
 
 STACK_DEFINITIONS(anon_scalar_t, anon_scalar_init, anon_scalar_destroy, anon_scalar_clone, anon_scalar_assign);
-STACK_DEFINITIONS(size_t, STACK_basic_init, STACK_basic_dest, STACK_basic_clone, STACK_basic_ass);
+STACK_DEFINITIONS(size_t, STACK_basic_init, STACK_basic_destroy, STACK_basic_clone, STACK_basic_assign);
 
 typedef struct vm_symboltable_registry_node_t {
     struct vm_symboltable_registry_node_t *m_next;

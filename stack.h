@@ -46,9 +46,9 @@
  types.
  */
 #define STACK_basic_init(x)         (0)
-#define STACK_basic_dest(x)         (0)
+#define STACK_basic_destroy(x)      (0)
 #define STACK_basic_clone(x, y)     ((*(x) = *(y)), 0)
-#define STACK_basic_ass(x, y)       ((*(x) = *(y)), 0)
+#define STACK_basic_assign(x, y)    ((*(x) = *(y)), 0)
 
 /* 
  This macro defines static inline functions for working with it stack structures.  
