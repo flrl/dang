@@ -28,6 +28,29 @@ static inline void _scalar_set_undef_unlocked(scalar_handle_t);
 
 void _scalar_pool_add_to_free_list(scalar_handle_t);
 
+/*
+=head1 SCALARS
+
+=head1 INTRODUCTION
+
+=head1 PUBLIC INTERFACE
+
+=cut
+*/
+
+/*
+=head2 Scalar Pool Functions
+
+=over
+
+=item scalar_pool_init()
+
+=item scalar_pool_destroy()
+
+Scalar pool setup and teardown functions
+
+=cut
+*/
 int scalar_pool_init(void) {
     if (NULL != (g_scalar_pool.m_items = calloc(_scalar_pool_initial_size, sizeof(g_scalar_pool.m_items[0])))) {
         g_scalar_pool.m_allocated_count = g_scalar_pool.m_free_count = _scalar_pool_initial_size;
@@ -63,6 +86,17 @@ int scalar_pool_destroy(void) {
     }
 }
 
+/*
+=item scalar_pool_allocate_scalar()
+
+=item scalar_pool_release_scalar()
+
+=item scalar_pool_increase_refcount()
+
+Functions for managing allocation of scalars
+
+=cut
+*/
 void scalar_pool_increase_refcount(scalar_handle_t handle) {
     assert(handle != 0);
     assert(handle <= g_scalar_pool.m_allocated_count);
@@ -153,7 +187,32 @@ void scalar_pool_release_scalar(scalar_handle_t handle) {
     }
 }
 
+/*
+=back
 
+=head2 Pooled Scalar Functions
+
+=over
+
+=cut
+*/
+
+/*
+=item scalar_set_undef()
+
+=item scalar_set_int_value()
+
+=item scalar_set_float_value()
+
+=item scalar_set_string_value()
+
+=item scalar_set_value()
+
+Functions for setting values on a pooled scalar.  Atomic when the scalar has its SCALAR_FLAG_SHARED flag set.  Any previous
+value is properly cleaned up.
+
+=cut
+*/
 void scalar_set_undef(scalar_handle_t handle) {
     assert(handle != 0);
     assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
@@ -222,7 +281,19 @@ void scalar_set_value(scalar_handle_t handle, const anon_scalar_t *val) {
     }
 }
 
+/*
+=item scalar_get_int_value()
 
+=item scalar_get_float_value()
+
+=item scalar_get_string_value()
+
+=item scalar_get_value()
+
+Functions for getting values from a pooled scalar.  Atomic when SCALAR_FLAG_SHARED is set.
+
+=cut
+*/
 intptr_t scalar_get_int_value(scalar_handle_t handle) {
     assert(handle != 0);
     assert((POOL_ITEM(handle).m_flags & SCALAR_FLAG_INUSE));
@@ -290,6 +361,21 @@ void scalar_get_value(scalar_handle_t handle, anon_scalar_t *result) {
 }
 
 
+/*
+=back
+
+=head2 Anonymous Scalar Functions
+
+=over
+
+=item anon_scalar_init()
+
+=item anon_scalar_destroy()
+
+Setup and teardown functions for anon_scalar_t objects
+
+=cut
+*/
 void anon_scalar_init(anon_scalar_t *self) {
     assert(self != NULL);
     self->m_flags = SCALAR_UNDEF;
@@ -313,6 +399,13 @@ void anon_scalar_destroy(anon_scalar_t *self) {
     self->m_value.as_int = 0;
 }
 
+/*
+=item anon_scalar_clone()
+
+Deep-copy clone of an anon_scalar_t object.  The resulting clone needs to be destroyed independently of the original.
+
+=cut
+*/
 void anon_scalar_clone(anon_scalar_t * restrict self, const anon_scalar_t * restrict other) {
     assert(self != NULL);
     assert(other != NULL);
@@ -332,6 +425,13 @@ void anon_scalar_clone(anon_scalar_t * restrict self, const anon_scalar_t * rest
     }
 }
 
+/*
+=item anon_scalar_assign()
+
+Shallow-copy of an anon_scalar_t object.  Only one of dest and original should be destroyed.
+
+=cut
+*/
 void anon_scalar_assign(anon_scalar_t * restrict self, const anon_scalar_t * restrict other) {
     assert(self != NULL);
     assert(other != NULL);
@@ -343,6 +443,17 @@ void anon_scalar_assign(anon_scalar_t * restrict self, const anon_scalar_t * res
     memcpy(self, other, sizeof(anon_scalar_t));
 }
 
+/*
+=item anon_scalar_set_int_value()
+
+=item anon_scalar_set_float_value()
+
+=item anon_scalar_set_string_value()
+
+Functions for setting the value of anon_scalar_t objects.  Any previous value is properly cleaned up.
+
+=cut
+*/
 void anon_scalar_set_int_value(anon_scalar_t *self, intptr_t ival) {
     assert(self != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
@@ -368,6 +479,17 @@ void anon_scalar_set_string_value(anon_scalar_t *self, const char *sval) {
     self->m_value.as_string = strdup(sval);
 }
 
+/*
+=item anon_scalar_get_int_value()
+
+=item anon_scalar_get_float_value()
+
+=item anon_scalar_get_string_value()
+
+Functions for getting values from anon_scalar_t objects.
+
+=cut
+*/
 intptr_t anon_scalar_get_int_value(const anon_scalar_t *self) {
     assert(self != NULL);
     intptr_t value;
@@ -447,7 +569,25 @@ void anon_scalar_get_string_value(const anon_scalar_t *self, char **result) {
     return;
 }
 
+/*
+=back
 
+=head1 PRIVATE INTERFACE
+
+=over
+
+=cut
+*/
+
+/*
+=item _scalar_lock()
+
+Locks a pooled scalar if it has the SCALAR_FLAG_SHARED flag set, or does nothing otherwise.
+
+Returns 0 on success, or a pthread_mutex_lock error value on failure.
+
+=cut
+*/
 static inline int _scalar_lock(scalar_handle_t handle) {
     if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
         return pthread_mutex_lock(POOL_ITEM(handle).m_mutex);
@@ -457,6 +597,15 @@ static inline int _scalar_lock(scalar_handle_t handle) {
     }
 }
 
+/*
+=item _scalar_unlock()
+
+Unlocks a pooled scalar if it has the SCALAR_FLAG_SHARED flag set, or does nothing otherwise.
+
+Returns 0 on success, or a pthread_mutex_unlock error value on failure.
+
+=cut
+*/
 static inline int _scalar_unlock(scalar_handle_t handle) {
     if (POOL_ITEM(handle).m_flags & SCALAR_FLAG_SHARED) {
         return pthread_mutex_unlock(POOL_ITEM(handle).m_mutex);
@@ -466,6 +615,16 @@ static inline int _scalar_unlock(scalar_handle_t handle) {
     }
 }
 
+/*
+=item _scalar_set_undef_unlocked()
+
+Sets a pooled scalar's value and related flags back to the "undefined" state, without consideration
+for the SCALAR_FLAG_SHARED flag and without a lock/unlock cycle.
+
+Use this when you already have the scalar locked and need to reset its value to undefined without losing atomicity.
+
+=cut
+*/
 static inline void _scalar_set_undef_unlocked(scalar_handle_t handle) {
     assert(handle != 0);
     
@@ -487,6 +646,15 @@ static inline void _scalar_set_undef_unlocked(scalar_handle_t handle) {
     POOL_ITEM(handle).m_value.as_int = 0;    
 }
 
+/*
+=item _scalar_pool_add_to_free_list()
+
+Unsets a pooled scalar's SCALAR_FLAG_INUSE flag and adds it into the pool's free list.
+
+Assumes any cleanup required has already been taken care of.
+
+=cut
+*/
 void _scalar_pool_add_to_free_list(scalar_handle_t handle) {
     assert(handle != 0);
     
@@ -510,3 +678,12 @@ void _scalar_pool_add_to_free_list(scalar_handle_t handle) {
         pthread_mutex_unlock(&g_scalar_pool.m_free_list_mutex);
     }
 }
+
+
+
+
+/*
+ =back
+ 
+ =cut
+ */
