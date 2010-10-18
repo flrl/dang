@@ -67,16 +67,16 @@ typedef struct pooled_scalar_t {
     pthread_mutex_t *m_mutex;
 } pooled_scalar_t;
 
+typedef uintptr_t scalar_handle_t;
+
 typedef struct scalar_pool_t {
     size_t m_allocated_count;
     size_t m_count;
     pooled_scalar_t *m_items;
     size_t m_free_count;
-    intptr_t m_free_list_head;
+    scalar_handle_t m_free_list_head;
     pthread_mutex_t m_free_list_mutex;
 } scalar_pool_t;
-
-typedef uintptr_t scalar_handle_t;
 
 int scalar_pool_init(void);
 int scalar_pool_destroy(void);
