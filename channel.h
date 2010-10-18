@@ -14,16 +14,20 @@
 
 #include "scalar.h"
 
-typedef struct channel_t {
-    size_t m_allocated_count;
-    size_t m_count;
-    anon_scalar_t *m_items;
-    size_t m_start;
-    pthread_mutex_t m_mutex;
-    pthread_cond_t m_has_items;
-    pthread_cond_t m_has_space;
-} channel_t;
+typedef uintptr_t channel_handle_t;
 
+int channel_pool_init(void);
+int channel_pool_destroy(void);
+
+channel_handle_t channel_allocate(void);
+int channel_release(channel_handle_t);
+int channel_increase_refcount(channel_handle_t);
+
+int channel_read(channel_handle_t, anon_scalar_t *);
+int channel_tryread(channel_handle_t, anon_scalar_t *);
+int channel_write(channel_handle_t, const anon_scalar_t *);
+
+#if 0
 /*
 =head1 channel.h
 
@@ -60,6 +64,8 @@ Write to a channel
 =cut
  */
 int channel_write(channel_t *, const anon_scalar_t *);
+
+#endif
 
 #endif
 /*

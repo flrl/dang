@@ -18,6 +18,126 @@
 #include "channel.h"
 #include "debug.h"
 
+
+#define CHANNEL_FLAG_INUSE          UINTPTR_MAX
+#define CHANNEL_POOL_ITEM(handle)   g_channel_pool.m_items[(handle) - 1]
+
+typedef struct channel_t {
+    size_t m_allocated_count;
+    size_t m_count;
+    anon_scalar_t *m_items;
+    size_t m_start;
+    pthread_mutex_t m_mutex;
+    pthread_cond_t m_has_items;
+    pthread_cond_t m_has_space;
+    size_t m_references;
+    channel_handle_t m_next_free;
+} channel_t;
+
+typedef struct channel_pool_t {
+    size_t m_allocated_count;
+    size_t m_count;
+    channel_t *m_items;
+    size_t m_free_count;
+    channel_handle_t m_free_list_head;
+    pthread_mutex_t m_free_list_mutex;
+} channel_pool_t;
+
+
+static channel_pool_t g_channel_pool;
+
+const size_t _channel_pool_initial_size = 64;  // FIXME arbitrary number
+
+int channel_pool_init(void) {
+    if (NULL != (g_channel_pool.m_items = calloc(_channel_pool_initial_size, sizeof(*g_channel_pool.m_items)))) {
+        g_channel_pool.m_allocated_count = g_channel_pool.m_free_count = _channel_pool_initial_size;
+        g_channel_pool.m_count = 0;
+        if (0 == pthread_mutex_init(&g_channel_pool.m_free_list_mutex, NULL)) {
+            g_channel_pool.m_free_list_head = 1;
+            for (channel_handle_t i = 2; i < g_channel_pool.m_allocated_count - 1; i++) {
+                CHANNEL_POOL_ITEM(i).m_next_free = i;
+            }
+            CHANNEL_POOL_ITEM(g_channel_pool.m_allocated_count).m_next_free = 0;
+            return 0;
+        }
+        else {
+            free(g_channel_pool.m_items);
+            return -1;
+        }
+    }
+    else {
+        return -1;
+    }
+}
+
+int channel_pool_destroy(void);
+
+channel_handle_t channel_allocate(void) {
+    if (0 == pthread_mutex_lock(&g_channel_pool.m_free_list_mutex)) {
+        channel_handle_t handle;
+        
+        if (g_channel_pool.m_free_count > 0) {
+            handle = g_channel_pool.m_free_list_head;
+            g_channel_pool.m_free_list_head = CHANNEL_POOL_ITEM(handle).m_next_free;
+            --g_channel_pool.m_free_count;
+            pthread_mutex_unlock(&g_channel_pool.m_free_list_mutex);
+        }
+        else {
+            handle = g_channel_pool.m_allocated_count + 1;
+            size_t new_size = 2 * g_channel_pool.m_allocated_count;
+            
+            channel_t *tmp = calloc(new_size, sizeof(*tmp));
+            if (tmp == NULL) {
+                pthread_mutex_unlock(&g_channel_pool.m_free_list_mutex);
+                return 0;
+            }
+            
+            memcpy(tmp, g_channel_pool.m_items, g_channel_pool.m_allocated_count * sizeof(*g_channel_pool.m_items));
+            free(g_channel_pool.m_items);
+            g_channel_pool.m_items = tmp;
+            g_channel_pool.m_allocated_count = new_size;
+            
+            g_channel_pool.m_free_list_head = handle + 1;
+            for (channel_handle_t i = handle + 1; i < g_channel_pool.m_allocated_count - 1; i++) {
+                CHANNEL_POOL_ITEM(i).m_next_free = i;
+            }
+            CHANNEL_POOL_ITEM(g_channel_pool.m_allocated_count).m_next_free = 0;
+            g_channel_pool.m_free_count = g_channel_pool.m_allocated_count - handle;  // FIXME think about this - is it right?
+
+            pthread_mutex_unlock(&g_channel_pool.m_free_list_mutex);
+        }
+
+//        typedef struct channel_t {
+//            size_t m_allocated_count;
+//            size_t m_count;
+//            anon_scalar_t *m_items;
+//            size_t m_start;
+//            pthread_mutex_t m_mutex;
+//            pthread_cond_t m_has_items;
+//            pthread_cond_t m_has_space;
+//            size_t m_references;
+//            channel_handle_t m_next_free;
+//        } channel_t;
+        
+        // FIXME now make sure the channel is set up sanely!
+
+        return handle;
+    }
+    else {
+        return 0;
+    }
+}
+
+int channel_release(channel_handle_t);
+int channel_increase_refcount(channel_handle_t);
+
+int channel_read(channel_handle_t, anon_scalar_t *);
+int channel_tryread(channel_handle_t, anon_scalar_t *);
+int channel_write(channel_handle_t, const anon_scalar_t *);
+
+/////////////////
+
+
 static const size_t _channel_initial_size = 16;
 
 static int _channel_reserve_unlocked(channel_t *, size_t);
