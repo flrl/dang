@@ -48,6 +48,9 @@ static channel_pool_t g_channel_pool;
 
 const size_t _channel_pool_initial_size = 64;  // FIXME arbitrary number
 
+int _channel_init(channel_t *);
+int _channel_destroy(channel_t *);
+
 int channel_pool_init(void) {
     if (NULL != (g_channel_pool.m_items = calloc(_channel_pool_initial_size, sizeof(*g_channel_pool.m_items)))) {
         g_channel_pool.m_allocated_count = g_channel_pool.m_free_count = _channel_pool_initial_size;
@@ -70,7 +73,9 @@ int channel_pool_init(void) {
     }
 }
 
-int channel_pool_destroy(void);
+int channel_pool_destroy(void) {    // FIXME write this
+    return -1;
+}
 
 channel_handle_t channel_allocate(void) {
     if (0 == pthread_mutex_lock(&g_channel_pool.m_free_list_mutex)) {
@@ -107,19 +112,10 @@ channel_handle_t channel_allocate(void) {
             pthread_mutex_unlock(&g_channel_pool.m_free_list_mutex);
         }
 
-//        typedef struct channel_t {
-//            size_t m_allocated_count;
-//            size_t m_count;
-//            anon_scalar_t *m_items;
-//            size_t m_start;
-//            pthread_mutex_t m_mutex;
-//            pthread_cond_t m_has_items;
-//            pthread_cond_t m_has_space;
-//            size_t m_references;
-//            channel_handle_t m_next_free;
-//        } channel_t;
-        
-        // FIXME now make sure the channel is set up sanely!
+        _channel_init(&CHANNEL_POOL_ITEM(handle));
+
+        CHANNEL_POOL_ITEM(handle).m_references = 1;
+        CHANNEL_POOL_ITEM(handle).m_next_free = CHANNEL_FLAG_INUSE;
 
         return handle;
     }
@@ -128,12 +124,73 @@ channel_handle_t channel_allocate(void) {
     }
 }
 
-int channel_release(channel_handle_t);
-int channel_increase_refcount(channel_handle_t);
+int channel_release(channel_handle_t handle) {
+    assert(handle != 0);
+    assert(handle <= g_channel_pool.m_allocated_count);
+    assert(CHANNEL_POOL_ITEM(handle).m_next_free == CHANNEL_FLAG_INUSE);
+    
+    if (0 == pthread_mutex_lock(&CHANNEL_POOL_ITEM(handle).m_mutex)) {
+        if (--CHANNEL_POOL_ITEM(handle).m_references == 0) {
+            _channel_destroy(&CHANNEL_POOL_ITEM(handle));   // n.b. destroys the mutex, so don't try to unlock it!
+            _channel_pool_add_to_free_list(handle);
+            return 0;
+        }
+        else {
+            pthread_mutex_unlock(&CHANNEL_POOL_ITEM(handle).m_mutex);
+            return 0;            
+        }
+    }
+    else {
+        return -1;
+    }    
+}
+
+int channel_increase_refcount(channel_handle_t handle) {
+    assert(handle != 0);
+    assert(handle <= g_channel_pool.m_allocated_count);
+    assert(CHANNEL_POOL_ITEM(handle).m_next_free == CHANNEL_FLAG_INUSE);
+    
+    if (0 == pthread_mutex_lock(&CHANNEL_POOL_ITEM(handle).m_mutex)) {
+        ++CHANNEL_POOL_ITEM(handle).m_references;
+        
+        pthread_mutex_unlock(&CHANNEL_POOL_ITEM(handle).m_mutex);
+        return 0;       
+    }
+    else {
+        return -1;
+    }
+}
 
 int channel_read(channel_handle_t, anon_scalar_t *);
 int channel_tryread(channel_handle_t, anon_scalar_t *);
 int channel_write(channel_handle_t, const anon_scalar_t *);
+
+
+void _channel_pool_add_to_free_list(channel_handle_t handle) {
+    assert(handle != 0);
+    assert(handle <= g_channel_pool.m_allocated_count);
+    
+    channel_handle_t prev = handle;
+    
+    if (0 == pthread_mutex_lock(&g_channel_pool.m_free_list_mutex)) {
+        for ( ; prev > 0 && !(CHANNEL_POOL_ITEM(prev).m_next_free == CHANNEL_FLAG_INUSE); --prev) ;
+        
+        if (prev > 0) {
+            CHANNEL_POOL_ITEM(handle).m_next_free = CHANNEL_POOL_ITEM(prev).m_next_free;
+            CHANNEL_POOL_ITEM(prev).m_next_free = handle;
+        }
+        else {
+            CHANNEL_POOL_ITEM(handle).m_next_free = g_channel_pool.m_free_list_head;
+            g_channel_pool.m_free_list_head = handle;
+        }
+        
+        g_channel_pool.m_free_count++;
+        
+        pthread_mutex_unlock(&g_channel_pool.m_free_list_mutex);
+    }
+}
+
+
 
 /////////////////
 
@@ -142,7 +199,7 @@ static const size_t _channel_initial_size = 16;
 
 static int _channel_reserve_unlocked(channel_t *, size_t);
 
-int channel_init(channel_t *self) {
+int _channel_init(channel_t *self) {
     assert(self != NULL);
     
     if (0 == pthread_mutex_init(&self->m_mutex, NULL)) {    
@@ -164,7 +221,7 @@ int channel_init(channel_t *self) {
     return -1;
 }
 
-int channel_destroy(channel_t *self) { // FIXME implement this
+int _channel_destroy(channel_t *self) { // FIXME implement this
     assert(self != NULL);
     return 0;
 }
