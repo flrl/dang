@@ -23,6 +23,7 @@ all variables stored in pools
         - does simply being in someone's scope count as a reference, or only if you explicitly take a reference?
           e.g. does  "my $foo" require a non-zero reference count at wherever $foo is allocated, or does the refcount only 
           become non-zero when someone later says "my $bar = \$foo" ?
+            - any reference, including the initial one, is counted
     - can intertwine a free list so the pool space can be reclaimed as locals go out of scope
         - just have a "type" value of "FREE" and another field in the union which is a pointer to the next free pool entry.
           the wrapper struct for the pool would have a head pointer
@@ -84,3 +85,22 @@ symbol table
       both seem to need the spaghetti/registry stuff too, so it would save writing a lot of the same code twice.
         - how does return stack fit into that?
         - does the data stack actually need all that scoping shenanigans now that there's a symbol table for locals?
+    - what if the bytecode provides an instruction to clone a symbol from an ancestor scope, so that two scopes can have the same
+      identifier with the same name pointing to the same object?
+        - it would need to increase the refcount on the object pointed to
+        - the object pointed to would need to be shared
+        - the only scopes that would be able to do this would be ones that could see the identifier anyway, but it would mean
+          they would only need to climb the scope heirarchy once to clone it, instead of at every access
+        - this might permit parent scopes to be cleaned up while their child scopes are still active, but only if the child made
+          sure to clone every symbol it needed before the parent ended
+          - what if there was also an instruction for a child to emancipate itself from its parent?
+            - decrement parent's refcount, and set child's parent pointer to NULL
+            - would still need the usual registry/garbage collection mechanism in case other children don't do this
+            - it would mean that the child is guaranteed that its parent scope will remain until it doesn't need it anymore
+            - in the typical case, when the parent ends it can clean itself up right away without waiting for garbage collection
+            
+        
+
+
+
+
