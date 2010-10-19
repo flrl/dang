@@ -51,7 +51,7 @@
 #define STACK_basic_assign(x, y)    ((*(x) = *(y)), 0)
 
 /* 
- This macro defines static inline functions for working with it stack structures.  
+ This macro defines static inline functions for working with stack structures.  
  The init_func, dest_func, clone_func and ass_func parameters specify functions for 
  initialising, destroying, clonining, and assigning objects of type "type".  They 
  expect to be macros or functions of the basic form thus:
