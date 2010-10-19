@@ -27,20 +27,21 @@
     pthread_mutex_t     m_free_list_mutex;                                              \
 }
 
+#define POOL_SINGLETON(type)    _##type##_POOL
+
 #define POOL_INIT(type)                         type##_POOL_INIT()
 #define POOL_DESTROY(type)                      type##_POOL_DESTROY()
 #define POOL_ALLOCATE(type, arg)                type##_POOL_ALLOCATE(arg)
 #define POOL_INCREASE_REFCOUNT(type, handle)    type##_POOL_INCREASE_REFCOUNT(handle)
 #define POOL_RELEASE(type, handle)              type##_POOL_RELEASE(handle)
 
+#define POOL_VALID_HANDLE(type, handle)         ((handle) > 0 && (handle) <= POOL_SINGLETON(type).m_allocated_count)
 
 #define POOL_basic_init(p, a)   (0)
 #define POOL_basic_initarg      (void *)
 #define POOL_basic_destroy(p)   (0)
 #define POOL_basic_lock(p)      (0)
 #define POOL_basic_unlock(p)    (0)
-
-#define POOL_SINGLETON(type)    _##type##_POOL
 
 #define POOL_ITEM(type, handle) POOL_SINGLETON(type).m_items[(handle) - 1]
 
