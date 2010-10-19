@@ -26,6 +26,9 @@
 
 #define CHANNEL_FLAG_INUSE          UINTPTR_MAX
 #define CHANNEL_POOL_ITEM(handle)   POOL_ITEM(channel_t, (handle))
+#define CHANNEL_ISINUSE(c)          ((c).m_next_free == CHANNEL_FLAG_INUSE)
+#define CHANNEL_NEXTFREE(c)         ((c).m_next_free)
+#define CHANNEL_INIT(c,a)           _channel_init(c)
 
 typedef struct channel_t {
     size_t m_allocated_count;
@@ -48,10 +51,6 @@ static int _channel_destroy(channel_t *);
 static inline int _channel_lock(channel_t *);
 static inline int _channel_unlock(channel_t *);
 static int _channel_reserve_unlocked(channel_t *, size_t);
-
-#define CHANNEL_ISINUSE(c)  (((c).m_next_free == CHANNEL_FLAG_INUSE) ? 1 : 0)
-#define CHANNEL_NEXTFREE(c) ((c).m_next_free)
-#define CHANNEL_INIT(c,a)   _channel_init(c)
 
 POOL_DEFINITIONS(channel_t, CHANNEL_ISINUSE, CHANNEL_NEXTFREE, CHANNEL_INIT, void*, _channel_destroy, _channel_lock, _channel_unlock);
 
