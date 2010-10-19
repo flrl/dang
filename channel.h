@@ -14,7 +14,9 @@
 
 #include "scalar.h"
 
-typedef uintptr_t channel_handle_t;
+#include "pool.h"
+
+typedef POOL_HANDLE(channel_t) channel_handle_t;
 
 int channel_pool_init(void);
 int channel_pool_destroy(void);
