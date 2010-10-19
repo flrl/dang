@@ -14,34 +14,37 @@
 #ifndef POOL_H
 #define POOL_H
 
-#define POOL_TYPE(type)     
-struct type##_POOL
+#define POOL_TYPE(type)     struct type##_POOL
 
 #define POOL_HANDLE(type)   uintptr_t
 
-#define POOL_STRUCT(type)   
-struct type##_POOL {
-    size_t m_allocated_count;
-    size_t m_count;
-    size_t m_free_count;
-    type   *m_items;
-    POOL_HANDLE(type)   m_free_list_head;
-    pthread_mutex_t     m_free_list_mutex;
+#define POOL_STRUCT(type)   struct type##_POOL {                                        \
+    size_t m_allocated_count;                                                           \
+    size_t m_count;                                                                     \
+    size_t m_free_count;                                                                \
+    type   *m_items;                                                                    \
+    POOL_HANDLE(type)   m_free_list_head;                                               \
+    pthread_mutex_t     m_free_list_mutex;                                              \
 }
 
+#define POOL_INIT(type)                         type##_POOL_INIT()
+#define POOL_DESTROY(type)                      type##_POOL_DESTROY()
+#define POOL_ALLOCATE(type, arg)                type##_POOL_ALLOCATE(arg)
+#define POOL_INCREASE_REFCOUNT(type, handle)    type##_POOL_INCREASE_REFCOUNT(handle)
+#define POOL_RELEASE(type, handle)              type##_POOL_RELEASE(handle)
 
-#define POOL_INIT(type, ...)
-// etc
 
-
-#define POOL_basic_init     (0)
-// etc
+#define POOL_basic_init(p, a)   (0)
+#define POOL_basic_initarg      (void *)
+#define POOL_basic_destroy(p)   (0)
+#define POOL_basic_lock(p)      (0)
+#define POOL_basic_unlock(p)    (0)
 
 #define POOL_SINGLETON(type)    _##type##_POOL
 
 #define POOL_ITEM(type, handle) POOL_SINGLETON(type).m_items[(handle) - 1]
 
-#define POOL_DEFINITIONS(type, isinuse, init, initarg, destroy, nextfree, lock, unlock)  \
+#define POOL_DEFINITIONS(type, isinuse, nextfree, init, initarg, destroy, lock, unlock)  \
 static POOL_TYPE(type) POOL_SINGLETON(type);                                             \
                                                                                          \
 static inline int type##_POOL_INIT(void) {                                               \
@@ -55,9 +58,9 @@ static inline int type##_POOL_INIT(void) {                                      
             for (   POOL_HANDLE(type) i = 2;                                             \
                     i < POOL_SINGLETON(type).m_allocated_count - 1;                      \
                     i++) {                                                               \
-                nextfree(&POOL_ITEM(type, i)) = i;                                       \
+                nextfree(POOL_ITEM(type, i)) = i;                                        \
             }                                                                            \
-            nextfree(&POOL_ITEM(type, POOL_SINGLETON(type).m_allocated_count)) = 0;      \
+            nextfree(POOL_ITEM(type, POOL_SINGLETON(type).m_allocated_count)) = 0;       \
             return 0;                                                                    \
         }                                                                                \
         else {                                                                           \
@@ -72,7 +75,11 @@ static inline int type##_POOL_INIT(void) {                                      
                                                                                          \
 static inline int type##_POOL_DESTROY(void) {                                            \
     if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {              \
-        /* FIXME loop over and properly destroy all the currently defined pool items */  \
+        for (   POOL_HANDLE(type) i = 1;                                                 \
+                i <= POOL_SINGLETON(type).m_allocated_count;                             \
+                i++) {                                                                   \
+            destroy(&POOL_ITEM(type, i));                                                \
+        }                                                                                \
         free(POOL_SINGLETON(type).m_items);                                              \
         POOL_SINGLETON(type).m_allocated_count = POOL_SINGLETON(type).m_count = 0;       \
         pthread_mutex_destroy(&POOL_SINGLETON(type).m_free_list_mutex);                  \
@@ -88,16 +95,14 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(initarg arg) {             
         POOL_HANDLE(type) handle;                                                        \
                                                                                          \
         if (POOL_SINGLETON(type).m_free_count > 0) {                                     \
-            /* allocate a new one from the free list */                                  \
             assert(POOL_SINGLETON(type).m_free_list_head != 0);                          \
             handle = POOL_SINGLETON(type).m_free_list_head;                              \
-            POOL_SINGLETON(type).m_free_list_head = nextfree(&POOL_ITEM(handle));        \
+            POOL_SINGLETON(type).m_free_list_head = nextfree(POOL_ITEM(type, handle));   \
             POOL_SINGLETON(type).m_free_count--;                                         \
                                                                                          \
             pthread_mutex_unlock(&POOL_SINGLETON(type).m_free_list_mutex);               \
         }                                                                                \
         else {                                                                           \
-            /* grow the pool and allocate a new one from the increased free list */      \
             handle = POOL_SINGLETON(type).m_allocated_count + 1;                         \
                                                                                          \
             size_t new_size = 2 * POOL_SINGLETON(type).m_allocated_count;                \
@@ -117,11 +122,11 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(initarg arg) {             
             for (   POOL_HANDLE(type) i = POOL_SINGLETON(type).m_free_list_head;         \
                     i < new_size - 1;                                                    \
                     i++) {                                                               \
-                nextfree(&POOL_ITEM(type, i)) = i;                                       \
+                nextfree(POOL_ITEM(type, i)) = i;                                        \
             }                                                                            \
-            nextfree(&POOL_ITEM(type, POOL_SINGLETON(type).m_allocated_count)) = 0;      \
+            nextfree(POOL_ITEM(type, POOL_SINGLETON(type).m_allocated_count)) = 0;       \
             POOL_SINGLETON(type).m_free_count =                                          \
-                POOLED_SINGLETON(type).m_allocated_count - handle;                       \
+                POOL_SINGLETON(type).m_allocated_count - handle;                         \
                                                                                          \
             pthread_mutex_unlock(&POOL_SINGLETON(type).m_free_list_mutex);               \
         }                                                                                \
@@ -141,12 +146,12 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(initarg arg) {             
 static inline int type##_INCREASE_REFCOUNT(POOL_HANDLE(type) handle) {                   \
     assert(handle != 0);                                                                 \
     assert(handle <= POOL_SINGLETON(type).m_allocated_count);                            \
-    assert(isinuse(&POOL_ITEM(type, handle)));                                           \
+    assert(isinuse(POOL_ITEM(type, handle)));                                            \
     assert(POOL_ITEM(type, handle).m_references > 0);                                    \
                                                                                          \
-    if (0 == lock(handle)) {                                                             \
-        ++POOL_ITEM(handle).m_references;                                                \
-        unlock(handle);                                                                  \
+    if (0 == lock(&POOL_ITEM(type,handle))) {                                            \
+        ++POOL_ITEM(type,handle).m_references;                                           \
+        unlock(&POOL_ITEM(type, handle));                                                \
         return 0;                                                                        \
     }                                                                                    \
     else {                                                                               \
@@ -161,14 +166,14 @@ static inline void _##type##_POOL_ADD_TO_FREE_LIST(POOL_HANDLE(type) handle) {  
     POOL_HANDLE(type) prev = handle;                                                     \
                                                                                          \
     if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {              \
-        for ( ; prev > 0 && ! isinuse(&POOL_ITEM(type, prev)); --prev) ;                 \
+        for ( ; prev > 0 && ! isinuse(POOL_ITEM(type, prev)); --prev) ;                  \
                                                                                          \
         if (prev > 0) {                                                                  \
-            nextfree(&POOL_ITEM(type, handle)) = nextfree(&POOL_ITEM(type, prev));       \
-            nextfree(&POOL_ITEM(type, prev)) = handle;                                   \
+            nextfree(POOL_ITEM(type, handle)) = nextfree(POOL_ITEM(type, prev));         \
+            nextfree(POOL_ITEM(type, prev)) = handle;                                    \
         }                                                                                \
         else {                                                                           \
-            nextfree(&POOL_ITEM(type, handle)) = POOL_SINGLETON(type).m_free_list_head;  \
+            nextfree(POOL_ITEM(type, handle)) = POOL_SINGLETON(type).m_free_list_head;   \
             POOL_SINGLETON(type).m_free_list_head = handle;                              \
         }                                                                                \
                                                                                          \
@@ -181,16 +186,16 @@ static inline void _##type##_POOL_ADD_TO_FREE_LIST(POOL_HANDLE(type) handle) {  
 static inline int type##_RELEASE(POOL_HANDLE(type) handle) {                             \
     assert(handle != 0);                                                                 \
     assert(handle <= POOL_SINGLETON(type).m_allocated_count);                            \
-    assert(isinuse(&POOL_ITEM(type, handle)));                                           \
+    assert(isinuse(POOL_ITEM(type, handle)));                                            \
     assert(POOL_ITEM(type, handle).m_references > 0);                                    \
                                                                                          \
-    if (0 == lock(handle)) {                                                             \
+    if (0 == lock(&POOL_ITEM(type, handle))) {                                           \
         if (--POOL_ITEM(type, handle).m_references == 0) {                               \
             destroy(&POOL_ITEM(type, handle));                                           \
             _##type##_POOL_ADD_TO_FREE_LIST(handle);                                     \
             POOL_SINGLETON(type).m_count--;                                              \
         }                                                                                \
-        unlock(handle);                                                                  \
+        unlock(&POOL_ITEM(type, handle));                                                \
         return 0;                                                                        \
     }                                                                                    \
     else {                                                                               \
