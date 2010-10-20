@@ -104,7 +104,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(initarg arg) {             
             size_t new_size = 2 * POOL_SINGLETON(type).m_allocated_count;                       \
             POOL_WRAPPER_STRUCT(type) *tmp =                                                    \
                 calloc(new_size, sizeof(POOL_WRAPPER_STRUCT(type)));                            \
-            if (tmp != NULL)  {                                                                 \
+            if (tmp == NULL)  {                                                                 \
                 pthread_mutex_unlock(&POOL_SINGLETON(type).m_free_list_mutex);                  \
                 return 0;                                                                       \
             }                                                                                   \
