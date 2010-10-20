@@ -206,6 +206,9 @@ int inst_SYMDEF(struct vm_context_t *context) {
 
 Reads an identifier from the following bytecode.  Looks up the identifier in the symbol table, and pushes its handle to the
 data stack, or 0 if the identifier was not found.
+
+FIXME This should push a reference to the data stack, or undef if not found.
+FIXME If it pushes a raw handle as an int value, then there's no reference counting happening...
  
 =cut
  */
@@ -242,6 +245,8 @@ int inst_SYMUNDEF(struct vm_context_t *context) {
 =item SLOAD ( handle -- a )
 
 Pops a scalar handle from the data stack.  Pushes the value of the scalar matching the handle.
+
+FIXME There won't be a raw handle on the stack.  I think this op just becomes "deref and read from a scalar reference"
  
 =cut
  */
@@ -264,6 +269,8 @@ int inst_SLOAD(struct vm_context_t *context) {
 =item SSTORE ( a handle -- )
 
 Pops a scalar handle and a scalar value from the data stack.  Stores the value in the scalar matching the handle.
+ 
+FIXME There won't be a raw handle on the stack.  I think this op just becomes "deref and write to a scalar reference"
  
 =cut
  */
