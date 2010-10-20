@@ -21,6 +21,13 @@
 #define POOL_FLAG_INUSE             UINTPTR_MAX
 #define POOL_WRAPPER_STRUCT(type)   struct POOLED_##type
 
+#define POOL_SINGLETON(type)        _##type##_POOL
+#define POOL_OBJECT(type, handle)   POOL_SINGLETON(type).m_items[(handle) - 1].m_object
+#define POOL_WRAPPER(type, handle)  POOL_SINGLETON(type).m_items[(handle) - 1]
+
+#define POOL_ISINUSE(type, handle)          (POOL_WRAPPER(type, handle).m_free_ptr == POOL_FLAG_INUSE)
+#define POOL_VALID_HANDLE(type, handle)     ((handle) > 0 && (handle) <= POOL_SINGLETON(type).m_allocated_count)
+
 #define POOL_STRUCT(type)   struct type##_POOL {                                                \
     size_t              m_allocated_count;                                                      \
     size_t              m_count;                                                                \
@@ -29,13 +36,6 @@
     POOL_HANDLE(type)   m_free_list_head;                                                       \
     pthread_mutex_t     m_free_list_mutex;                                                      \
 }
-
-#define POOL_SINGLETON(type)        _##type##_POOL
-#define POOL_OBJECT(type, handle)   POOL_SINGLETON(type).m_items[(handle) - 1].m_object
-#define POOL_WRAPPER(type, handle)  POOL_SINGLETON(type).m_items[(handle) - 1]
-
-#define POOL_ISINUSE(type, handle)          (POOL_WRAPPER(type, handle).m_free_ptr == POOL_FLAG_INUSE)
-#define POOL_VALID_HANDLE(type, handle)     ((handle) > 0 && (handle) <= POOL_SINGLETON(type).m_allocated_count)
 
 #define POOL_DEFINITIONS(type, init, initarg, destroy, lock, unlock)                            \
 POOL_WRAPPER_STRUCT(type) {                                                                     \
