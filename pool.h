@@ -145,8 +145,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(initarg arg) {             
                                                                                          \
                                                                                          \
 static inline int type##_POOL_INCREASE_REFCOUNT(POOL_HANDLE(type) handle) {              \
-    assert(handle != 0);                                                                 \
-    assert(handle <= POOL_SINGLETON(type).m_allocated_count);                            \
+    assert(POOL_VALID_HANDLE(handle));                                                   \
     assert(isinuse(POOL_ITEM(type, handle)));                                            \
     assert(POOL_ITEM(type, handle).m_references > 0);                                    \
                                                                                          \
@@ -161,8 +160,7 @@ static inline int type##_POOL_INCREASE_REFCOUNT(POOL_HANDLE(type) handle) {     
 }                                                                                        \
                                                                                          \
 static inline void _##type##_POOL_ADD_TO_FREE_LIST(POOL_HANDLE(type) handle) {           \
-    assert(handle != 0);                                                                 \
-    assert(handle <= POOL_SINGLETON(type).m_allocated_count);                            \
+    assert(POOL_VALID_HANDLE(handle));                                                   \
                                                                                          \
     POOL_HANDLE(type) prev = handle;                                                     \
                                                                                          \
@@ -185,8 +183,7 @@ static inline void _##type##_POOL_ADD_TO_FREE_LIST(POOL_HANDLE(type) handle) {  
 }                                                                                        \
                                                                                          \
 static inline int type##_POOL_RELEASE(POOL_HANDLE(type) handle) {                        \
-    assert(handle != 0);                                                                 \
-    assert(handle <= POOL_SINGLETON(type).m_allocated_count);                            \
+    assert(POOL_VALID_HANDLE(handle));                                                   \
     assert(isinuse(POOL_ITEM(type, handle)));                                            \
     assert(POOL_ITEM(type, handle).m_references > 0);                                    \
                                                                                          \
