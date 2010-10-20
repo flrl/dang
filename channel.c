@@ -24,11 +24,8 @@
 #define POOL_INITIAL_SIZE           (64)
 #include "pool.h"
 
-#define CHANNEL_FLAG_INUSE          UINTPTR_MAX
-#define CHANNEL_POOL_ITEM(handle)   POOL_ITEM(channel_t, (handle))
-#define CHANNEL_ISINUSE(c)          ((c).m_next_free == CHANNEL_FLAG_INUSE)
-#define CHANNEL_NEXTFREE(c)         ((c).m_next_free)
-#define CHANNEL_INIT(c,a)           _channel_init(c)
+#define CHANNEL(handle)     POOL_OBJECT(channel_t, (handle))
+#define CHANNEL_INIT(c,a)   _channel_init(c)
 
 typedef struct channel_t {
     size_t m_allocated_count;
@@ -38,8 +35,6 @@ typedef struct channel_t {
     pthread_mutex_t m_mutex;
     pthread_cond_t m_has_items;
     pthread_cond_t m_has_space;
-    size_t m_references;
-    channel_handle_t m_next_free;
 } channel_t;
 
 typedef POOL_STRUCT(channel_t) channel_pool_t;
@@ -52,7 +47,7 @@ static inline int _channel_lock(channel_t *);
 static inline int _channel_unlock(channel_t *);
 static int _channel_reserve_unlocked(channel_t *, size_t);
 
-POOL_DEFINITIONS(channel_t, CHANNEL_ISINUSE, CHANNEL_NEXTFREE, CHANNEL_INIT, void*, _channel_destroy, _channel_lock, _channel_unlock);
+POOL_DEFINITIONS(channel_t, CHANNEL_INIT, void*, _channel_destroy, _channel_lock, _channel_unlock);
 
 int channel_pool_init(void) {
     return POOL_INIT(channel_t);
@@ -76,20 +71,19 @@ int channel_increase_refcount(channel_handle_t handle) {
 
 int channel_read(channel_handle_t handle, anon_scalar_t *result) {
     assert(POOL_VALID_HANDLE(channel_t, handle));
-
-    assert(CHANNEL_POOL_ITEM(handle).m_next_free == CHANNEL_FLAG_INUSE);
+    assert(POOL_ISINUSE(channel_t, handle));
     assert(result != NULL);
     
-    if (0 == _channel_lock(&CHANNEL_POOL_ITEM(handle))) {
-        while (CHANNEL_POOL_ITEM(handle).m_count == 0) {
-            pthread_cond_wait(&CHANNEL_POOL_ITEM(handle).m_has_items, &CHANNEL_POOL_ITEM(handle).m_mutex);
+    if (0 == _channel_lock(&CHANNEL(handle))) {
+        while (CHANNEL(handle).m_count == 0) {
+            pthread_cond_wait(&CHANNEL(handle).m_has_items, &CHANNEL(handle).m_mutex);
         }
-        anon_scalar_assign(result, &CHANNEL_POOL_ITEM(handle).m_items[CHANNEL_POOL_ITEM(handle).m_start]);
-        CHANNEL_POOL_ITEM(handle).m_start = (CHANNEL_POOL_ITEM(handle).m_start + 1) % CHANNEL_POOL_ITEM(handle).m_allocated_count;
-        CHANNEL_POOL_ITEM(handle).m_count--;
-        _channel_unlock(&CHANNEL_POOL_ITEM(handle));
+        anon_scalar_assign(result, &CHANNEL(handle).m_items[CHANNEL(handle).m_start]);
+        CHANNEL(handle).m_start = (CHANNEL(handle).m_start + 1) % CHANNEL(handle).m_allocated_count;
+        CHANNEL(handle).m_count--;
+        _channel_unlock(&CHANNEL(handle));
         
-        pthread_cond_signal(&CHANNEL_POOL_ITEM(handle).m_has_space);
+        pthread_cond_signal(&CHANNEL(handle).m_has_space);
         return 0;
     }
     else {
@@ -99,21 +93,21 @@ int channel_read(channel_handle_t handle, anon_scalar_t *result) {
 
 int channel_tryread(channel_handle_t handle, anon_scalar_t *result) {
     assert(POOL_VALID_HANDLE(channel_t, handle));
-    assert(CHANNEL_POOL_ITEM(handle).m_next_free == CHANNEL_FLAG_INUSE);
+    assert(POOL_ISINUSE(channel_t, handle));
     assert(result != NULL);
     
-    if (0 == _channel_lock(&CHANNEL_POOL_ITEM(handle))) {
+    if (0 == _channel_lock(&CHANNEL(handle))) {
         int status;
-        if (CHANNEL_POOL_ITEM(handle).m_count > 0) {
-            anon_scalar_assign(result, &CHANNEL_POOL_ITEM(handle).m_items[CHANNEL_POOL_ITEM(handle).m_start]);
-            CHANNEL_POOL_ITEM(handle).m_start = (CHANNEL_POOL_ITEM(handle).m_start + 1) % CHANNEL_POOL_ITEM(handle).m_allocated_count;
-            CHANNEL_POOL_ITEM(handle).m_count--;
+        if (CHANNEL(handle).m_count > 0) {
+            anon_scalar_assign(result, &CHANNEL(handle).m_items[CHANNEL(handle).m_start]);
+            CHANNEL(handle).m_start = (CHANNEL(handle).m_start + 1) % CHANNEL(handle).m_allocated_count;
+            CHANNEL(handle).m_count--;
             status = 0;
         }
         else {
             status = EWOULDBLOCK;
         }
-        _channel_unlock(&CHANNEL_POOL_ITEM(handle));
+        _channel_unlock(&CHANNEL(handle));
         return status;
     }
     else {
@@ -123,23 +117,23 @@ int channel_tryread(channel_handle_t handle, anon_scalar_t *result) {
 
 int channel_write(channel_handle_t handle, const anon_scalar_t *value) {
     assert(POOL_VALID_HANDLE(channel_t, handle));
-    assert(CHANNEL_POOL_ITEM(handle).m_next_free == CHANNEL_FLAG_INUSE);
+    assert(POOL_ISINUSE(channel_t, handle));
     assert(value != NULL);
     
     static const struct timespec wait_timeout = { 0, 250000 };
     
-    if (0 == _channel_lock(&CHANNEL_POOL_ITEM(handle))) {
-        while (CHANNEL_POOL_ITEM(handle).m_count >= CHANNEL_POOL_ITEM(handle).m_allocated_count) {
-            if (ETIMEDOUT == pthread_cond_timedwait(&CHANNEL_POOL_ITEM(handle).m_has_space, &CHANNEL_POOL_ITEM(handle).m_mutex, &wait_timeout)) {
-                _channel_reserve_unlocked(&CHANNEL_POOL_ITEM(handle), CHANNEL_POOL_ITEM(handle).m_allocated_count * 2);
+    if (0 == _channel_lock(&CHANNEL(handle))) {
+        while (CHANNEL(handle).m_count >= CHANNEL(handle).m_allocated_count) {
+            if (ETIMEDOUT == pthread_cond_timedwait(&CHANNEL(handle).m_has_space, &CHANNEL(handle).m_mutex, &wait_timeout)) {
+                _channel_reserve_unlocked(&CHANNEL(handle), CHANNEL(handle).m_allocated_count * 2);
             }
         }
-        size_t index = (CHANNEL_POOL_ITEM(handle).m_start + CHANNEL_POOL_ITEM(handle).m_count) % CHANNEL_POOL_ITEM(handle).m_allocated_count;
-        anon_scalar_clone(&CHANNEL_POOL_ITEM(handle).m_items[index], value);
-        CHANNEL_POOL_ITEM(handle).m_count++;
-        _channel_unlock(&CHANNEL_POOL_ITEM(handle));
+        size_t index = (CHANNEL(handle).m_start + CHANNEL(handle).m_count) % CHANNEL(handle).m_allocated_count;
+        anon_scalar_clone(&CHANNEL(handle).m_items[index], value);
+        CHANNEL(handle).m_count++;
+        _channel_unlock(&CHANNEL(handle));
         
-        pthread_cond_signal(&CHANNEL_POOL_ITEM(handle).m_has_items);
+        pthread_cond_signal(&CHANNEL(handle).m_has_items);
         return 0;        
     }
     else {
@@ -158,7 +152,6 @@ static int _channel_init(channel_t *self) {
                         self->m_allocated_count = _channel_initial_size;
                         self->m_start = 0;
                         self->m_count = 0;
-                        self->m_references = 0;
                         pthread_mutex_unlock(&self->m_mutex);
                         return 0;
                     }
@@ -178,14 +171,12 @@ static int _channel_destroy(channel_t *self) { // FIXME implement this
 
 static inline int _channel_lock(channel_t *self) {
     assert(self != NULL);
-    assert(self->m_next_free == CHANNEL_FLAG_INUSE);
     
     return pthread_mutex_lock(&self->m_mutex);
 }
 
 static inline int _channel_unlock(channel_t *self) {
     assert(self != NULL);
-    assert(self->m_next_free == CHANNEL_FLAG_INUSE);
     
     return pthread_mutex_unlock(&self->m_mutex);
 }
