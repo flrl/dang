@@ -70,9 +70,9 @@ typedef POOL_HANDLE(pooled_scalar_t) scalar_handle_t;
 int scalar_pool_init(void);
 int scalar_pool_destroy(void);
 
-scalar_handle_t scalar_pool_allocate_scalar(uint32_t);
-int scalar_pool_release_scalar(scalar_handle_t);
-int scalar_pool_increase_refcount(scalar_handle_t);
+scalar_handle_t scalar_allocate(uint32_t);
+int scalar_release(scalar_handle_t);
+int scalar_increase_refcount(scalar_handle_t);
 
 void scalar_set_undef(scalar_handle_t);
 void scalar_set_int_value(scalar_handle_t, intptr_t);

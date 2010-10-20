@@ -67,24 +67,24 @@ int scalar_pool_destroy(void) {
 }
 
 /*
-=item scalar_pool_allocate_scalar()
+=item scalar_allocate()
 
-=item scalar_pool_release_scalar()
+=item scalar_release()
 
-=item scalar_pool_increase_refcount()
+=item scalar_increase_refcount()
 
 Functions for managing allocation of scalars
 
 =cut
 */
-scalar_handle_t scalar_pool_allocate_scalar(uint32_t flags) {
+scalar_handle_t scalar_allocate(uint32_t flags) {
     return POOL_ALLOCATE(pooled_scalar_t, flags);
 }
 
-int scalar_pool_release_scalar(scalar_handle_t handle) {
+int scalar_release(scalar_handle_t handle) {
     return POOL_RELEASE(pooled_scalar_t, handle);
 }
-int scalar_pool_increase_refcount(scalar_handle_t handle) {
+int scalar_increase_refcount(scalar_handle_t handle) {
     return POOL_INCREASE_REFCOUNT(pooled_scalar_t, handle);
 }
 

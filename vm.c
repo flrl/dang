@@ -198,7 +198,7 @@ int vm_symbol_define(vm_context_t *context, identifier_t identifier, uint32_t fl
     vm_symbol_init(symbol);
     symbol->m_identifier = identifier;
     symbol->m_flags = flags;  // FIXME validate this
-    symbol->m_referent.as_scalar = scalar_pool_allocate_scalar(flags);
+    symbol->m_referent.as_scalar = scalar_allocate(flags);
     // FIXME need two sets of flags here: one set for the symbol (to say whether it's a scalar, array, etc), and one set
     // FIXME for the thing being defined (to say whether it's shared, etc)
     
@@ -444,7 +444,7 @@ int vm_symbol_init(vm_symbol_t *self) {
 
 int vm_symbol_destroy(vm_symbol_t *self) {
     assert(self != NULL);
-    scalar_pool_release_scalar(self->m_referent.as_scalar);  // FIXME handle different types of symbol table entry
+    scalar_release(self->m_referent.as_scalar);  // FIXME handle different types of symbol table entry
     memset(self, 0, sizeof(*self));
     return 0;
 }
