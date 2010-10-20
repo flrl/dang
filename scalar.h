@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 #include "floatptr_t.h"
+#include "pool.h"
 
 #define SCALAR_UNDEF            0x00000000u
 #define SCALAR_INT              0x01u
@@ -34,18 +35,16 @@
 #define SCALAR_FLAG_REF         0x00000010u     /* pseudo flag, actually part of the type mask */
 // ...
 #define SCALAR_FLAG_PTR         0x08000000u
-#define SCALAR_FLAG_SHARED      0x40000000u
-#define SCALAR_FLAG_INUSE       0x80000000u
+#define SCALAR_FLAG_SHARED      0x80000000u
 
-#define SCALAR_ALL_FLAGS        0xC800001Fu     /* keep this up to date */
+#define SCALAR_ALL_FLAGS        0x8800001Fu     /* keep this up to date */
 #define ANON_SCALAR_ALL_FLAGS   0x0800001Fu     /* keep this up to date */
 /*
- 1100 1000  0000 0000  0000 0000  0001 1111
- ||   |                              | ''''-- basic types
- ||   |                              '------- value is a reference
- ||   '-------------------------------------- value is a malloc'd pointer, make sure to free it
- |'------------------------------------------ scalar is shared, lock the mutex
- '------------------------------------------- scalar is in use
+ 1000 1000  0000 0000  0000 0000  0001 1111
+ |    |                              | ''''-- basic types
+ |    |                              '------- value is a reference
+ |    '-------------------------------------- value is a malloc'd pointer, make sure to free it
+ '------------------------------------------- scalar is shared, lock the mutex
  */
 
 #define SCALAR_GUTS             \
@@ -54,7 +53,6 @@
         intptr_t as_int;        \
         floatptr_t as_float;    \
         char     *as_string;    \
-        intptr_t next_free;     \
     } m_value
 
 typedef struct scalar_t {
@@ -63,27 +61,18 @@ typedef struct scalar_t {
 
 typedef struct pooled_scalar_t {
     SCALAR_GUTS;
-    size_t m_references;
     pthread_mutex_t *m_mutex;
 } pooled_scalar_t;
 
-typedef uintptr_t scalar_handle_t;
 
-typedef struct scalar_pool_t {
-    size_t m_allocated_count;
-    size_t m_count;
-    pooled_scalar_t *m_items;
-    size_t m_free_count;
-    scalar_handle_t m_free_list_head;
-    pthread_mutex_t m_free_list_mutex;
-} scalar_pool_t;
+typedef POOL_HANDLE(pooled_scalar_t) scalar_handle_t; 
 
 int scalar_pool_init(void);
 int scalar_pool_destroy(void);
 
 scalar_handle_t scalar_pool_allocate_scalar(uint32_t);
-void scalar_pool_release_scalar(scalar_handle_t);
-void scalar_pool_increase_refcount(scalar_handle_t);
+int scalar_pool_release_scalar(scalar_handle_t);
+int scalar_pool_increase_refcount(scalar_handle_t);
 
 void scalar_set_undef(scalar_handle_t);
 void scalar_set_int_value(scalar_handle_t, intptr_t);
