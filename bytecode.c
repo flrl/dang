@@ -25,7 +25,7 @@
 #define NEXT_BYTE(x) (const uint8_t*)(&(x)->m_bytecode[(x)->m_counter + 1])
 
 #define BYTECODE_NUMERIC_OP(type, op) do {                                          \
-    scalar_t a, b, c;                                                          \
+    scalar_t a, b, c;                                                               \
     anon_scalar_init(&a);                                                           \
     anon_scalar_init(&b);                                                           \
     anon_scalar_init(&c);                                                           \
@@ -202,13 +202,11 @@ int inst_SYMDEF(struct vm_context_t *context) {
 }
 
 /*
-=item SYMFIND ( -- handle )
+=item SYMFIND ( -- ref )
 
-Reads an identifier from the following bytecode.  Looks up the identifier in the symbol table, and pushes its handle to the
-data stack, or 0 if the identifier was not found.
+Reads an identifier from the following bytecode and looks it up in the symbol table.
 
-FIXME This should push a reference to the data stack, or undef if not found.
-FIXME If it pushes a raw handle as an int value, then there's no reference counting happening...
+Pushes a reference to the symbol to the data stack if found, or undef if not found.
  
 =cut
  */
@@ -217,11 +215,16 @@ int inst_SYMFIND(struct vm_context_t *context) {
     
     const vm_symbol_t *symbol = vm_symbol_lookup(context, identifier);
 
-    scalar_t handle;
-    anon_scalar_init(&handle);    
-    anon_scalar_set_int_value(&handle, symbol ? symbol->m_referent.as_scalar : 0);
-    vm_ds_push(context, &handle);
-    anon_scalar_destroy(&handle);
+    scalar_t ref;
+    anon_scalar_init(&ref);
+    
+    if (symbol != NULL) {
+        // FIXME handle different types of symbols
+        anon_scalar_set_scalar_reference(&ref, symbol->m_referent.as_scalar);
+    }
+    
+    vm_ds_push(context, &ref);
+    anon_scalar_destroy(&ref);
     
     return 1 + sizeof(identifier);
 }
@@ -242,50 +245,48 @@ int inst_SYMUNDEF(struct vm_context_t *context) {
 }
 
 /*
-=item SLOAD ( handle -- a )
+=item SLOAD ( ref -- a )
 
-Pops a scalar handle from the data stack.  Pushes the value of the scalar matching the handle.
+Pops a scalar reference from the data stack.  Pushes the value of the referenced scalar.
 
-FIXME There won't be a raw handle on the stack.  I think this op just becomes "deref and read from a scalar reference"
- 
 =cut
  */
 int inst_SLOAD(struct vm_context_t *context) {
-    scalar_t handle, a;
-    anon_scalar_init(&handle);
+    scalar_t ref, a;
+    anon_scalar_init(&ref);
     anon_scalar_init(&a);
 
-    vm_ds_pop(context, &handle);
-    scalar_get_value((scalar_handle_t) anon_scalar_get_int_value(&handle), &a);
+    vm_ds_pop(context, &ref);
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_SCAREF);
+    anon_scalar_dereference(&ref, &a);
     vm_ds_push(context, &a);
     
     anon_scalar_destroy(&a);
-    anon_scalar_destroy(&handle);
+    anon_scalar_destroy(&ref);
     
     return 1;
 }
 
 /*
-=item SSTORE ( a handle -- )
+=item SSTORE ( a ref -- )
 
-Pops a scalar handle and a scalar value from the data stack.  Stores the value in the scalar matching the handle.
- 
-FIXME There won't be a raw handle on the stack.  I think this op just becomes "deref and write to a scalar reference"
+Pops a scalar reference and a scalar value from the data stack.  Stores the value in the scalar referenced by the reference.
  
 =cut
  */
 int inst_SSTORE(struct vm_context_t *context) {
-    scalar_t handle, a;
+    scalar_t ref, a;
     
-    anon_scalar_init(&handle);
+    anon_scalar_init(&ref);
     anon_scalar_init(&a);
     
-    vm_ds_pop(context, &handle);
+    vm_ds_pop(context, &ref);
     vm_ds_pop(context, &a);
-    scalar_set_value((scalar_handle_t) anon_scalar_get_int_value(&handle), &a);
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_SCAREF);
+    scalar_set_value(ref.m_value.as_scalar_handle, &a);
     
     anon_scalar_destroy(&a);
-    anon_scalar_destroy(&handle);
+    anon_scalar_destroy(&ref);
     
     return 1;
 }
