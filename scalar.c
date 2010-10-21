@@ -25,8 +25,6 @@
 
 static inline void _scalar_set_undef_unlocked(scalar_t *);
 
-void _scalar_pool_add_to_free_list(scalar_handle_t);
-
 typedef POOL_STRUCT(scalar_t) scalar_pool_t;
 
 POOL_DEFINITIONS(scalar_t, anon_scalar_init, anon_scalar_destroy);
@@ -106,7 +104,7 @@ int scalar_increase_refcount(scalar_handle_t handle) {
 
 =item scalar_set_value()
 
-Functions for setting values on a pooled scalar.  Atomic when the scalar has its SCALAR_FLAG_SHARED flag set.  Any previous
+Functions for setting values on a pooled scalar.  Atomic when the scalar has been allocated as shared.  Any previous
 value is properly cleaned up.
 
 =cut
@@ -189,7 +187,7 @@ void scalar_set_value(scalar_handle_t handle, const scalar_t *val) {
 
 =item scalar_get_value()
 
-Functions for getting values from a pooled scalar.  Atomic when SCALAR_FLAG_SHARED is set.
+Functions for getting values from a pooled scalar.  Atomic when scalar was allocated as shared.
 
 =cut
 */
@@ -271,7 +269,7 @@ void scalar_get_value(scalar_handle_t handle, scalar_t *result) {
 
 =item anon_scalar_destroy()
 
-Setup and teardown functions for scalar_t objects
+Setup and teardown functions for anonymous scalar_t objects
 
 =cut
 */
@@ -303,7 +301,7 @@ int anon_scalar_destroy(scalar_t *self) {
 /*
 =item anon_scalar_clone()
 
-Deep-copy clone of an scalar_t object.  The resulting clone needs to be destroyed independently of the original.
+Deep-copy clone of an anonymous scalar_t object.  The resulting clone needs to be destroyed independently of the original.
 
 =cut
 */
@@ -330,7 +328,7 @@ int anon_scalar_clone(scalar_t * restrict self, const scalar_t * restrict other)
 /*
 =item anon_scalar_assign()
 
-Shallow-copy of an scalar_t object.  Only one of dest and original should be destroyed.
+Shallow-copy of an anonymous scalar_t object.  Only one of dest and original should be destroyed.
 
 =cut
 */
@@ -353,7 +351,7 @@ int anon_scalar_assign(scalar_t * restrict self, const scalar_t * restrict other
 
 =item anon_scalar_set_string_value()
 
-Functions for setting the value of scalar_t objects.  Any previous value is properly cleaned up.
+Functions for setting the value of anonymous scalar_t objects.  Any previous value is properly cleaned up.
 
 =cut
 */
@@ -389,7 +387,7 @@ void anon_scalar_set_string_value(scalar_t *self, const char *sval) {
 
 =item anon_scalar_get_string_value()
 
-Functions for getting values from scalar_t objects.
+Functions for getting values from anonymous scalar_t objects.
 
 =cut
 */
@@ -486,7 +484,7 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
 =item _scalar_set_undef_unlocked()
 
 Sets a pooled scalar's value and related flags back to the "undefined" state, without consideration
-for the SCALAR_FLAG_SHARED flag and without a lock/unlock cycle.
+for whether the scalar was allocated as shared, and without a lock/unlock cycle.
 
 Use this when you already have the scalar locked and need to reset its value to undefined without losing atomicity.
 
