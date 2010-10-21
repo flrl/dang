@@ -13,7 +13,6 @@
 #include <pthread.h>
 
 #include "scalar.h"
-
 #include "pool.h"
 
 typedef POOL_HANDLE(channel_t) channel_handle_t;
