@@ -17,6 +17,7 @@
 
 #include "floatptr_t.h"
 #include "pool.h"
+#include "channel.h"
 
 #define SCALAR_UNDEF            0x00000000u
 #define SCALAR_INT              0x01u
@@ -46,7 +47,6 @@
  */
 
 typedef POOL_HANDLE(scalar_t) scalar_handle_t;
-//typedef POOL_HANDLE(channel_t) channel_handle_t;
 
 typedef struct scalar_t {
     uint32_t m_flags;
@@ -55,7 +55,7 @@ typedef struct scalar_t {
         floatptr_t as_float;
         char     *as_string;
         scalar_handle_t as_scalar_handle;
-//        channel_handle_t as_channel_handle;
+        channel_handle_t as_channel_handle;
     } m_value;
 } scalar_t;
 
@@ -88,7 +88,7 @@ void anon_scalar_set_float_value(scalar_t *, floatptr_t);
 void anon_scalar_set_string_value(scalar_t *, const char *);
 
 void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
-//void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
+void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
 
 intptr_t anon_scalar_get_int_value(const scalar_t *);
 floatptr_t anon_scalar_get_float_value(const scalar_t *);

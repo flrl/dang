@@ -409,18 +409,18 @@ void anon_scalar_set_scalar_reference(scalar_t *self, scalar_handle_t handle) {
     
     self->m_flags = SCALAR_SCAREF;
     self->m_value.as_scalar_handle = handle;
-    POOL_INCREASE_REFCOUNT(scalar_t, handle);
+    scalar_increase_refcount(handle);
 }
 
-//void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) {
-//    assert(self != NULL);
-//    assert(POOL_VALID_HANDLE(scalar_t, handle));
-//    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
-//    
-//    self->m_flags = SCALAR_CHANREF;
-//    self->m_value.as_channel_handle = handle;
-//    POOL_INCREASE_REFCOUNT(channel_t, handle);
-//}
+void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) {
+    assert(self != NULL);
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+    
+    self->m_flags = SCALAR_CHANREF;
+    self->m_value.as_channel_handle = handle;
+    channel_increase_refcount(handle);
+}
 
 /*
 =item anon_scalar_get_int_value()

@@ -15,8 +15,10 @@
 #include <string.h>
 
 #include "bits.h"
-#include "channel.h"
 #include "debug.h"
+#include "scalar.h"
+
+#include "channel.h"
 
 #ifdef POOL_INITIAL_SIZE
 #undef POOL_INITIAL_SIZE
