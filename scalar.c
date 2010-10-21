@@ -402,6 +402,7 @@ cleaned up.
 
 =cut
 */
+
 void anon_scalar_set_scalar_reference(scalar_t *self, scalar_handle_t handle) {
     assert(self != NULL);
     assert(POOL_VALID_HANDLE(scalar_t, handle));
@@ -513,19 +514,28 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
 }
 
 /*
-=item anon_scalar_dereference()
+=item anon_scalar_deref_scalar_reference()
 
-Dereferences a reference type anonymous scalar
+=item anon_scalar_deref_channel_reference()
+
+Dereference reference type anonymous scalars
 
 =cut
 */
-void anon_scalar_deref_scaref(const scalar_t *self, scalar_t *result) {
+scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *self) {
     assert(self != NULL);
-    assert(result != NULL);
     assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_SCAREF);
     
-    scalar_get_value(self->m_value.as_scalar_handle, result);
+    return self->m_value.as_scalar_handle;
 }
+
+channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *self) {
+    assert(self != NULL);
+    assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_CHANREF);
+    
+    return self->m_value.as_channel_handle;    
+}
+
 
 /*
 =back

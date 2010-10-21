@@ -247,6 +247,8 @@ int inst_SYMUNDEF(struct vm_context_t *context) {
 /*
 =item SLOAD ( ref -- a )
 
+FIXME rename this op
+
 Pops a scalar reference from the data stack.  Pushes the value of the referenced scalar.
 
 =cut
@@ -257,8 +259,7 @@ int inst_SLOAD(struct vm_context_t *context) {
     anon_scalar_init(&a);
 
     vm_ds_pop(context, &ref);
-    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_SCAREF);
-    anon_scalar_deref_scaref(&ref, &a);
+    scalar_get_value(anon_scalar_deref_scalar_reference(&ref), &a);
     vm_ds_push(context, &a);
     
     anon_scalar_destroy(&a);
@@ -269,6 +270,8 @@ int inst_SLOAD(struct vm_context_t *context) {
 
 /*
 =item SSTORE ( a ref -- )
+
+FIXME rename this op
 
 Pops a scalar reference and a scalar value from the data stack.  Stores the value in the scalar referenced by the reference.
  
@@ -282,8 +285,8 @@ int inst_SSTORE(struct vm_context_t *context) {
     
     vm_ds_pop(context, &ref);
     vm_ds_pop(context, &a);
-    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_SCAREF);
-    scalar_set_value(ref.m_value.as_scalar_handle, &a);
+
+    scalar_set_value(anon_scalar_deref_scalar_reference(&ref), &a);
     
     anon_scalar_destroy(&a);
     anon_scalar_destroy(&ref);

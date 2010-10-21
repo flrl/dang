@@ -87,12 +87,14 @@ void anon_scalar_set_int_value(scalar_t *, intptr_t);
 void anon_scalar_set_float_value(scalar_t *, floatptr_t);
 void anon_scalar_set_string_value(scalar_t *, const char *);
 
-void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
-void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
-
 intptr_t anon_scalar_get_int_value(const scalar_t *);
 floatptr_t anon_scalar_get_float_value(const scalar_t *);
 void anon_scalar_get_string_value(const scalar_t *, char **);
-void anon_scalar_deref_scaref(const scalar_t *, scalar_t *);
+
+void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
+void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
+
+scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *);
+channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *);
 
 #endif
