@@ -35,37 +35,25 @@
 #define SCALAR_FLAG_REF         0x00000010u     /* pseudo flag, actually part of the type mask */
 // ...
 #define SCALAR_FLAG_PTR         0x08000000u
-#define SCALAR_FLAG_SHARED      0x80000000u
 
-#define SCALAR_ALL_FLAGS        0x8800001Fu     /* keep this up to date */
-#define ANON_SCALAR_ALL_FLAGS   0x0800001Fu     /* keep this up to date */
+#define SCALAR_ALL_FLAGS        0x0800001Fu     /* keep this up to date */
 /*
- 1000 1000  0000 0000  0000 0000  0001 1111
- |    |                              | ''''-- basic types
- |    |                              '------- value is a reference
- |    '-------------------------------------- value is a malloc'd pointer, make sure to free it
- '------------------------------------------- scalar is shared, lock the mutex
+ 0000 1000  0000 0000  0000 0000  0001 1111
+      |                              | ''''-- basic types
+      |                              '------- value is a reference
+      '-------------------------------------- value is a malloc'd pointer, make sure to free it
  */
 
-#define SCALAR_GUTS             \
-    uint32_t m_flags;           \
-    union {                     \
-        intptr_t as_int;        \
-        floatptr_t as_float;    \
-        char     *as_string;    \
-    } m_value
-
 typedef struct scalar_t {
-    SCALAR_GUTS;
-} anon_scalar_t;
+    uint32_t m_flags;
+    union {
+        intptr_t as_int;
+        floatptr_t as_float;
+        char     *as_string;
+    } m_value;
+} scalar_t;
 
-typedef struct pooled_scalar_t {
-    SCALAR_GUTS;
-    pthread_mutex_t *m_mutex;
-} pooled_scalar_t;
-
-
-typedef POOL_HANDLE(pooled_scalar_t) scalar_handle_t; 
+typedef POOL_HANDLE(scalar_t) scalar_handle_t; 
 
 int scalar_pool_init(void);
 int scalar_pool_destroy(void);
@@ -78,25 +66,25 @@ void scalar_set_undef(scalar_handle_t);
 void scalar_set_int_value(scalar_handle_t, intptr_t);
 void scalar_set_float_value(scalar_handle_t, floatptr_t);
 void scalar_set_string_value(scalar_handle_t, const char *);
-void scalar_set_value(scalar_handle_t, const anon_scalar_t *);
+void scalar_set_value(scalar_handle_t, const scalar_t *);
 
 intptr_t scalar_get_int_value(scalar_handle_t);
 floatptr_t scalar_get_float_value(scalar_handle_t);
 void scalar_get_string_value(scalar_handle_t, char **);
-void scalar_get_value(scalar_handle_t, anon_scalar_t *);
+void scalar_get_value(scalar_handle_t, scalar_t *);
 
-int anon_scalar_init(anon_scalar_t *);
-int anon_scalar_destroy(anon_scalar_t *);
+int anon_scalar_init(scalar_t *);
+int anon_scalar_destroy(scalar_t *);
 
-int anon_scalar_clone(anon_scalar_t * restrict, const anon_scalar_t * restrict);
-int anon_scalar_assign(anon_scalar_t * restrict, const anon_scalar_t * restrict);
+int anon_scalar_clone(scalar_t * restrict, const scalar_t * restrict);
+int anon_scalar_assign(scalar_t * restrict, const scalar_t * restrict);
 
-void anon_scalar_set_int_value(anon_scalar_t *, intptr_t);
-void anon_scalar_set_float_value(anon_scalar_t *, floatptr_t);
-void anon_scalar_set_string_value(anon_scalar_t *, const char *);
+void anon_scalar_set_int_value(scalar_t *, intptr_t);
+void anon_scalar_set_float_value(scalar_t *, floatptr_t);
+void anon_scalar_set_string_value(scalar_t *, const char *);
 
-intptr_t anon_scalar_get_int_value(const anon_scalar_t *);
-floatptr_t anon_scalar_get_float_value(const anon_scalar_t *);
-void anon_scalar_get_string_value(const anon_scalar_t *, char **);
+intptr_t anon_scalar_get_int_value(const scalar_t *);
+floatptr_t anon_scalar_get_float_value(const scalar_t *);
+void anon_scalar_get_string_value(const scalar_t *, char **);
 
 #endif
