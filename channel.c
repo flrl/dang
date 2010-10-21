@@ -25,7 +25,6 @@
 #include "pool.h"
 
 #define CHANNEL(handle)     POOL_OBJECT(channel_t, (handle))
-#define CHANNEL_INIT(c,a)   _channel_init(c)
 
 typedef struct channel_t {
     size_t m_allocated_count;
@@ -47,7 +46,7 @@ static inline int _channel_lock(channel_t *);
 static inline int _channel_unlock(channel_t *);
 static int _channel_reserve_unlocked(channel_t *, size_t);
 
-POOL_DEFINITIONS(channel_t, CHANNEL_INIT, void*, _channel_destroy, _channel_lock, _channel_unlock);
+POOL_DEFINITIONS(channel_t, _channel_init, _channel_destroy);
 
 int channel_pool_init(void) {
     return POOL_INIT(channel_t);
@@ -58,7 +57,7 @@ int channel_pool_destroy(void) {
 }
 
 channel_handle_t channel_allocate(void) {
-    return POOL_ALLOCATE(channel_t, NULL);
+    return POOL_ALLOCATE(channel_t, POOL_OBJECT_FLAG_SHARED);
 }
 
 int channel_release(channel_handle_t handle) {
