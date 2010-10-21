@@ -93,6 +93,6 @@ void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
 intptr_t anon_scalar_get_int_value(const scalar_t *);
 floatptr_t anon_scalar_get_float_value(const scalar_t *);
 void anon_scalar_get_string_value(const scalar_t *, char **);
-void anon_scalar_dereference(const scalar_t *, scalar_t *);
+void anon_scalar_deref_scaref(const scalar_t *, scalar_t *);
 
 #endif

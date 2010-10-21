@@ -258,7 +258,7 @@ int inst_SLOAD(struct vm_context_t *context) {
 
     vm_ds_pop(context, &ref);
     assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_SCAREF);
-    anon_scalar_dereference(&ref, &a);
+    anon_scalar_deref_scaref(&ref, &a);
     vm_ds_push(context, &a);
     
     anon_scalar_destroy(&a);
