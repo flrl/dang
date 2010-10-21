@@ -292,7 +292,18 @@ int anon_scalar_destroy(scalar_t *self) {
                 break;
         }
     }
-    // FIXME other cleanup stuff
+
+    if (self->m_flags & SCALAR_FLAG_REF) {
+        switch (self->m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_SCAREF:
+                POOL_RELEASE(scalar_t, self->m_value.as_scalar_handle);
+                break;
+            default:
+                debug("unexpected anon scalar type: %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
+                break;
+        }
+    }
+
     self->m_flags = SCALAR_UNDEF;
     self->m_value.as_int = 0;
     return 0;
@@ -379,6 +390,37 @@ void anon_scalar_set_string_value(scalar_t *self, const char *sval) {
     self->m_flags = SCALAR_FLAG_PTR | SCALAR_STRING;
     self->m_value.as_string = strdup(sval);
 }
+
+
+/*
+=item anon_scalar_set_scalar_reference()
+
+=item anon_scalar_set_channel_reference()
+
+Functions for setting up anonymous scalar_t objects to reference other objects.  Any previous value is properly
+cleaned up.
+
+=cut
+*/
+void anon_scalar_set_scalar_reference(scalar_t *self, scalar_handle_t handle) {
+    assert(self != NULL);
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+    
+    self->m_flags = SCALAR_SCAREF;
+    self->m_value.as_scalar_handle = handle;
+    POOL_INCREASE_REFCOUNT(scalar_t, handle);
+}
+
+//void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) {
+//    assert(self != NULL);
+//    assert(POOL_VALID_HANDLE(scalar_t, handle));
+//    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+//    
+//    self->m_flags = SCALAR_CHANREF;
+//    self->m_value.as_channel_handle = handle;
+//    POOL_INCREASE_REFCOUNT(channel_t, handle);
+//}
 
 /*
 =item anon_scalar_get_int_value()
@@ -468,6 +510,21 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
     }
 
     return;
+}
+
+/*
+=item anon_scalar_dereference()
+
+Dereferences a reference type anonymous scalar
+
+=cut
+*/
+void anon_scalar_deref_scaref(const scalar_t *self, scalar_t *result) {
+    assert(self != NULL);
+    assert(result != NULL);
+    assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_SCAREF);
+    
+    scalar_get_value(self->m_value.as_scalar_handle, result);
 }
 
 /*

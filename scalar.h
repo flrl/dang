@@ -28,6 +28,7 @@
 #define SCALAR_SCAREF           0x11u
 #define SCALAR_ARRREF           0x12u
 #define SCALAR_HASHREF          0x13u
+#define SCALAR_CHANREF          0x14u
 
 #define SCALAR_TYPE_MASK        0x0000001Fu
 #define SCALAR_FLAGS_MASK       0xFFFFFFE0u
@@ -44,16 +45,19 @@
       '-------------------------------------- value is a malloc'd pointer, make sure to free it
  */
 
+typedef POOL_HANDLE(scalar_t) scalar_handle_t;
+//typedef POOL_HANDLE(channel_t) channel_handle_t;
+
 typedef struct scalar_t {
     uint32_t m_flags;
     union {
         intptr_t as_int;
         floatptr_t as_float;
         char     *as_string;
+        scalar_handle_t as_scalar_handle;
+//        channel_handle_t as_channel_handle;
     } m_value;
 } scalar_t;
-
-typedef POOL_HANDLE(scalar_t) scalar_handle_t; 
 
 int scalar_pool_init(void);
 int scalar_pool_destroy(void);
@@ -83,8 +87,12 @@ void anon_scalar_set_int_value(scalar_t *, intptr_t);
 void anon_scalar_set_float_value(scalar_t *, floatptr_t);
 void anon_scalar_set_string_value(scalar_t *, const char *);
 
+void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
+//void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
+
 intptr_t anon_scalar_get_int_value(const scalar_t *);
 floatptr_t anon_scalar_get_float_value(const scalar_t *);
 void anon_scalar_get_string_value(const scalar_t *, char **);
+void anon_scalar_dereference(const scalar_t *, scalar_t *);
 
 #endif
