@@ -28,7 +28,7 @@
 =cut
 */
 
-STACK_DEFINITIONS(anon_scalar_t, anon_scalar_init, anon_scalar_destroy, anon_scalar_clone, anon_scalar_assign);
+STACK_DEFINITIONS(scalar_t, anon_scalar_init, anon_scalar_destroy, anon_scalar_clone, anon_scalar_assign);
 STACK_DEFINITIONS(size_t, STACK_basic_init, STACK_basic_destroy, STACK_basic_clone, STACK_basic_assign);
 
 typedef struct vm_symboltable_registry_node_t {
@@ -92,24 +92,24 @@ Data stack management functions
 
 =cut
  */
-int vm_ds_push(vm_context_t *context, const anon_scalar_t *value) {
+int vm_ds_push(vm_context_t *context, const scalar_t *value) {
     assert(context != NULL);
     assert(value != NULL);
     
-    return STACK_PUSH(anon_scalar_t, &context->m_data_stack, value);
+    return STACK_PUSH(scalar_t, &context->m_data_stack, value);
 }
 
-int vm_ds_pop(vm_context_t *context, anon_scalar_t *result) {
+int vm_ds_pop(vm_context_t *context, scalar_t *result) {
     assert(context != NULL);
     
-    return STACK_POP(anon_scalar_t, &context->m_data_stack, result);
+    return STACK_POP(scalar_t, &context->m_data_stack, result);
 }
 
-int vm_ds_top(vm_context_t *context, anon_scalar_t *result) {
+int vm_ds_top(vm_context_t *context, scalar_t *result) {
     assert(context != NULL);
     assert(result != NULL);
     
-    return STACK_TOP(anon_scalar_t, &context->m_data_stack, result);
+    return STACK_TOP(scalar_t, &context->m_data_stack, result);
 }
 
 
@@ -399,12 +399,12 @@ int vm_context_init(vm_context_t *self) {
     assert(self != NULL);
     memset(self, 0, sizeof(*self));
     
-    if (0 == STACK_INIT(anon_scalar_t, &self->m_data_stack)) {
+    if (0 == STACK_INIT(scalar_t, &self->m_data_stack)) {
         if (0 == STACK_INIT(size_t, &self->m_return_stack)) {
             return 0;
         }
         else {
-            STACK_DESTROY(anon_scalar_t, &self->m_data_stack);
+            STACK_DESTROY(scalar_t, &self->m_data_stack);
             return -1;
         }
     }
@@ -416,7 +416,7 @@ int vm_context_init(vm_context_t *self) {
 int vm_context_destroy(vm_context_t *self) {
     assert(self != NULL);
     
-    STACK_DESTROY(anon_scalar_t, &self->m_data_stack);
+    STACK_DESTROY(scalar_t, &self->m_data_stack);
     STACK_DESTROY(size_t, &self->m_return_stack);
     
     if (0 == vm_symboltable_destroy(self->m_symboltable)) {

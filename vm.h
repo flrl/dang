@@ -15,7 +15,7 @@
 
 typedef uintptr_t identifier_t;
 
-typedef STACK_STRUCT(anon_scalar_t) data_stack_t;
+typedef STACK_STRUCT(scalar_t) data_stack_t;
 typedef STACK_STRUCT(size_t) return_stack_t;
 
 typedef struct vm_symbol_t {
@@ -46,9 +46,9 @@ typedef struct vm_context_t {
 
 void *vm_execute(void *);
 
-int vm_ds_push(vm_context_t *, const anon_scalar_t *);
-int vm_ds_pop(vm_context_t *, anon_scalar_t *);
-int vm_ds_top(vm_context_t *, anon_scalar_t *);
+int vm_ds_push(vm_context_t *, const scalar_t *);
+int vm_ds_pop(vm_context_t *, scalar_t *);
+int vm_ds_top(vm_context_t *, scalar_t *);
 
 int vm_rs_push(vm_context_t *, size_t);
 int vm_rs_pop(vm_context_t *, size_t *);

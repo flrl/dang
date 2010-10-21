@@ -29,7 +29,7 @@
 typedef struct channel_t {
     size_t m_allocated_count;
     size_t m_count;
-    anon_scalar_t *m_items;
+    scalar_t *m_items;
     size_t m_start;
     pthread_mutex_t m_mutex;
     pthread_cond_t m_has_items;
@@ -68,7 +68,7 @@ int channel_increase_refcount(channel_handle_t handle) {
     return POOL_INCREASE_REFCOUNT(channel_t, handle);
 }
 
-int channel_read(channel_handle_t handle, anon_scalar_t *result) {
+int channel_read(channel_handle_t handle, scalar_t *result) {
     assert(POOL_VALID_HANDLE(channel_t, handle));
     assert(POOL_ISINUSE(channel_t, handle));
     assert(result != NULL);
@@ -90,7 +90,7 @@ int channel_read(channel_handle_t handle, anon_scalar_t *result) {
     }
 }
 
-int channel_tryread(channel_handle_t handle, anon_scalar_t *result) {
+int channel_tryread(channel_handle_t handle, scalar_t *result) {
     assert(POOL_VALID_HANDLE(channel_t, handle));
     assert(POOL_ISINUSE(channel_t, handle));
     assert(result != NULL);
@@ -114,7 +114,7 @@ int channel_tryread(channel_handle_t handle, anon_scalar_t *result) {
     }
 }
 
-int channel_write(channel_handle_t handle, const anon_scalar_t *value) {
+int channel_write(channel_handle_t handle, const scalar_t *value) {
     assert(POOL_VALID_HANDLE(channel_t, handle));
     assert(POOL_ISINUSE(channel_t, handle));
     assert(value != NULL);
@@ -147,7 +147,7 @@ static int _channel_init(channel_t *self) {
         if (0 == pthread_mutex_lock(&self->m_mutex)) {
             if (0 == pthread_cond_init(&self->m_has_items, NULL)) {
                 if (0 == pthread_cond_init(&self->m_has_space, NULL)) {
-                    if (NULL != (self->m_items = calloc(_channel_initial_size, sizeof(anon_scalar_t)))) {
+                    if (NULL != (self->m_items = calloc(_channel_initial_size, sizeof(scalar_t)))) {
                         self->m_allocated_count = _channel_initial_size;
                         self->m_start = 0;
                         self->m_count = 0;
@@ -186,13 +186,13 @@ static int _channel_reserve_unlocked(channel_t *self, size_t new_size) {
 
     if (self->m_allocated_count >= new_size)  return 0;
     
-    anon_scalar_t *new_ringbuf = calloc(new_size, sizeof(*new_ringbuf));
+    scalar_t *new_ringbuf = calloc(new_size, sizeof(*new_ringbuf));
     if (new_ringbuf == NULL)  return -1;
     
     size_t straight_count = self->m_allocated_count - self->m_start > self->m_count ? self->m_count : self->m_allocated_count - self->m_start;
     size_t rotated_count = self->m_count - straight_count;
-    memcpy(&new_ringbuf[0], &self->m_items[self->m_start], straight_count * sizeof(anon_scalar_t));
-    memcpy(&new_ringbuf[straight_count], &self->m_items[0], rotated_count * sizeof(anon_scalar_t));
+    memcpy(&new_ringbuf[0], &self->m_items[self->m_start], straight_count * sizeof(scalar_t));
+    memcpy(&new_ringbuf[straight_count], &self->m_items[0], rotated_count * sizeof(scalar_t));
     free(self->m_items);
     self->m_allocated_count = new_size;
     self->m_items = new_ringbuf;

@@ -25,9 +25,9 @@ channel_handle_t channel_allocate(void);
 int channel_release(channel_handle_t);
 int channel_increase_refcount(channel_handle_t);
 
-int channel_read(channel_handle_t, anon_scalar_t *);
-int channel_tryread(channel_handle_t, anon_scalar_t *);
-int channel_write(channel_handle_t, const anon_scalar_t *);
+int channel_read(channel_handle_t, scalar_t *);
+int channel_tryread(channel_handle_t, scalar_t *);
+int channel_write(channel_handle_t, const scalar_t *);
 
 #if 0
 /*
@@ -55,8 +55,8 @@ Functions for reading from a channel
 
 =cut
  */
-int channel_read(channel_t *, anon_scalar_t *);
-int channel_tryread(channel_t *, anon_scalar_t *);
+int channel_read(channel_t *, scalar_t *);
+int channel_tryread(channel_t *, scalar_t *);
 
 /*
 =item channel_write()
@@ -65,7 +65,7 @@ Write to a channel
 
 =cut
  */
-int channel_write(channel_t *, const anon_scalar_t *);
+int channel_write(channel_t *, const scalar_t *);
 
 #endif
 

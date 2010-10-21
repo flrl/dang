@@ -25,7 +25,7 @@
 #define NEXT_BYTE(x) (const uint8_t*)(&(x)->m_bytecode[(x)->m_counter + 1])
 
 #define BYTECODE_NUMERIC_OP(type, op) do {                                          \
-    anon_scalar_t a, b, c;                                                          \
+    scalar_t a, b, c;                                                          \
     anon_scalar_init(&a);                                                           \
     anon_scalar_init(&b);                                                           \
     anon_scalar_init(&c);                                                           \
@@ -119,7 +119,7 @@ Swaps the two items at the top of the data stack
 =cut
  */
 int inst_SWAP(vm_context_t *context) {
-    anon_scalar_t a, b;
+    scalar_t a, b;
     vm_ds_pop(context, &b);
     vm_ds_pop(context, &a);
     vm_ds_push(context, &b);
@@ -137,7 +137,7 @@ Duplicates the item on the top of the data stack
 =cut
  */
 int inst_DUP(vm_context_t *context) {
-    anon_scalar_t a;
+    scalar_t a;
     vm_ds_top(context, &a);
     vm_ds_push(context, &a);
     anon_scalar_destroy(&a);
@@ -168,7 +168,7 @@ int inst_0BRANCH(vm_context_t *context) {
     const intptr_t branch_offset = *(const intptr_t *) NEXT_BYTE(context);
     int incr = 0;
 
-    anon_scalar_t a;
+    scalar_t a;
     vm_ds_pop(context, &a);
 
     if (anon_scalar_get_int_value(&a) == 0) {
@@ -217,7 +217,7 @@ int inst_SYMFIND(struct vm_context_t *context) {
     
     const vm_symbol_t *symbol = vm_symbol_lookup(context, identifier);
 
-    anon_scalar_t handle;
+    scalar_t handle;
     anon_scalar_init(&handle);    
     anon_scalar_set_int_value(&handle, symbol ? symbol->m_referent.as_scalar : 0);
     vm_ds_push(context, &handle);
@@ -251,7 +251,7 @@ FIXME There won't be a raw handle on the stack.  I think this op just becomes "d
 =cut
  */
 int inst_SLOAD(struct vm_context_t *context) {
-    anon_scalar_t handle, a;
+    scalar_t handle, a;
     anon_scalar_init(&handle);
     anon_scalar_init(&a);
 
@@ -275,7 +275,7 @@ FIXME There won't be a raw handle on the stack.  I think this op just becomes "d
 =cut
  */
 int inst_SSTORE(struct vm_context_t *context) {
-    anon_scalar_t handle, a;
+    scalar_t handle, a;
     
     anon_scalar_init(&handle);
     anon_scalar_init(&a);
@@ -301,7 +301,7 @@ int inst_SSTORE(struct vm_context_t *context) {
 int inst_INTLIT(vm_context_t *context) {
     const intptr_t lit = *(const intptr_t *) NEXT_BYTE(context);
     
-    anon_scalar_t a;
+    scalar_t a;
     anon_scalar_init(&a);
     anon_scalar_set_int_value(&a, lit);
     vm_ds_push(context, &a);
@@ -387,7 +387,7 @@ int inst_STRLIT(struct vm_context_t *context) {
     const uint16_t len = *(uint16_t *) (&context->m_bytecode[context->m_counter + 1]);
     const char *str = (const char *) (&context->m_bytecode[context->m_counter + 1 + sizeof(len)]);
     
-    anon_scalar_t s;
+    scalar_t s;
     anon_scalar_init(&s);
     
     if (len > 0) {
@@ -415,7 +415,7 @@ Pops two strings from the stack, and pushes back their concatenation.
 =cut
  */
 int inst_STRCAT(struct vm_context_t *context) {
-    anon_scalar_t a, b, c;
+    scalar_t a, b, c;
     char *str_a, *str_b, *str_c;
 
     anon_scalar_init(&a);
@@ -457,7 +457,7 @@ Reads a floating point literal from the following bytecode and pushes it onto th
 int inst_FLTLIT(struct vm_context_t *context) {
     const floatptr_t lit = *(const floatptr_t *) (&context->m_bytecode[context->m_counter + 1]);
     
-    anon_scalar_t a;
+    scalar_t a;
     anon_scalar_init(&a);
     anon_scalar_set_float_value(&a, lit);
     vm_ds_push(context, &a);
@@ -522,7 +522,7 @@ Pops two floating point values from the data stack and pushes back their remaind
 =cut
  */
 int inst_FLTMOD(struct vm_context_t *context) {
-    anon_scalar_t a, b, c;
+    scalar_t a, b, c;
     
     anon_scalar_init(&a);
     anon_scalar_init(&b);
