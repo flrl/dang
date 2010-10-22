@@ -291,7 +291,6 @@ int vm_symbol_undefine(vm_context_t *context, identifier_t identifier) {
     
     if (symbol->m_left_child != NULL) {
         if (symbol->m_right_child != NULL) {
-            // FIXME two child nodes - tricky bit goes here
             vm_symbol_t *replacement = symbol;
             vm_symbol_t *join;
             if (rand() & 0x4000) {
