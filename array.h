@@ -14,18 +14,18 @@
 
 #include "scalar.h"
 
-struct array_t;
+typedef struct array_t array_t;
 
-int array_init(struct array_t *);
-int array_destroy(struct array_t *);
-int array_reserve(struct array_t *, size_t);
+int array_init(array_t *);
+int array_destroy(array_t *);
+int array_reserve(array_t *, size_t);
 
-scalar_handle_t array_item_at(struct array_t *, size_t);
+scalar_handle_t array_item_at(array_t *, size_t);
 
-int array_push(struct array_t *, scalar_handle_t);
-int array_unshift(struct array_t *, scalar_handle_t);
+int array_push(array_t *, scalar_handle_t);
+int array_unshift(array_t *, scalar_handle_t);
 
-scalar_handle_t array_pop(struct array_t *);
-scalar_handle_t array_shift(struct array_t *);
+scalar_handle_t array_pop(array_t *);
+scalar_handle_t array_shift(array_t *);
 
 #endif

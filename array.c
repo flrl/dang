@@ -13,11 +13,11 @@
 
 #include "array.h"
 
-typedef struct array_t {
+struct array_t {
     size_t m_allocated_count;
     size_t m_count;
     scalar_handle_t *m_items;
-} array_t;
+};
 
 static const size_t array_initial_reserve_size = 10; // FIXME 
 static const size_t array_grow_size = 10; // FIXME
