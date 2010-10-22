@@ -29,49 +29,4 @@ int channel_read(channel_handle_t, struct scalar_t *);
 int channel_tryread(channel_handle_t, struct scalar_t *);
 int channel_write(channel_handle_t, const struct scalar_t *);
 
-#if 0
-/*
-=head1 channel.h
-
-=over
-
-=item channel_init()
-
-=item channel_destroy()
-
-Setup and teardown functions for channel_t objects
- 
-=cut
- */
-int channel_init(channel_t *);
-int channel_destroy(channel_t *);
-
-/*
-=item channel_read()
- 
-=item channel_tryread()
-
-Functions for reading from a channel
-
-=cut
- */
-int channel_read(channel_t *, struct scalar_t *);
-int channel_tryread(channel_t *, struct scalar_t *);
-
-/*
-=item channel_write()
-
-Write to a channel
-
-=cut
- */
-int channel_write(channel_t *, const struct scalar_t *);
-
 #endif
-
-#endif
-/*
-=back
-
-=cut
-*/
