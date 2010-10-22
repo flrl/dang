@@ -30,6 +30,17 @@
 #define POOL_ISINUSE(type, handle)          (POOL_WRAPPER(type, handle).m_next_free == POOL_FLAG_INUSE)
 #define POOL_VALID_HANDLE(type, handle)     ((handle) > 0 && (handle) <= POOL_SINGLETON(type).m_allocated_count)
 
+#define POOL_INIT(type)                         type##_POOL_INIT()
+#define POOL_DESTROY(type)                      type##_POOL_DESTROY()
+#define POOL_ALLOCATE(type, arg)                type##_POOL_ALLOCATE(arg)
+#define POOL_INCREASE_REFCOUNT(type, handle)    type##_POOL_INCREASE_REFCOUNT(handle)
+#define POOL_RELEASE(type, handle)              type##_POOL_RELEASE(handle)
+#define POOL_LOCK(type, handle)                 type##_POOL_LOCK(handle)
+#define POOL_UNLOCK(type, handle)               type##_POOL_UNLOCK(handle)
+
+#define POOL_basic_init(p, a)   (0)
+#define POOL_basic_destroy(p)   (0)
+
 #define POOL_STRUCT(type)   struct type##_POOL {                                                \
     size_t              m_allocated_count;                                                      \
     size_t              m_count;                                                                \
@@ -242,19 +253,5 @@ static inline int type##_POOL_RELEASE(POOL_HANDLE(type) handle) {               
     }                                                                                           \
 }
 
-
-#define POOL_INIT(type)                         type##_POOL_INIT()
-#define POOL_DESTROY(type)                      type##_POOL_DESTROY()
-#define POOL_ALLOCATE(type, arg)                type##_POOL_ALLOCATE(arg)
-#define POOL_INCREASE_REFCOUNT(type, handle)    type##_POOL_INCREASE_REFCOUNT(handle)
-#define POOL_RELEASE(type, handle)              type##_POOL_RELEASE(handle)
-#define POOL_LOCK(type, handle)                 type##_POOL_LOCK(handle)
-#define POOL_UNLOCK(type, handle)               type##_POOL_UNLOCK(handle)
-
-#define POOL_basic_init(p, a)   (0)
-#define POOL_basic_initarg      (void *)
-#define POOL_basic_destroy(p)   (0)
-#define POOL_basic_lock(p)      (0)
-#define POOL_basic_unlock(p)    (0)
 
 #endif
