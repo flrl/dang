@@ -41,10 +41,6 @@ int symboltable_init(symboltable_t *restrict, symboltable_t *restrict);
 int symboltable_destroy(symboltable_t *);
 int symboltable_garbage_collect(void);
 
-int symbol_init(symbol_t *);
-int symbol_destroy(symbol_t *);
-int symbol_reap(symbol_t *);
-
 int symbol_define(symboltable_t *, identifier_t, uint32_t);
 const symbol_t *symbol_lookup(symboltable_t *, identifier_t);
 int symbol_undefine(symboltable_t *, identifier_t);

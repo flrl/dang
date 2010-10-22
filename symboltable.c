@@ -25,56 +25,31 @@ typedef struct symboltable_registry_node_t {
 static symboltable_registry_node_t *_symboltable_registry = NULL;
 static pthread_mutex_t _symboltable_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+int _symbol_init(symbol_t *);
+int _symbol_destroy(symbol_t *);
+int _symbol_reap(symbol_t *);
 
 /*
- =item symbol_init()
- 
- =item symbol_destroy()
- 
- Setup and teardown functions for individual symbol_t objects
- 
- =cut
- */
-int symbol_init(symbol_t *self) {
-    assert(self != NULL);
-    memset(self, 0, sizeof(*self));
-    return 0;
-}
+=head1 NAME
 
-int symbol_destroy(symbol_t *self) {
-    assert(self != NULL);
-    scalar_release(self->m_referent.as_scalar);  // FIXME handle different types of symbol table entry
-    memset(self, 0, sizeof(*self));
-    return 0;
-}
+symboltable
+
+=head1 INTRODUCTION
+
+=head1 PUBLIC INTERFACE
+
+=over
+
+=cut
+*/
 
 /*
- =item symbol_reap()
- 
- Recursively destroys a symbol_t object and all of its children
- 
- =cut
- */
-int symbol_reap(symbol_t *self) {
-    assert(self != NULL);
-    if (self->m_left_child != NULL) {
-        symbol_reap(self->m_left_child);
-        free(self->m_left_child);
-    }
-    if (self->m_right_child != NULL) {
-        symbol_reap(self->m_right_child);
-        free(self->m_right_child);
-    }
-    return symbol_destroy(self);
-}
+=item symboltable_init() 
 
-/*
- =item symboltable_init() 
- 
- Initialises a symbol table and associates it with its parent.  The symbol table is also registered globally for later
- garbage collection.
- 
- =cut
+Initialises a symbol table and associates it with its parent.  The symbol table is also registered globally for later
+garbage collection.
+
+=cut
  */
 int symboltable_init(symboltable_t *restrict self, symboltable_t *restrict parent) {
     assert(self != NULL);
@@ -99,13 +74,13 @@ int symboltable_init(symboltable_t *restrict self, symboltable_t *restrict paren
 }
 
 /*
- =item symboltable_destroy()
- 
- Decrements a symbol table's reference count.  If the reference count reaches zero, destroys the symbol table, removes it from
- the global registry, and decrements its parent's reference count.  If the reference count does not reach zero, the symbol table
- is left in the global registry for later garbage collection.
- 
- =cut
+=item symboltable_destroy()
+
+Decrements a symbol table's reference count.  If the reference count reaches zero, destroys the symbol table, removes it from
+the global registry, and decrements its parent's reference count.  If the reference count does not reach zero, the symbol table
+is left in the global registry for later garbage collection.
+
+=cut
  */
 int symboltable_destroy(symboltable_t *self) {
     assert(self != NULL);
@@ -114,7 +89,7 @@ int symboltable_destroy(symboltable_t *self) {
     if (--self->m_references == 0) {
         if (self->m_parent != NULL)  --self->m_parent->m_references;
         if (self->m_symbols != NULL) {
-            symbol_reap(self->m_symbols);
+            _symbol_reap(self->m_symbols);
             free(self->m_symbols);
         } 
         
@@ -139,16 +114,16 @@ int symboltable_destroy(symboltable_t *self) {
 }
 
 /*
- =item symboltable_garbage_collect()
- 
- Checks the global symbol table registry for entries with a zero reference count, and destroys them.
- 
- This situation arises when a scope ends while it is still referenced elsewhere (e.g. by a child scope running in a different
- thread of execution).  When the child scope ends it decrements the parent's reference count, but by this time the parent scope 
- has already ended.  Periodically calling symboltable_garbage_collect allows the resources held by these scopes to be reclaimed
- by the system.
- 
- =cut
+=item symboltable_garbage_collect()
+
+Checks the global symbol table registry for entries with a zero reference count, and destroys them.
+
+This situation arises when a scope ends while it is still referenced elsewhere (e.g. by a child scope running in a different
+thread of execution).  When the child scope ends it decrements the parent's reference count, but by this time the parent scope 
+has already ended.  Periodically calling symboltable_garbage_collect allows the resources held by these scopes to be reclaimed
+by the system.
+
+=cut
  */
 int symboltable_garbage_collect(void) {
     if (0 == pthread_mutex_lock(&_symboltable_registry_mutex)) {
@@ -167,7 +142,7 @@ int symboltable_garbage_collect(void) {
                 
                 if (old_table->m_parent != NULL)  --old_table->m_parent->m_references;
                 if (old_table->m_symbols != NULL) {
-                    symbol_reap(old_table->m_symbols);
+                    _symbol_reap(old_table->m_symbols);
                     free(old_table->m_symbols);
                 }
                 
@@ -184,16 +159,16 @@ int symboltable_garbage_collect(void) {
 }
 
 /*
- =item symbol_define()
- 
- Define a symbol within the current scope.
- 
- =cut
+=item symbol_define()
+
+Define a symbol within the current scope.
+
+=cut
  */
 int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags) {
     assert(table != NULL);
     symbol_t *symbol = calloc(1, sizeof(*symbol));
-    symbol_init(symbol);
+    _symbol_init(symbol);
     symbol->m_identifier = identifier;
     symbol->m_flags = flags;  // FIXME validate this
     symbol->m_referent.as_scalar = scalar_allocate(flags);  // FIXME different types of symbol depending on flags
@@ -229,7 +204,7 @@ int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags)
             }
             else {
                 debug("identifier %"PRIuPTR" is already defined in current scope\n", identifier);
-                symbol_destroy(symbol);
+                _symbol_destroy(symbol);
                 free(symbol);
                 return -1;
             }
@@ -241,14 +216,14 @@ int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags)
 }
 
 /*
- =item symbol_lookup()
- 
- Look for a symbol in the current scope.  If no such symbol is found, search parent scopes, then grandparent scopes, etc,
- until either a matching symbol is found, or the top level ("global") scope has been unsuccessfully searched.
- 
- Returns a pointer to the symbol_t object found, or NULL if the symbol is not defined.
- 
- =cut
+=item symbol_lookup()
+
+Look for a symbol in the current scope.  If no such symbol is found, search parent scopes, then grandparent scopes, etc,
+until either a matching symbol is found, or the top level ("global") scope has been unsuccessfully searched.
+
+Returns a pointer to the symbol_t object found, or NULL if the symbol is not defined.
+
+=cut
  */
 const symbol_t *symbol_lookup(symboltable_t *table, identifier_t identifier) {
     assert(table != NULL);
@@ -272,14 +247,14 @@ const symbol_t *symbol_lookup(symboltable_t *table, identifier_t identifier) {
 }
 
 /*
- =item symbol_undefine()
- 
- Removes a symbol from the current scope.  This does I<not> search upwards through ancestor scopes.
- 
- Returns 0 when the requested symbol no longer exists (or never did exist) at the current scope.  Other
- return values indicate an error undefining the symbol, and that it may still exist at the current scope.
- 
- =cut
+=item symbol_undefine()
+
+Removes a symbol from the current scope.  This does I<not> search upwards through ancestor scopes.
+
+Returns 0 when the requested symbol no longer exists (or never did exist) at the current scope.  Other
+return values indicate an error undefining the symbol, and that it may still exist at the current scope.
+
+=cut
  */
 int symbol_undefine(symboltable_t *table, identifier_t identifier) {
     assert(table != NULL);
@@ -328,7 +303,7 @@ int symbol_undefine(symboltable_t *table, identifier_t identifier) {
                 debug("symbol's parent doesn't claim it as a child\n");
             }
             
-            symbol_destroy(symbol);
+            _symbol_destroy(symbol);
             free(symbol);
             return 0;                
         }
@@ -342,7 +317,7 @@ int symbol_undefine(symboltable_t *table, identifier_t identifier) {
             else {
                 debug("symbol's parent doesn't claim it as a child\n");
             }
-            symbol_destroy(symbol);
+            _symbol_destroy(symbol);
             free(symbol);
             return 0;
         }
@@ -357,7 +332,7 @@ int symbol_undefine(symboltable_t *table, identifier_t identifier) {
         else {
             debug("symbol's parent doesn't claim it as a child\n");
         }
-        symbol_destroy(symbol);
+        _symbol_destroy(symbol);
         free(symbol);
         return 0;
     }
@@ -371,9 +346,66 @@ int symbol_undefine(symboltable_t *table, identifier_t identifier) {
         else {
             debug("symbol's parent doesn't claim it as a child\n");
         }
-        symbol_destroy(symbol);
+        _symbol_destroy(symbol);
         free(symbol);
         return 0;
     }
 }
 
+/*
+=back
+
+=head1 PRIVATE INTERFACE
+
+=over
+
+=cut
+ */
+
+/*
+=item _symbol_init()
+
+=item _symbol_destroy()
+
+Setup and teardown functions for individual symbol_t objects
+
+=cut
+ */
+int _symbol_init(symbol_t *self) {
+    assert(self != NULL);
+    memset(self, 0, sizeof(*self));
+    return 0;
+}
+
+int _symbol_destroy(symbol_t *self) {
+    assert(self != NULL);
+    scalar_release(self->m_referent.as_scalar);  // FIXME handle different types of symbol table entry
+    memset(self, 0, sizeof(*self));
+    return 0;
+}
+
+/*
+=item _symbol_reap()
+
+Recursively destroys a symbol_t object and all of its children
+
+=cut
+ */
+int _symbol_reap(symbol_t *self) {
+    assert(self != NULL);
+    if (self->m_left_child != NULL) {
+        _symbol_reap(self->m_left_child);
+        free(self->m_left_child);
+    }
+    if (self->m_right_child != NULL) {
+        _symbol_reap(self->m_right_child);
+        free(self->m_right_child);
+    }
+    return _symbol_destroy(self);
+}
+
+/*
+=back
+
+=cut
+*/
