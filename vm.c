@@ -198,9 +198,9 @@ int vm_symbol_define(vm_context_t *context, identifier_t identifier, uint32_t fl
     vm_symbol_init(symbol);
     symbol->m_identifier = identifier;
     symbol->m_flags = flags;  // FIXME validate this
-    symbol->m_referent.as_scalar = scalar_allocate(flags);
-    // FIXME need two sets of flags here: one set for the symbol (to say whether it's a scalar, array, etc), and one set
-    // FIXME for the thing being defined (to say whether it's shared, etc)
+    symbol->m_referent.as_scalar = scalar_allocate(flags);  // FIXME different types of symbol depending on flags
+    // FIXME symbols flags needs to be able to say what type of object to allocate, and whether to allocated it as shared
+    // FIXME and then need to set up m_flags and m_referent appropriately based on this
     
     if (context->m_symboltable->m_symbols == NULL) {
         context->m_symboltable->m_symbols = symbol;
