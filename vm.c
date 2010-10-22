@@ -19,9 +19,13 @@
 #include "vm.h"
 
 /*
-=head1 VM
+=head1 NAME
+
+vm
 
 =head1 INTRODUCTION
+
+...
 
 =head1 PUBLIC INTERFACE
 

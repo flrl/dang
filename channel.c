@@ -30,9 +30,13 @@
 #define CHANNEL_MUTEX(handle)   POOL_WRAPPER(channel_t, (handle)).m_mutex
 
 /*
-=head1 CHANNEL
+=head1 NAME
+
+channel
 
 =head1 INTRODUCTION
+
+...
 
 =head1 PUBLIC INTERFACE
 

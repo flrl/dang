@@ -36,6 +36,8 @@ symboltable
 
 =head1 INTRODUCTION
 
+...
+
 =head1 PUBLIC INTERFACE
 
 =over

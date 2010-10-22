@@ -30,9 +30,13 @@ typedef POOL_STRUCT(scalar_t) scalar_pool_t;
 POOL_DEFINITIONS(scalar_t, anon_scalar_init, anon_scalar_destroy);
 
 /*
-=head1 SCALARS
+=head1 NAME
+
+scalar
 
 =head1 INTRODUCTION
+
+...
 
 =head1 PUBLIC INTERFACE
 

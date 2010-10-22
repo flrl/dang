@@ -5,7 +5,15 @@
  *  Created by Ellie on 3/10/10.
  *  Copyright 2010 Ellie. All rights reserved.
  *
-=head1 bytecode
+=head1 NAME
+
+bytecode
+
+=head1 INTRODUCTION
+
+...
+
+=head1 PUBLIC INTERFACE
 
 =over
 
@@ -41,7 +49,7 @@
 
 
 /*
-=item END
+=item END ( -- )
  
 Indicates the end of the bytecode stream.
  
@@ -54,7 +62,7 @@ int inst_END(vm_context_t *context) {
 }
 
 /*
-=item NOOP
+=item NOOP ( -- )
 
 Does nothing.  Used to pad the bytecode when alignment is important.
 
