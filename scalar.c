@@ -82,7 +82,7 @@ scalar_handle_t scalar_allocate(uint32_t flags) {
 int scalar_release(scalar_handle_t handle) {
     return POOL_RELEASE(scalar_t, handle);
 }
-int scalar_increase_refcount(scalar_handle_t handle) {
+scalar_handle_t scalar_increase_refcount(scalar_handle_t handle) {
     return POOL_INCREASE_REFCOUNT(scalar_t, handle);
 }
 

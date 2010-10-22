@@ -190,7 +190,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(uint32_t flags) {          
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline int type##_POOL_INCREASE_REFCOUNT(POOL_HANDLE(type) handle) {                     \
+static inline POOL_HANDLE(type) type##_POOL_INCREASE_REFCOUNT(POOL_HANDLE(type) handle) {       \
     assert(POOL_VALID_HANDLE(type, handle));                                                    \
     assert(POOL_WRAPPER(type, handle).m_next_free == POOL_FLAG_INUSE);                          \
     assert(POOL_WRAPPER(type, handle).m_references > 0);                                        \
@@ -198,10 +198,10 @@ static inline int type##_POOL_INCREASE_REFCOUNT(POOL_HANDLE(type) handle) {     
     if (0 == POOL_LOCK(type, handle)) {                                                         \
         ++POOL_WRAPPER(type,handle).m_references;                                               \
         POOL_UNLOCK(type, handle);                                                              \
-        return 0;                                                                               \
+        return handle;                                                                          \
     }                                                                                           \
     else {                                                                                      \
-        return -1;                                                                              \
+        return 0;                                                                               \
     }                                                                                           \
 }                                                                                               \
                                                                                                 \

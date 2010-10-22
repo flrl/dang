@@ -114,7 +114,7 @@ Increase a channel's refcount.  Call C<channel_release()> to lower it again.
 
 =cut
  */
-int channel_increase_refcount(channel_handle_t handle) {
+channel_handle_t channel_increase_refcount(channel_handle_t handle) {
     return POOL_INCREASE_REFCOUNT(channel_t, handle);
 }
 
