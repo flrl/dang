@@ -196,7 +196,7 @@ int inst_SYMDEF(struct vm_context_t *context) {
     const uint32_t flags = *(const uint32_t *) (&context->m_bytecode[context->m_counter + 1]);
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1 + sizeof(flags)]);
     
-    vm_symbol_define(context, identifier, flags);
+    symbol_define(context->m_symboltable, identifier, flags);
     
     return 1 + sizeof(flags) + sizeof(identifier);
 }
@@ -213,7 +213,7 @@ Pushes a reference to the symbol to the data stack if found, or undef if not fou
 int inst_SYMFIND(struct vm_context_t *context) {
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1]);
     
-    const vm_symbol_t *symbol = vm_symbol_lookup(context, identifier);
+    const symbol_t *symbol = symbol_lookup(context->m_symboltable, identifier);
 
     scalar_t ref;
     anon_scalar_init(&ref);
@@ -239,7 +239,7 @@ Reads an identifier from the following bytecode.  Removes the identifier from th
 int inst_SYMUNDEF(struct vm_context_t *context) {
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1]);
     
-    vm_symbol_undefine(context, identifier);
+    symbol_undefine(context->m_symboltable, identifier);
     
     return 1 + sizeof(identifier);
 }
