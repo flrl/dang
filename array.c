@@ -49,8 +49,9 @@ int array_reserve(array_t *self, size_t new_size) {
         scalar_t *new_items = calloc(new_size, sizeof(scalar_t));
         if (NULL != new_items) {
             memcpy(new_items, self->m_items, self->m_count * sizeof(scalar_t));
-            free(self->m_items);
+            scalar_t *tmp = self->m_items;
             self->m_items = new_items;
+            free(tmp);
             self->m_allocated_count = new_size;
             return 0;
         }
@@ -75,15 +76,7 @@ int array_item_at(array_t *self, size_t index, scalar_t *result) {
 int array_push(array_t *self, const scalar_t *value) {
     assert(self != NULL);
     if (self->m_count == self->m_allocated_count) {
-        scalar_t *tmp = self->m_items;
-        self->m_items = calloc(self->m_allocated_count + array_grow_size, sizeof(scalar_t));
-        if (self->m_items == NULL) {
-            self->m_items = tmp;
-            return -1;
-        }
-        self->m_allocated_count += array_grow_size;
-        memcpy(self->m_items, tmp, self->m_count * sizeof(scalar_t));
-        free(tmp);
+        if (0 != array_reserve(self, 2 * self->m_allocated_count))  return -1;
     }
     anon_scalar_clone(&self->m_items[self->m_count++], value);
     return 0;
@@ -93,6 +86,8 @@ int array_unshift(array_t *self, const scalar_t *value) {
     assert(self != NULL);
     assert(value != NULL);
     if (self->m_count == self->m_allocated_count) {
+        // n.b. this can't currently simply call reserve, cause it wants at least one 
+        // of the new items to be at the start rather than the end.
         scalar_t *tmp = self->m_items;
         self->m_items = calloc(self->m_allocated_count + array_grow_size, sizeof(scalar_t));
         if (self->m_items == NULL) {
