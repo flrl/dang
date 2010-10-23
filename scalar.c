@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "array.h"
 #include "debug.h"
 #include "channel.h"
 
@@ -308,7 +309,14 @@ int anon_scalar_destroy(scalar_t *self) {
     if (self->m_flags & SCALAR_FLAG_REF) {
         switch (self->m_flags & SCALAR_TYPE_MASK) {
             case SCALAR_SCAREF:
-                POOL_RELEASE(scalar_t, self->m_value.as_scalar_handle);
+                scalar_release(self->m_value.as_scalar_handle);
+                break;
+            case SCALAR_ARRREF:
+                array_release(self->m_value.as_array_handle);
+                break;
+            //...
+            case SCALAR_CHANREF:
+                channel_release(self->m_value.as_channel_handle);
                 break;
             default:
                 debug("unexpected anon scalar type: %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
@@ -341,7 +349,19 @@ int anon_scalar_clone(scalar_t * restrict self, const scalar_t * restrict other)
             self->m_flags = SCALAR_FLAG_PTR | SCALAR_STRING;
             self->m_value.as_string = strdup(other->m_value.as_string);
             break;
-        // FIXME other setup stuff
+        case SCALAR_SCAREF:
+            self->m_flags = SCALAR_SCAREF;
+            self->m_value.as_scalar_handle = scalar_reference(other->m_value.as_scalar_handle);
+            break;
+        case SCALAR_ARRREF:
+            self->m_flags = SCALAR_ARRREF;
+            self->m_value.as_array_handle = array_reference(other->m_value.as_array_handle);
+            break;
+        //...
+        case SCALAR_CHANREF:
+            self->m_flags = SCALAR_CHANREF;
+            self->m_value.as_channel_handle = channel_reference(other->m_value.as_channel_handle);
+            break;
         default:
             memcpy(self, other, sizeof(*self));
     }
@@ -407,6 +427,8 @@ void anon_scalar_set_string_value(scalar_t *self, const char *sval) {
 /*
 =item anon_scalar_set_scalar_reference()
 
+=item anon_scalar_set_array_reference()
+
 =item anon_scalar_set_channel_reference()
 
 Functions for setting up anonymous scalar_t objects to reference other objects.  Any previous value is properly
@@ -417,16 +439,22 @@ cleaned up.
 
 void anon_scalar_set_scalar_reference(scalar_t *self, scalar_handle_t handle) {
     assert(self != NULL);
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
     self->m_flags = SCALAR_SCAREF;
     self->m_value.as_scalar_handle = scalar_reference(handle);
 }
 
+void anon_scalar_set_array_reference(scalar_t *self, array_handle_t handle) {
+    assert(self != NULL);
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+    
+    self->m_flags = SCALAR_ARRREF;
+    self->m_value.as_array_handle = array_reference(handle);
+}
+
 void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) {
     assert(self != NULL);
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
     self->m_flags = SCALAR_CHANREF;
@@ -526,6 +554,8 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
 /*
 =item anon_scalar_deref_scalar_reference()
 
+=item anon_scalar_deref_array_reference()
+
 =item anon_scalar_deref_channel_reference()
 
 Dereference reference type anonymous scalars
@@ -537,6 +567,13 @@ scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *self) {
     assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_SCAREF);
     
     return self->m_value.as_scalar_handle;
+}
+
+array_handle_t anon_scalar_deref_array_reference(const scalar_t *self) {
+    assert(self != NULL);
+    assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    
+    return self->m_value.as_array_handle;
 }
 
 channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *self) {

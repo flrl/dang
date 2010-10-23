@@ -67,6 +67,7 @@ typedef struct scalar_t {
         floatptr_t as_float;
         char     *as_string;
         scalar_handle_t as_scalar_handle;
+        array_handle_t as_array_handle;
         channel_handle_t as_channel_handle;
     } m_value;
 } scalar_t;
@@ -85,10 +86,15 @@ void scalar_set_float_value(scalar_handle_t, floatptr_t);
 void scalar_set_string_value(scalar_handle_t, const char *);
 void scalar_set_value(scalar_handle_t, const scalar_t *);
 
+// FIXME set_foo_reference functions for pooled scalars
+// FIXME most of the set*'s need their guts ripped out i think, and converted to wrappers around anon_*
+
 intptr_t scalar_get_int_value(scalar_handle_t);
 floatptr_t scalar_get_float_value(scalar_handle_t);
 void scalar_get_string_value(scalar_handle_t, char **);
 void scalar_get_value(scalar_handle_t, scalar_t *);
+
+// FIXME deref_foo_reference functions for pooled scalars
 
 int anon_scalar_init(scalar_t *);
 int anon_scalar_destroy(scalar_t *);
@@ -105,9 +111,11 @@ floatptr_t anon_scalar_get_float_value(const scalar_t *);
 void anon_scalar_get_string_value(const scalar_t *, char **);
 
 void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
+void anon_scalar_set_array_reference(scalar_t *, array_handle_t);
 void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
 
 scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *);
+array_handle_t anon_scalar_deref_array_reference(const scalar_t *);
 channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *);
 
 #endif
