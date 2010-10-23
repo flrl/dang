@@ -267,13 +267,13 @@ int inst_SYMUNDEF(struct vm_context_t *context) {
 }
 
 /*
-=item SRGET ( ref -- a )
+=item SRREAD ( ref -- a )
 
 Pops a scalar reference from the data stack.  Pushes the value of the referenced scalar.
 
 =cut
  */
-int inst_SRGET(struct vm_context_t *context) {
+int inst_SRREAD(struct vm_context_t *context) {
     scalar_t ref, a;
     anon_scalar_init(&ref);
     anon_scalar_init(&a);
@@ -289,13 +289,13 @@ int inst_SRGET(struct vm_context_t *context) {
 }
 
 /*
-=item SRSET ( a ref -- )
+=item SRWRITE ( a ref -- )
 
 Pops a scalar reference and a scalar value from the data stack.  Stores the value in the scalar referenced by the reference.
  
 =cut
  */
-int inst_SRSET(struct vm_context_t *context) {
+int inst_SRWRITE(struct vm_context_t *context) {
     scalar_t ref, a;
     
     anon_scalar_init(&ref);
