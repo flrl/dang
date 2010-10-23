@@ -313,65 +313,31 @@ int inst_SRSET(struct vm_context_t *context) {
 }
 
 /*
-=item ARGET ( ref i -- a )
+=item ARIND ( ar i -- sr )
 
-Pops a scalar index and an array reference from the data stack.  Pushes back the value stored in the referenced array at the
-specified index.
-
-FIXME actually rename these all back to load/store?
+Pops an index and an array reference from the data stack.  Pushes back a reference to the item in the array at index.
 
 =cut
  */
-int inst_ARGET(struct vm_context_t *context) {
-    scalar_t ref, i, a;
+int inst_ARIND(struct vm_context_t *context) {
+    scalar_t ar, i, sr;
     
-    anon_scalar_init(&ref);
+    anon_scalar_init(&ar);
     anon_scalar_init(&i);
-    anon_scalar_init(&a);
+    anon_scalar_init(&sr);
     
     vm_ds_pop(context, &i);
-    vm_ds_pop(context, &ref);
+    vm_ds_pop(context, &ar);
     
-    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    scalar_handle_t item = array_item_at(ref.m_value.as_array_handle, (size_t) anon_scalar_get_int_value(&i));
-    scalar_get_value(item, &a);
-    scalar_release(item);
-    vm_ds_push(context, &a);
+    assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    scalar_handle_t s = array_item_at(anon_scalar_deref_array_reference(&ar), (size_t) anon_scalar_get_int_value(&i));
+    anon_scalar_set_scalar_reference(&sr, s);
+    scalar_release(s);
+    vm_ds_push(context, &sr);
     
-    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&sr);
     anon_scalar_destroy(&i);
-    anon_scalar_destroy(&ref);
-    
-    return 1;
-}
-
-/*
-=item ARSET ( a ref i -- )
-
-Pops a scalar index, an array reference, and a value from the data stack, and stores the value in the array at the specified
-index.
-
-=cut
- */
-int inst_ARSET(struct vm_context_t *context) {
-    scalar_t a, ref, i;
-    
-    anon_scalar_init(&a);
-    anon_scalar_init(&ref);
-    anon_scalar_init(&i);
-    
-    vm_ds_pop(context, &i);
-    vm_ds_pop(context, &ref);
-    vm_ds_pop(context, &a);
-    
-    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    scalar_handle_t item = array_item_at(ref.m_value.as_array_handle, (size_t) anon_scalar_get_int_value(&i));
-    scalar_set_value(item, &a);
-    scalar_release(item);
-    
-    anon_scalar_destroy(&i);
-    anon_scalar_destroy(&ref);
-    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&ar);
     
     return 1;
 }
