@@ -82,8 +82,8 @@ scalar_handle_t scalar_allocate(uint32_t flags) {
 int scalar_release(scalar_handle_t handle) {
     return POOL_RELEASE(scalar_t, handle);
 }
-scalar_handle_t scalar_increase_refcount(scalar_handle_t handle) {
-    return POOL_INCREASE_REFCOUNT(scalar_t, handle);
+scalar_handle_t scalar_reference(scalar_handle_t handle) {
+    return POOL_REFERENCE(scalar_t, handle);
 }
 
 
@@ -413,8 +413,7 @@ void anon_scalar_set_scalar_reference(scalar_t *self, scalar_handle_t handle) {
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
     self->m_flags = SCALAR_SCAREF;
-    self->m_value.as_scalar_handle = handle;
-    scalar_increase_refcount(handle);
+    self->m_value.as_scalar_handle = scalar_reference(handle);
 }
 
 void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) {
@@ -423,8 +422,7 @@ void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) 
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
     self->m_flags = SCALAR_CHANREF;
-    self->m_value.as_channel_handle = handle;
-    channel_increase_refcount(handle);
+    self->m_value.as_channel_handle = channel_reference(handle);
 }
 
 /*

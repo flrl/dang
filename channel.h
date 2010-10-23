@@ -23,7 +23,7 @@ int channel_pool_destroy(void);
 
 channel_handle_t channel_allocate(void);
 int channel_release(channel_handle_t);
-channel_handle_t channel_increase_refcount(channel_handle_t);
+channel_handle_t channel_reference(channel_handle_t);
 
 int channel_read(channel_handle_t, struct scalar_t *);
 int channel_tryread(channel_handle_t, struct scalar_t *);

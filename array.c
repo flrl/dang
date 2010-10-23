@@ -109,7 +109,7 @@ scalar_handle_t array_item_at(array_t *self, size_t index) {
     assert(self != NULL);
     assert(index < self->m_count);
     
-    return scalar_increase_refcount(self->m_items[self->m_first + index]);
+    return scalar_reference(self->m_items[self->m_first + index]);
 }
 
 /*
@@ -126,7 +126,7 @@ int array_push(array_t *self, scalar_handle_t handle) {
         if (0 != _array_grow_back(self, self->m_count))  return -1;
     }
 
-    self->m_items[self->m_count++] = scalar_increase_refcount(handle);
+    self->m_items[self->m_count++] = scalar_reference(handle);
     return 0;
 }
 
@@ -144,7 +144,7 @@ int array_unshift(array_t *self, scalar_handle_t handle) {
         if (0 != _array_grow_front(self, self->m_count))  return -1;
     }
     
-    self->m_items[--self->m_first] = scalar_increase_refcount(handle);
+    self->m_items[--self->m_first] = scalar_reference(handle);
     return 0;
 }
 

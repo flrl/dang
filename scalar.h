@@ -64,7 +64,7 @@ int scalar_pool_destroy(void);
 
 scalar_handle_t scalar_allocate(uint32_t);
 int scalar_release(scalar_handle_t);
-scalar_handle_t scalar_increase_refcount(scalar_handle_t);
+scalar_handle_t scalar_reference(scalar_handle_t);
 
 void scalar_set_undef(scalar_handle_t);
 void scalar_set_int_value(scalar_handle_t, intptr_t);

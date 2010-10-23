@@ -34,7 +34,7 @@
 #define POOL_DESTROY(type)                      type##_POOL_DESTROY()
 #define POOL_ALLOCATE(type, flags)              type##_POOL_ALLOCATE(flags)
 #define POOL_ALLOCATE_MANY(type, count, flags)  type##_POOL_ALLOCATE_MANY(count, flags)
-#define POOL_INCREASE_REFCOUNT(type, handle)    type##_POOL_INCREASE_REFCOUNT(handle)
+#define POOL_REFERENCE(type, handle)            type##_POOL_REFERENCE(handle)
 #define POOL_RELEASE(type, handle)              type##_POOL_RELEASE(handle)
 #define POOL_LOCK(type, handle)                 type##_POOL_LOCK(handle)
 #define POOL_UNLOCK(type, handle)               type##_POOL_UNLOCK(handle)
@@ -278,7 +278,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE_MANY(size_t many, uint32_t 
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline POOL_HANDLE(type) type##_POOL_INCREASE_REFCOUNT(POOL_HANDLE(type) handle) {       \
+static inline POOL_HANDLE(type) type##_POOL_REFERENCE(POOL_HANDLE(type) handle) {               \
     assert(POOL_VALID_HANDLE(type, handle));                                                    \
     assert(POOL_WRAPPER(type, handle).m_next_free == POOL_FLAG_INUSE);                          \
     assert(POOL_WRAPPER(type, handle).m_references > 0);                                        \
