@@ -135,36 +135,40 @@ scalar_handle_t array_item_at(array_handle_t handle, size_t index) {
 /*
 =item array_push()
 
-Adds an item at the end of the array.  The caller still needs to release their own copy of the handle.
+Adds an item at the end of the array.
 
 =cut
 */
-int array_push(array_handle_t handle, scalar_handle_t s) {
+int array_push(array_handle_t handle, const scalar_t *value) {
     assert(POOL_VALID_HANDLE(array_t, handle));
 
     if (ARRAY(handle).m_first + ARRAY(handle).m_count == ARRAY(handle).m_allocated_count) {
         if (0 != _array_grow_back(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
     }
 
-    ARRAY(handle).m_items[ARRAY(handle).m_count++] = scalar_reference(s);
+    scalar_handle_t s = scalar_allocate(0); // FIXME flags
+    scalar_set_value(s, value);
+    ARRAY(handle).m_items[ARRAY(handle).m_count++] = s;
     return 0;
 }
 
 /*
 =item array_unshift()
 
-Adds an item before the first in the array.  The caller still needs to release their own copy of the handle.
+Adds an item at the start of the array.
 
 =cut
 */
-int array_unshift(array_handle_t handle, scalar_handle_t s) {
+int array_unshift(array_handle_t handle, const scalar_t *value) {
     assert(POOL_VALID_HANDLE(array_t, handle));
     
     if (ARRAY(handle).m_first == 0) {
         if (0 != _array_grow_front(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
     }
     
-    ARRAY(handle).m_items[--ARRAY(handle).m_first] = scalar_reference(s);
+    scalar_handle_t s = scalar_allocate(0); // FIXME flags
+    scalar_set_value(s, value);
+    ARRAY(handle).m_items[--ARRAY(handle).m_first] = s;
     return 0;
 }
 
@@ -176,14 +180,17 @@ done with it.
 
 =cut
 */
-scalar_handle_t array_pop(array_handle_t handle) {
+int array_pop(array_handle_t handle, scalar_t *result) {
     assert(POOL_VALID_HANDLE(array_t, handle));
 
     if (ARRAY(handle).m_count > 0) {
-        return ARRAY(handle).m_items[ARRAY(handle).m_first + --ARRAY(handle).m_count];
+        scalar_handle_t s = ARRAY(handle).m_items[ARRAY(handle).m_first + --ARRAY(handle).m_count];
+        if (result != NULL)  scalar_get_value(s, result);
+        scalar_release(s);
+        return 0;
     }
     else {
-        return 0;
+        return -1;
     }
 }
 
@@ -195,15 +202,18 @@ done with it.
 
 =cut
 */
-scalar_handle_t array_shift(array_handle_t handle) {
+int array_shift(array_handle_t handle, scalar_t *result) {
     assert(POOL_VALID_HANDLE(array_t, handle));
 
     if (ARRAY(handle).m_count > 0) {
         --ARRAY(handle).m_count;
-        return ARRAY(handle).m_items[ARRAY(handle).m_first++];
+        scalar_handle_t s = ARRAY(handle).m_items[ARRAY(handle).m_first++];
+        if (result != NULL)  scalar_get_value(s, result);
+        scalar_release(s);
+        return 0;
     }
     else {
-        return 0;
+        return -1;
     }
 }
 

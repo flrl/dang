@@ -25,6 +25,7 @@ typedef POOL_HANDLE(scalar_t) scalar_handle_t;
 #endif
 
 typedef struct array_t array_t;
+struct scalar_t;
 
 int array_pool_init(void);
 int array_pool_destroy(void);
@@ -36,10 +37,10 @@ int array_release(array_handle_t);
 
 scalar_handle_t array_item_at(array_handle_t, size_t);
 
-int array_push(array_handle_t, scalar_handle_t);
-int array_unshift(array_handle_t, scalar_handle_t);
+int array_push(array_handle_t, const struct scalar_t *);
+int array_unshift(array_handle_t, const struct scalar_t *);
 
-scalar_handle_t array_pop(array_handle_t);
-scalar_handle_t array_shift(array_handle_t);
+int array_pop(array_handle_t, struct scalar_t *);
+int array_shift(array_handle_t, struct scalar_t *);
 
 #endif
