@@ -317,6 +317,8 @@ int inst_SRWRITE(struct vm_context_t *context) {
 
 Pops an index and an array reference from the data stack.  Pushes back a reference to the item in the array at index.
 
+If the index is out of range, the array automatically grows to accomodate it.
+
 =cut
  */
 int inst_ARIND(struct vm_context_t *context) {
