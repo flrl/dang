@@ -21,6 +21,7 @@ bytecode
  */
 
 #include <assert.h>
+#include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
@@ -227,8 +228,18 @@ int inst_SYMFIND(struct vm_context_t *context) {
     anon_scalar_init(&ref);
     
     if (symbol != NULL) {
-        // FIXME handle different types of symbols
-        anon_scalar_set_scalar_reference(&ref, symbol->m_referent.as_scalar);
+        switch(symbol->m_flags & SYMBOL_TYPE_MASK) {
+            case SYMBOL_SCALAR:
+                anon_scalar_set_scalar_reference(&ref, symbol->m_referent.as_scalar);
+                break;
+            //...
+            case SYMBOL_CHANNEL:
+                anon_scalar_set_channel_reference(&ref, symbol->m_referent.as_channel);
+                break;
+            default:
+                debug("unhandled symbol type: %"PRIu32"\n", symbol->m_flags);
+                break;
+        }
     }
     
     vm_ds_push(context, &ref);
