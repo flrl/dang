@@ -20,16 +20,48 @@ struct array_t {
     scalar_handle_t *m_items;
 };
 
-static const size_t array_initial_reserve_size = 10; // FIXME 
-static const size_t array_grow_size = 10; // FIXME
+static const size_t _array_initial_reserve_size = 16;
 
+static int _array_grow_back(array_t *, size_t);
+static int _array_grow_front(array_t *, size_t);
+
+/*
+=head1 NAME
+
+array
+
+=head1 INTRODUCTION
+
+=head1 PUBLIC INTERFACE
+
+=over
+
+=cut
+*/
+
+
+/*
+=item array_init()
+
+=item array_destroy()
+
+Setup and teardown functions for array_t objects
+
+=cut
+*/
 int array_init(array_t *self) {
     assert(self != NULL);
     
     memset(self, 0, sizeof(*self));
-    self->m_items = calloc(array_initial_reserve_size, sizeof(*self->m_items));
+    self->m_items = calloc(_array_initial_reserve_size, sizeof(*self->m_items));
 
-    return (self->m_items != NULL ? 0 : -1);
+    if (self->m_items != NULL) {
+        self->m_allocated_count = _array_initial_reserve_size;
+        return 0;
+    }
+    else {
+        return -1;
+    }
 }
 
 int array_destroy(array_t *self) {
@@ -44,29 +76,135 @@ int array_destroy(array_t *self) {
     return 0;
 }
 
-// this is sort of obsolete
-int array_reserve(array_t *self, size_t new_size) {
+/*
+=item array_reserve()
+
+Ensure an array has space for a certain number of items.  Additional space, if any, is allocated at the end of the array.
+
+=cut
+*/
+int array_reserve(array_t *self, size_t target_size) {
     assert(self != NULL);
-    if (self->m_allocated_count < new_size) {
-        scalar_handle_t *new_items = calloc(new_size, sizeof(*new_items));
-        if (NULL != new_items) {
-            memcpy(new_items, self->m_items, self->m_allocated_count * sizeof(*self->m_items));
-            scalar_handle_t *tmp = self->m_items;
-            self->m_items = new_items;
-            free(tmp);
-            self->m_allocated_count = new_size;
-            return 0;
-        }
-        else {
-            return -1;
-        }
+
+    size_t effective_size = self->m_allocated_count - self->m_first;
+
+    if (effective_size < target_size) {
+        return _array_grow_back(self, target_size - effective_size);
     }
     else {
-        return 0; // do nothing
+        return 0;
     }
 }
 
-int array_grow_back(array_t *self, size_t n) {
+/*
+=item array_item_at()
+
+Gets a handle to the item in the array at a given index.  The caller must release the handle when they are done with it.
+
+FIXME: Make it grow the array as necessary to ensure the index is valid (setting any new intermediate items to undef)
+
+=cut
+*/
+scalar_handle_t array_item_at(array_t *self, size_t index) {
+    assert(self != NULL);
+    assert(index < self->m_count);
+    
+    return scalar_increase_refcount(self->m_items[self->m_first + index]);
+}
+
+/*
+=item array_push()
+
+Adds an item at the end of the array.  The caller still needs to release their own copy of the handle.
+
+=cut
+*/
+int array_push(array_t *self, scalar_handle_t handle) {
+    assert(self != NULL);
+
+    if (self->m_first + self->m_count == self->m_allocated_count) {
+        if (0 != _array_grow_back(self, self->m_count))  return -1;
+    }
+
+    self->m_items[self->m_count++] = scalar_increase_refcount(handle);
+    return 0;
+}
+
+/*
+=item array_unshift()
+
+Adds an item before the first in the array.  The caller still needs to release their own copy of the handle.
+
+=cut
+*/
+int array_unshift(array_t *self, scalar_handle_t handle) {
+    assert(self != NULL);
+    
+    if (self->m_first == 0) {
+        if (0 != _array_grow_front(self, self->m_count))  return -1;
+    }
+    
+    self->m_items[--self->m_first] = scalar_increase_refcount(handle);
+    return 0;
+}
+
+/*
+=item array_pop()
+
+Removes an item from the end of the array and returns it.  The caller must release the returned item when they are
+done with it.
+
+=cut
+*/
+scalar_handle_t array_pop(array_t *self) {
+    assert(self != NULL);
+
+    if (self->m_count > 0) {
+        return self->m_items[self->m_first + --self->m_count];
+    }
+    else {
+        return 0;
+    }
+}
+
+/*
+=item array_shift()
+
+Removes an item from the start of the array and returns it.  The caller must release the returned itme when they're
+done with it.
+
+=cut
+*/
+scalar_handle_t array_shift(array_t *self) {
+    assert(self != NULL);
+
+    if (self->m_count > 0) {
+        --self->m_count;
+        return self->m_items[self->m_first++];
+    }
+    else {
+        return 0;
+    }
+}
+
+/*
+=back
+
+=head1 PRIVATE INTERFACE
+
+=over
+
+=cut
+*/
+
+/*
+=item _array_grow_back()
+
+Allocates space for an additional n items at the end of the current allocation.
+
+=cut
+*/
+static int _array_grow_back(array_t *self, size_t n) {
     assert(self != NULL);
     scalar_handle_t *new_items = calloc(self->m_allocated_count + n, sizeof(*new_items));
     if (new_items != NULL) {
@@ -82,7 +220,14 @@ int array_grow_back(array_t *self, size_t n) {
     }
 }
 
-int array_grow_front(array_t *self, size_t n) {
+/*
+=item _array_grow_front()
+
+Allocates space for an additional n items at the front of the current allocation.
+
+=cut
+*/
+static int _array_grow_front(array_t *self, size_t n) {
     assert(self != NULL);
     scalar_handle_t *new_items = calloc(self->m_allocated_count + n, sizeof(*new_items));
     if (new_items != NULL) {
@@ -99,54 +244,8 @@ int array_grow_front(array_t *self, size_t n) {
     }
 }
 
-scalar_handle_t array_item_at(array_t *self, size_t index) {
-    assert(self != NULL);
-    assert(index < self->m_count);
-    
-    return scalar_increase_refcount(self->m_items[self->m_first + index]);
-}
+/*
+=back
 
-int array_push(array_t *self, scalar_handle_t handle) {
-    assert(self != NULL);
-
-    if (self->m_first + self->m_count == self->m_allocated_count) {
-        if (0 != array_grow_back(self, self->m_count))  return -1;
-    }
-
-    self->m_items[self->m_count++] = scalar_increase_refcount(handle);
-    return 0;
-}
-
-int array_unshift(array_t *self, scalar_handle_t handle) {
-    assert(self != NULL);
-    
-    if (self->m_first == 0) {
-        if (0 != array_grow_front(self, self->m_count))  return -1;
-    }
-    
-    self->m_items[--self->m_first] = scalar_increase_refcount(handle);
-    return 0;
-}
-
-scalar_handle_t array_pop(array_t *self) {
-    assert(self != NULL);
-
-    if (self->m_count > 0) {
-        return self->m_items[self->m_first + --self->m_count];
-    }
-    else {
-        return 0;
-    }
-}
-
-scalar_handle_t array_shift(array_t *self) {
-    assert(self != NULL);
-
-    if (self->m_count > 0) {
-        --self->m_count;
-        return self->m_items[self->m_first++];
-    }
-    else {
-        return 0;
-    }
-}
+=cut
+*/
