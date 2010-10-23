@@ -110,6 +110,17 @@ channel_handle_t channel_allocate_many(size_t count) {
 }
 
 /*
+=item channel_reference()
+
+Get a handle to an existing channel (increasing its reference count).  The handle must be released with C<channel_release()>.
+
+=cut
+ */
+channel_handle_t channel_reference(channel_handle_t handle) {
+    return POOL_REFERENCE(channel_t, handle);
+}
+
+/*
 =item channel_release()
 
 Release a channel handle, decrementing the objects refcount and causing its destruction if it reaches zero.
@@ -118,17 +129,6 @@ Release a channel handle, decrementing the objects refcount and causing its dest
  */
 int channel_release(channel_handle_t handle) {
     return POOL_RELEASE(channel_t, handle);
-}
-
-/*
-=item channel_increase_refcount()
-
-Increase a channel's refcount.  Call C<channel_release()> to lower it again.
-
-=cut
- */
-channel_handle_t channel_reference(channel_handle_t handle) {
-    return POOL_REFERENCE(channel_t, handle);
 }
 
 /*
