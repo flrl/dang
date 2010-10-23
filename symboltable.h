@@ -48,6 +48,7 @@ typedef struct symboltable_t {
 
 int symboltable_init(symboltable_t *restrict, symboltable_t *restrict);
 int symboltable_destroy(symboltable_t *);
+int symboltable_isolate(symboltable_t *);
 int symboltable_garbage_collect(void);
 
 int symbol_define(symboltable_t *, identifier_t, uint32_t);

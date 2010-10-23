@@ -117,6 +117,27 @@ int symboltable_destroy(symboltable_t *self) {
 }
 
 /*
+=item symboltable_isolate()
+
+Cuts off a symbol table from its parent.  Symbols defined in ancestor scopes will no longer be accessible from this symbol table.
+
+To make copies of any needed ancestor symbols prior to isolating a symbol table, use C<symbol_clone()> to clone them.
+
+=cut
+ */
+int symboltable_isolate(symboltable_t *table) {
+    assert(table != NULL);
+    
+    if (table->m_parent != NULL) {
+        assert(table->m_parent->m_references > 0);
+        --table->m_parent->m_references;
+        table->m_parent = NULL;
+    }
+    
+    return 0;
+}
+
+/*
 =item symboltable_garbage_collect()
 
 Checks the global symbol table registry for entries with a zero reference count, and destroys them.
