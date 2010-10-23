@@ -172,10 +172,20 @@ int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags)
     symbol_t *symbol = calloc(1, sizeof(*symbol));
     _symbol_init(symbol);
     symbol->m_identifier = identifier;
-    symbol->m_flags = flags;  // FIXME validate this
-    symbol->m_referent.as_scalar = scalar_allocate(flags);  // FIXME different types of symbol depending on flags
-    // FIXME symbols flags needs to be able to say what type of object to allocate, and whether to allocated it as shared
-    // FIXME and then need to set up m_flags and m_referent appropriately based on this
+    switch (flags & SYMBOL_TYPE_MASK) {
+        case SYMBOL_SCALAR:
+            symbol->m_flags = SYMBOL_SCALAR;
+            symbol->m_referent.as_scalar = scalar_allocate(flags & ~SYMBOL_TYPE_MASK);
+            break;
+        //...
+        case SYMBOL_CHANNEL:
+            symbol->m_flags = SYMBOL_SCALAR;
+            symbol->m_referent.as_channel = channel_allocate();
+            break;
+        default:
+            debug("unhandled symbol type: %"PRIu32"\n", flags);
+            break;
+    }
     
     if (table->m_symbols == NULL) {
         table->m_symbols = symbol;
@@ -213,6 +223,7 @@ int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags)
         } while (parent != NULL);
         
         debug("not supposed to get here\n");
+        _symbol_destroy(symbol);
         return -1;
     }
 }
@@ -381,7 +392,18 @@ int _symbol_init(symbol_t *self) {
 
 int _symbol_destroy(symbol_t *self) {
     assert(self != NULL);
-    scalar_release(self->m_referent.as_scalar);  // FIXME handle different types of symbol table entry
+    switch (self->m_flags & SYMBOL_TYPE_MASK) {
+        case SYMBOL_SCALAR:
+            scalar_release(self->m_referent.as_scalar);
+            break;
+        //...
+        case SYMBOL_CHANNEL:
+            channel_release(self->m_referent.as_channel);
+            break;
+        default:
+            debug("unhandled symbol type: %"PRIu32"\n", self->m_flags);
+            break;
+    }
     memset(self, 0, sizeof(*self));
     return 0;
 }

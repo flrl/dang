@@ -15,6 +15,15 @@
 #include "scalar.h"
 #include "channel.h"
 
+#define SYMBOL_SCALAR       0x01u
+#define SYMBOL_ARRAY        0x02u
+#define SYMBOL_HASH         0x03u
+#define SYMBOL_CHANNEL      0x04u
+
+#define SYMBOL_TYPE_MASK    0x0000000Fu
+
+#define SYMBOL_FLAG_SHARED  0x80000000u
+
 typedef uintptr_t identifier_t;
 
 typedef struct symbol_t {
