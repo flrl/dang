@@ -12,8 +12,9 @@
 
 #include <stdint.h>
 
-#include "scalar.h"
+#include "array.h"
 #include "channel.h"
+#include "scalar.h"
 
 #define SYMBOL_SCALAR       0x01u
 #define SYMBOL_ARRAY        0x02u
@@ -34,7 +35,7 @@ typedef struct symbol_t {
     uint32_t m_flags;
     union {
         scalar_handle_t as_scalar;
-//        array_handle_t as_array;
+        array_handle_t as_array;
 //        hash_handle_t as_hash;
         channel_handle_t as_channel;
     } m_referent;

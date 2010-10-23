@@ -199,6 +199,10 @@ int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags)
             symbol->m_flags = SYMBOL_SCALAR;
             symbol->m_referent.as_scalar = scalar_allocate(flags & ~SYMBOL_TYPE_MASK);
             break;
+        case SYMBOL_ARRAY:
+            symbol->m_flags = SYMBOL_ARRAY;
+            symbol->m_referent.as_array = array_allocate();
+            break;
         //...
         case SYMBOL_CHANNEL:
             symbol->m_flags = SYMBOL_SCALAR;
@@ -254,6 +258,10 @@ int symbol_clone(symboltable_t *table, identifier_t identifier) {
             case SYMBOL_SCALAR:
                 symbol->m_flags = SYMBOL_SCALAR;
                 symbol->m_referent.as_scalar = scalar_reference(remote_symbol->m_referent.as_scalar);
+                break;
+            case SYMBOL_ARRAY:
+                symbol->m_flags = SYMBOL_ARRAY;
+                symbol->m_referent.as_array = array_reference(remote_symbol->m_referent.as_array);
                 break;
             //...
             case SYMBOL_CHANNEL:
@@ -328,6 +336,7 @@ int symbol_undefine(symboltable_t *table, identifier_t identifier) {
     table->m_parent = NULL;
     symbol_t *symbol = (symbol_t *) symbol_lookup(table, identifier);
     table->m_parent = tmp;
+    
     if (symbol == NULL)  return 0;
     
     if (symbol->m_left_child != NULL) {
@@ -503,6 +512,9 @@ int _symbol_destroy(symbol_t *self) {
     switch (self->m_flags & SYMBOL_TYPE_MASK) {
         case SYMBOL_SCALAR:
             scalar_release(self->m_referent.as_scalar);
+            break;
+        case SYMBOL_ARRAY:
+            array_release(self->m_referent.as_array);
             break;
         //...
         case SYMBOL_CHANNEL:
