@@ -99,16 +99,29 @@ int array_reserve(array_t *self, size_t target_size) {
 /*
 =item array_item_at()
 
-Gets a handle to the item in the array at a given index.  The caller must release the handle when they are done with it.
+Gets a handle to the item in the array at a given index.  If the index is beyond the current 
+bounds of the array, the array is grown to accommodate the index, with new items being set
+to undefined.
 
-FIXME: Make it grow the array as necessary to ensure the index is valid (setting any new intermediate items to undef)
+Returns a handle to the item, or 0 on error.  The caller must release the handle when they are
+done with it.
 
 =cut
 */
 scalar_handle_t array_item_at(array_t *self, size_t index) {
     assert(self != NULL);
-    assert(index < self->m_count);
-    
+
+    if (index >= self->m_first + self->m_count) {
+        if (0 != array_reserve(self, index + 1))  return 0;
+        
+        size_t need = index - (self->m_first + self->m_count - 1);
+        scalar_handle_t handle = scalar_allocate_many(need, 0);  // FIXME flags
+        
+        while (self->m_count <= index - self->m_first) {
+            self->m_items[self->m_first + self->m_count++] = handle++;
+        }
+    }
+
     return scalar_reference(self->m_items[self->m_first + index]);
 }
 
