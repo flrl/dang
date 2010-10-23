@@ -393,10 +393,7 @@ int inst_ARPUSH(struct vm_context_t *context) {
     vm_ds_pop(context, &a);
     
     assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    scalar_handle_t tmp = scalar_allocate(0);
-    scalar_set_value(tmp, &a);
-    array_push(ref.m_value.as_array_handle, tmp);
-    scalar_release(tmp);
+    array_push(ref.m_value.as_array_handle, &a);
     
     anon_scalar_destroy(&ref);
     anon_scalar_destroy(&a);
@@ -404,10 +401,84 @@ int inst_ARPUSH(struct vm_context_t *context) {
     return 1;
 }
 
-int inst_ARPOP(struct vm_context_t *);
-int inst_ARSHFT(struct vm_context_t *);
-int inst_ARUNSHFT(struct vm_context_t *);
+/*
+=item ARPOP ( ref -- a )
 
+Pops an array reference from the data stack.  Pops the last item off the referenced array, and pushes its value back to the
+data stack.
+
+=cut
+ */
+int inst_ARPOP(struct vm_context_t *context) {
+    scalar_t ref, a;
+    
+    anon_scalar_init(&ref);
+    anon_scalar_init(&a);
+    
+    vm_ds_pop(context, &ref);
+    
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    array_pop(ref.m_value.as_array_handle, &a);
+    
+    vm_ds_push(context, &a);
+
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&ref);
+    
+    return 1;
+}
+
+/*
+=item ARSHFT ( ref -- a )
+
+Pops an array reference from the data stack.  Shifts the first item off the referenced array, and pushes its value back to the
+data stack.
+
+=cut
+ */
+int inst_ARSHFT(struct vm_context_t *context) {
+    scalar_t ref, a;
+    
+    anon_scalar_init(&ref);
+    anon_scalar_init(&a);
+    
+    vm_ds_pop(context, &ref);
+    
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    array_shift(ref.m_value.as_array_handle, &a);
+    
+    vm_ds_push(context, &a);
+    
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&ref);
+    
+    return 1;    
+}
+
+/*
+=item ARUNSHFT ( a ref -- )
+
+Pops an array reference and a scalar value from the data stack, and adds the scalar value to the start of the array.
+
+=cut
+ */
+int inst_ARUNSHFT(struct vm_context_t *context) {
+    scalar_t a, ref;
+    
+    anon_scalar_init(&a);
+    anon_scalar_destroy(&ref);
+    
+    vm_ds_pop(context, &ref);
+    vm_ds_pop(context, &a);
+    
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    array_unshift(ref.m_value.as_array_handle, &a);
+    
+    anon_scalar_destroy(&ref);
+    anon_scalar_destroy(&a);
+    
+    return 1;    
+}
 
 /*
  =item INTLIT ( -- a ) 
