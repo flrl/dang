@@ -322,8 +322,12 @@ Returns 0 on success, or non-zero on failure - in which case the symbol may stil
  */
 int symbol_undefine(symboltable_t *table, identifier_t identifier) {
     assert(table != NULL);
-    
+        
+    // temporarily detach the table's parent to do a local-only lookup
+    symboltable_t *tmp = table->m_parent;
+    table->m_parent = NULL;
     symbol_t *symbol = (symbol_t *) symbol_lookup(table, identifier);
+    table->m_parent = tmp;
     if (symbol == NULL)  return 0;
     
     if (symbol->m_left_child != NULL) {
