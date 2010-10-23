@@ -267,15 +267,13 @@ int inst_SYMUNDEF(struct vm_context_t *context) {
 }
 
 /*
-=item SLOAD ( ref -- a )
-
-FIXME rename this op
+=item SRGET ( ref -- a )
 
 Pops a scalar reference from the data stack.  Pushes the value of the referenced scalar.
 
 =cut
  */
-int inst_SLOAD(struct vm_context_t *context) {
+int inst_SRGET(struct vm_context_t *context) {
     scalar_t ref, a;
     anon_scalar_init(&ref);
     anon_scalar_init(&a);
@@ -291,15 +289,13 @@ int inst_SLOAD(struct vm_context_t *context) {
 }
 
 /*
-=item SSTORE ( a ref -- )
-
-FIXME rename this op
+=item SRSET ( a ref -- )
 
 Pops a scalar reference and a scalar value from the data stack.  Stores the value in the scalar referenced by the reference.
  
 =cut
  */
-int inst_SSTORE(struct vm_context_t *context) {
+int inst_SRSET(struct vm_context_t *context) {
     scalar_t ref, a;
     
     anon_scalar_init(&ref);
@@ -315,6 +311,103 @@ int inst_SSTORE(struct vm_context_t *context) {
     
     return 1;
 }
+
+/*
+=item ARGET ( ref i -- a )
+
+Pops a scalar index and an array reference from the data stack.  Pushes back the value stored in the referenced array at the
+specified index.
+
+FIXME actually rename these all back to load/store?
+
+=cut
+ */
+int inst_ARGET(struct vm_context_t *context) {
+    scalar_t ref, i, a;
+    
+    anon_scalar_init(&ref);
+    anon_scalar_init(&i);
+    anon_scalar_init(&a);
+    
+    vm_ds_pop(context, &i);
+    vm_ds_pop(context, &ref);
+    
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    scalar_handle_t item = array_item_at(ref.m_value.as_array_handle, (size_t) anon_scalar_get_int_value(&i));
+    scalar_get_value(item, &a);
+    scalar_release(item);
+    vm_ds_push(context, &a);
+    
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&i);
+    anon_scalar_destroy(&ref);
+    
+    return 1;
+}
+
+/*
+=item ARSET ( a ref i -- )
+
+Pops a scalar index, an array reference, and a value from the data stack, and stores the value in the array at the specified
+index.
+
+=cut
+ */
+int inst_ARSET(struct vm_context_t *context) {
+    scalar_t a, ref, i;
+    
+    anon_scalar_init(&a);
+    anon_scalar_init(&ref);
+    anon_scalar_init(&i);
+    
+    vm_ds_pop(context, &i);
+    vm_ds_pop(context, &ref);
+    vm_ds_pop(context, &a);
+    
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    scalar_handle_t item = array_item_at(ref.m_value.as_array_handle, (size_t) anon_scalar_get_int_value(&i));
+    scalar_set_value(item, &a);
+    scalar_release(item);
+    
+    anon_scalar_destroy(&i);
+    anon_scalar_destroy(&ref);
+    anon_scalar_destroy(&a);
+    
+    return 1;
+}
+
+/*
+=item ARPUSH ( a ref -- )
+
+Pops an array reference and a scalar value from the data stack, and adds the scalar value to the end of the array.
+
+=cut
+ */
+int inst_ARPUSH(struct vm_context_t *context) {
+    scalar_t a, ref;
+    
+    anon_scalar_init(&a);
+    anon_scalar_destroy(&ref);
+    
+    vm_ds_pop(context, &ref);
+    vm_ds_pop(context, &a);
+    
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    scalar_handle_t tmp = scalar_allocate(0);
+    scalar_set_value(tmp, &a);
+    array_push(ref.m_value.as_array_handle, tmp);
+    scalar_release(tmp);
+    
+    anon_scalar_destroy(&ref);
+    anon_scalar_destroy(&a);
+    
+    return 1;
+}
+
+int inst_ARPOP(struct vm_context_t *);
+int inst_ARSHFT(struct vm_context_t *);
+int inst_ARUNSHFT(struct vm_context_t *);
+
 
 /*
  =item INTLIT ( -- a ) 
