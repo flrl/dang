@@ -86,15 +86,19 @@ void scalar_set_float_value(scalar_handle_t, floatptr_t);
 void scalar_set_string_value(scalar_handle_t, const char *);
 void scalar_set_value(scalar_handle_t, const scalar_t *);
 
-// FIXME set_foo_reference functions for pooled scalars
-// FIXME most of the set*'s need their guts ripped out i think, and converted to wrappers around anon_*
-
 intptr_t scalar_get_int_value(scalar_handle_t);
 floatptr_t scalar_get_float_value(scalar_handle_t);
 void scalar_get_string_value(scalar_handle_t, char **);
 void scalar_get_value(scalar_handle_t, scalar_t *);
 
-// FIXME deref_foo_reference functions for pooled scalars
+void scalar_set_scalar_reference(scalar_handle_t, scalar_handle_t);
+void scalar_set_array_reference(scalar_handle_t, array_handle_t);
+void scalar_set_channel_reference(scalar_handle_t, channel_handle_t);
+
+scalar_handle_t scalar_deref_scalar_reference(scalar_handle_t);
+array_handle_t scalar_deref_array_reference(scalar_handle_t);
+channel_handle_t scalar_deref_channel_reference(scalar_handle_t);
+
 
 int anon_scalar_init(scalar_t *);
 int anon_scalar_destroy(scalar_t *);

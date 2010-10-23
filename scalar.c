@@ -26,8 +26,6 @@
 
 #define SCALAR(handle)      POOL_OBJECT(scalar_t, handle)
 
-static inline void _scalar_set_undef_unlocked(scalar_t *);
-
 typedef POOL_STRUCT(scalar_t) scalar_pool_t;
 
 POOL_DEFINITIONS(scalar_t, anon_scalar_init, anon_scalar_destroy);
@@ -127,7 +125,7 @@ void scalar_set_undef(scalar_handle_t handle) {
     assert(POOL_ISINUSE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
-        _scalar_set_undef_unlocked(&SCALAR(handle));
+        anon_scalar_destroy(&SCALAR(handle));
         POOL_UNLOCK(scalar_t, handle);
     }
 }
@@ -137,9 +135,7 @@ void scalar_set_int_value(scalar_handle_t handle, intptr_t ival) {
     assert(POOL_ISINUSE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
-        _scalar_set_undef_unlocked(&SCALAR(handle));
-        SCALAR(handle).m_flags |= SCALAR_INT;
-        SCALAR(handle).m_value.as_int = ival;
+        anon_scalar_set_int_value(&SCALAR(handle), ival);
         POOL_UNLOCK(scalar_t, handle);
     }    
 }
@@ -149,9 +145,7 @@ void scalar_set_float_value(scalar_handle_t handle, floatptr_t fval) {
     assert(POOL_ISINUSE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
-        _scalar_set_undef_unlocked(&SCALAR(handle));
-        SCALAR(handle).m_flags |= SCALAR_INT;
-        SCALAR(handle).m_value.as_float = fval;
+        anon_scalar_set_float_value(&SCALAR(handle), fval);
         POOL_UNLOCK(scalar_t, handle);
     }
 }
@@ -162,9 +156,7 @@ void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
     assert(sval != NULL);
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
-        _scalar_set_undef_unlocked(&SCALAR(handle));
-        SCALAR(handle).m_flags |= SCALAR_STRING | SCALAR_FLAG_PTR;
-        SCALAR(handle).m_value.as_string = strdup(sval);
+        anon_scalar_set_string_value(&SCALAR(handle), sval);
         POOL_UNLOCK(scalar_t, handle);
     }
 }
@@ -175,21 +167,52 @@ void scalar_set_value(scalar_handle_t handle, const scalar_t *val) {
     assert(val != NULL);
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
-        switch (val->m_flags & SCALAR_TYPE_MASK) {
-            case SCALAR_STRING:
-                SCALAR(handle).m_value.as_string = strdup(val->m_value.as_string);
-                SCALAR(handle).m_flags &= ~SCALAR_TYPE_MASK;
-                SCALAR(handle).m_flags |= SCALAR_STRING | SCALAR_FLAG_PTR;
-                break;
-            default:
-                memcpy(&SCALAR(handle).m_value, &val->m_value, sizeof(SCALAR(handle).m_value));
-                SCALAR(handle).m_flags &= ~SCALAR_TYPE_MASK;
-                SCALAR(handle).m_flags |= val->m_flags & SCALAR_TYPE_MASK;
-                break;
-        }
+        anon_scalar_clone(&SCALAR(handle), val);
         POOL_UNLOCK(scalar_t, handle);
     }
 }
+
+/*
+=item scalar_set_scalar_reference()
+
+=item scalar_set_array_reference()
+
+=item scalar_set_channel_reference()
+
+Functions for setting up references
+
+=cut
+*/
+void scalar_set_scalar_reference(scalar_handle_t handle, scalar_handle_t s) {
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    assert(POOL_ISINUSE(scalar_t, handle));
+    
+    if (0 == POOL_LOCK(scalar_t, handle)) {
+        anon_scalar_set_scalar_reference(&SCALAR(handle), s);
+        POOL_UNLOCK(scalar_t, handle);
+    }
+}
+
+void scalar_set_array_reference(scalar_handle_t handle, array_handle_t a) {
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    assert(POOL_ISINUSE(scalar_t, handle));
+    
+    if (0 == POOL_LOCK(scalar_t, handle)) {
+        anon_scalar_set_array_reference(&SCALAR(handle), a);
+        POOL_UNLOCK(scalar_t, handle);
+    }    
+}
+
+void scalar_set_channel_reference(scalar_handle_t handle, channel_handle_t c) {
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    assert(POOL_ISINUSE(scalar_t, handle));
+    
+    if (0 == POOL_LOCK(scalar_t, handle)) {
+        anon_scalar_set_channel_reference(&SCALAR(handle), c);
+        POOL_UNLOCK(scalar_t, handle);
+    }    
+}
+
 
 /*
 =item scalar_get_int_value()
@@ -256,20 +279,65 @@ void scalar_get_value(scalar_handle_t handle, scalar_t *result) {
     if ((result->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(result);
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
-        switch(SCALAR(handle).m_flags & SCALAR_TYPE_MASK) {
-            case SCALAR_STRING:
-                result->m_value.as_string = strdup(SCALAR(handle).m_value.as_string);
-                result->m_flags = SCALAR_STRING | SCALAR_FLAG_PTR;
-                break;
-            default:
-                memcpy(&result->m_value, &SCALAR(handle).m_value, sizeof(result->m_value));
-                result->m_flags = SCALAR(handle).m_flags & SCALAR_TYPE_MASK;
-                break;
-        }
+        anon_scalar_clone(result, &SCALAR(handle));
         POOL_UNLOCK(scalar_t, handle);
     }
 }
 
+/*
+=item scalar_deref_scalar_reference()
+
+=item scalar_deref_array_reference()
+
+=item scalar_deref_channel_reference()
+
+Functions for dereferencing references in pooled scalars
+
+=cut
+ */
+scalar_handle_t scalar_deref_scalar_reference(scalar_handle_t handle) {
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    assert(POOL_ISINUSE(scalar_t, handle));
+
+    scalar_handle_t s;
+    if (0 == POOL_LOCK(scalar_t, handle)) {
+        s = anon_scalar_deref_scalar_reference(&SCALAR(handle));
+        POOL_UNLOCK(scalar_t, handle);
+    }
+    else {
+        s = 0;
+    }
+    return s;
+}
+
+array_handle_t scalar_deref_array_reference(scalar_handle_t handle) {
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    assert(POOL_ISINUSE(scalar_t, handle));
+    
+    array_handle_t a;
+    if (0 == POOL_LOCK(scalar_t, handle)) {
+        a = anon_scalar_deref_array_reference(&SCALAR(handle));
+        POOL_UNLOCK(scalar_t, handle);
+    }
+    else {
+        a = 0;
+    }
+    return a;    
+}
+channel_handle_t scalar_deref_channel_reference(scalar_handle_t handle) {
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    assert(POOL_ISINUSE(scalar_t, handle));
+    
+    channel_handle_t c;
+    if (0 == POOL_LOCK(scalar_t, handle)) {
+        c = anon_scalar_deref_channel_reference(&SCALAR(handle));
+        POOL_UNLOCK(scalar_t, handle);
+    }
+    else {
+        c = 0;
+    }
+    return c;    
+}
 
 /*
 =back
@@ -286,14 +354,14 @@ Setup and teardown functions for anonymous scalar_t objects
 
 =cut
 */
-inline int anon_scalar_init(scalar_t *self) {
+int anon_scalar_init(scalar_t *self) {
     assert(self != NULL);
     self->m_flags = SCALAR_UNDEF;
     self->m_value.as_int = 0;
     return 0;
 }
 
-inline int anon_scalar_destroy(scalar_t *self) {
+int anon_scalar_destroy(scalar_t *self) {
     assert(self != NULL);
     if (self->m_flags & SCALAR_FLAG_PTR) {
         switch (self->m_flags & SCALAR_TYPE_MASK) {
@@ -336,7 +404,7 @@ Deep-copy clone of an anonymous scalar_t object.  The resulting clone needs to b
 
 =cut
 */
-inline int anon_scalar_clone(scalar_t * restrict self, const scalar_t * restrict other) {
+int anon_scalar_clone(scalar_t * restrict self, const scalar_t * restrict other) {
     assert(self != NULL);
     assert(other != NULL);
     
@@ -375,7 +443,7 @@ Shallow-copy of an anonymous scalar_t object.  Only one of dest and original sho
 
 =cut
 */
-inline int anon_scalar_assign(scalar_t * restrict self, const scalar_t * restrict other) {
+int anon_scalar_assign(scalar_t * restrict self, const scalar_t * restrict other) {
     assert(self != NULL);
     assert(other != NULL);
     
@@ -594,40 +662,9 @@ inline channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *self
 =cut
 */
 
+
 /*
-=item _scalar_set_undef_unlocked()
-
-Sets a pooled scalar's value and related flags back to the "undefined" state, without consideration
-for whether the scalar was allocated as shared, and without a lock/unlock cycle.
-
-Use this when you already have the scalar locked and need to reset its value to undefined without losing atomicity.
+=back
 
 =cut
-*/
-static inline void _scalar_set_undef_unlocked(scalar_t *self) {
-    assert(self != NULL);
-    
-    // clean up allocated memory, if anything
-    if (self->m_flags & SCALAR_FLAG_PTR) {
-        switch(self->m_flags & SCALAR_TYPE_MASK) {
-            case SCALAR_STRING:
-                free(self->m_value.as_string);
-                self->m_flags &= ~SCALAR_FLAG_PTR;
-                break;
-        }
-    }
-    
-    // FIXME if it was a reference type, decrease ref counts on referenced object here
-    
-    // set up default values
-    self->m_flags &= ~SCALAR_TYPE_MASK;
-    self->m_flags |= SCALAR_UNDEF;
-    self->m_value.as_int = 0;    
-}
-
-
-/*
- =back
- 
- =cut
  */
