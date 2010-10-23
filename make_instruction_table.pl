@@ -23,7 +23,8 @@ while (<>) {
 
     chomp;
 
-    my ($instruction, $value) = m/^.*i_(\w+)(?:\s*=\s*(\w+))?,/;
+    my ($instruction, $value) = m/^\s*i_(\w+)(?:\s*=\s*(\w+))?,/;
+    next if not $instruction;
 
     # FIXME handle values
     push @instructions, $instruction;
