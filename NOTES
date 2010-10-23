@@ -101,6 +101,9 @@ symbol table
             - even if the parent's refcount reaches zero when the child isolates itself, the child should not automatically 
               clean up the parent -- there might still be pointers to it elsewhere.  leave it to the garbage collector.
     - do symbol tables need mutexes?
+        - i think so, at table level.  writes only happen at the "current" scope, but if a child is running in a separate
+          context, its parent might be messing around with its own scope at the same time as the child wants to search upwards
+          through it.
             
         
 
