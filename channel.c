@@ -97,6 +97,19 @@ channel_handle_t channel_allocate(void) {
 }
 
 /*
+=item channel_allocate_many()
+
+Allocate a number of channels with sequential handles, and return the first handle.
+
+The caller must explicitly release each handle in the sequence.
+
+=cut
+ */
+channel_handle_t channel_allocate_many(size_t count) {
+    return POOL_ALLOCATE_MANY(channel_t, count, POOL_OBJECT_FLAG_SHARED);
+}
+
+/*
 =item channel_release()
 
 Release a channel handle, decrementing the objects refcount and causing its destruction if it reaches zero.

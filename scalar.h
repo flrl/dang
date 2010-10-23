@@ -63,6 +63,7 @@ int scalar_pool_init(void);
 int scalar_pool_destroy(void);
 
 scalar_handle_t scalar_allocate(uint32_t);
+scalar_handle_t scalar_allocate_many(size_t, uint32_t);
 int scalar_release(scalar_handle_t);
 scalar_handle_t scalar_reference(scalar_handle_t);
 

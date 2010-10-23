@@ -67,6 +67,8 @@ int scalar_pool_destroy(void) {
 /*
 =item scalar_allocate()
 
+=item scalar_allocate_many()
+
 =item scalar_release()
 
 =item scalar_increase_refcount()
@@ -77,6 +79,10 @@ Functions for managing allocation of scalars
 */
 scalar_handle_t scalar_allocate(uint32_t flags) {
     return POOL_ALLOCATE(scalar_t, flags);
+}
+
+scalar_handle_t scalar_allocate_many(size_t count, uint32_t flags) {
+    return POOL_ALLOCATE_MANY(scalar_t, count, flags);
 }
 
 int scalar_release(scalar_handle_t handle) {

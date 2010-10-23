@@ -22,6 +22,7 @@ int channel_pool_init(void);
 int channel_pool_destroy(void);
 
 channel_handle_t channel_allocate(void);
+channel_handle_t channel_allocate_many(size_t);
 int channel_release(channel_handle_t);
 channel_handle_t channel_reference(channel_handle_t);
 
