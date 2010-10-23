@@ -25,6 +25,7 @@ typedef struct symboltable_registry_node_t {
 static symboltable_registry_node_t *_symboltable_registry = NULL;
 static pthread_mutex_t _symboltable_registry_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+int _symboltable_insert(symboltable_t *restrict, symbol_t *restrict);
 int _symbol_init(symbol_t *);
 int _symbol_destroy(symbol_t *);
 int _symbol_reap(symbol_t *);
@@ -187,43 +188,72 @@ int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags)
             break;
     }
     
-    if (table->m_symbols == NULL) {
-        table->m_symbols = symbol;
+    if (0 == _symboltable_insert(table, symbol)) {
         return 0;
     }
     else {
-        symbol_t *parent = table->m_symbols;
-        do {
-            if (identifier < parent->m_identifier) {
-                if (parent->m_left_child == NULL) {
-                    parent->m_left_child = symbol;
-                    symbol->m_parent = parent;
-                    return 0;
-                }
-                else {
-                    parent = parent->m_left_child;
-                }
-            }
-            else if (identifier > parent->m_identifier) {
-                if (parent->m_right_child == NULL) {
-                    parent->m_right_child = symbol;
-                    symbol->m_parent = parent;
-                    return 0;
-                }
-                else {
-                    parent = parent->m_right_child;
-                }
-            }
-            else {
-                debug("identifier %"PRIuPTR" is already defined in current scope\n", identifier);
-                _symbol_destroy(symbol);
-                free(symbol);
-                return -1;
-            }
-        } while (parent != NULL);
-        
-        debug("not supposed to get here\n");
         _symbol_destroy(symbol);
+        free(symbol);
+        return 0;
+    }
+}
+
+/*
+=item symbol_clone()
+
+Clones the specified symbol from an ancestor scope into the current scope.  If the symbol already exists in the
+current scope, it considers this to be a success, and does nothing.
+
+Returns 0 on success, non-zero on failure.
+
+=cut
+*/
+int symbol_clone(symboltable_t *table, identifier_t identifier) {
+    assert(table != NULL);
+    assert(table->m_parent != NULL);
+    
+    // temporarily detach the table's parent to do a local-only lookup
+    symboltable_t *tmp = table->m_parent;
+    table->m_parent = NULL;
+    const symbol_t *local_symbol = symbol_lookup(table, identifier);
+    table->m_parent = tmp;
+    
+    // if a symbol was found locally, there's nothing to do here
+    if (local_symbol != NULL)  return 0;
+    
+    // find the symbol in an ancestor scope
+    const symbol_t *remote_symbol = symbol_lookup(table->m_parent, identifier);
+
+    // clone it into the current scope
+    if (remote_symbol != NULL) {
+        symbol_t *symbol = calloc(1, sizeof(*symbol));
+        _symbol_init(symbol);
+        
+        switch (remote_symbol->m_flags & SYMBOL_TYPE_MASK) {
+            case SYMBOL_SCALAR:
+                symbol->m_flags = SYMBOL_SCALAR;
+                symbol->m_referent.as_scalar = scalar_reference(remote_symbol->m_referent.as_scalar);
+                break;
+            //...
+            case SYMBOL_CHANNEL:
+                symbol->m_flags = SYMBOL_CHANNEL;
+                symbol->m_referent.as_channel = channel_reference(remote_symbol->m_referent.as_channel);
+                break;
+            default:
+                debug("unhandled symbol type: %"PRIu32"\n", remote_symbol->m_flags);
+                break;
+        }
+
+        if (0 == _symboltable_insert(table, symbol)) {
+            return 0;
+        }
+        else {
+            _symbol_destroy(symbol);
+            free(symbol);
+            return -1;
+        }
+    }
+    else {
         return -1;
     }
 }
@@ -262,10 +292,10 @@ const symbol_t *symbol_lookup(symboltable_t *table, identifier_t identifier) {
 /*
 =item symbol_undefine()
 
-Removes a symbol from the current scope.  This does I<not> search upwards through ancestor scopes.
+Removes a symbol from the current scope.  This does I<not> search upwards through ancestor scopes.  If the
+symbol does not exist at the current scope, it considers this to be a success, and does nothing.
 
-Returns 0 when the requested symbol no longer exists (or never did exist) at the current scope.  Other
-return values indicate an error undefining the symbol, and that it may still exist at the current scope.
+Returns 0 on success, or non-zero on failure - in which case the symbol may still exist at the current scope.
 
 =cut
  */
@@ -374,6 +404,59 @@ int symbol_undefine(symboltable_t *table, identifier_t identifier) {
 
 =cut
  */
+
+/*
+=item _symboltable_insert()
+
+Transfer ownership of a symbol pointer into the given symbol table.  
+
+Returns 0 on success, in which case the caller should I<not> perform any cleanup on their pointer to the symbol.
+
+On failure returns non-zero, in which case the caller remains responsible for cleanup of the symbol.
+
+=cut
+ */
+int _symboltable_insert(symboltable_t *restrict table, symbol_t *restrict symbol) {
+    assert(table != NULL);
+    assert(symbol != NULL);
+    
+    if (table->m_symbols == NULL) {
+        table->m_symbols = symbol;
+        return 0;
+    }
+    else {
+        symbol_t *parent = table->m_symbols;
+        do {
+            if (symbol->m_identifier < parent->m_identifier) {
+                if (parent->m_left_child == NULL) {
+                    parent->m_left_child = symbol;
+                    symbol->m_parent = parent;
+                    return 0;
+                }
+                else {
+                    parent = parent->m_left_child;
+                }
+            }
+            else if (symbol->m_identifier > parent->m_identifier) {
+                if (parent->m_right_child == NULL) {
+                    parent->m_right_child = symbol;
+                    symbol->m_parent = parent;
+                    return 0;
+                }
+                else {
+                    parent = parent->m_right_child;
+                }
+            }
+            else {
+                debug("identifier %"PRIuPTR" is already defined in current scope\n", symbol->m_identifier);
+                return -1;
+            }
+        } while (parent != NULL);
+        
+        debug("not supposed to get here\n");
+        return -1;
+    }    
+}
 
 /*
 =item _symbol_init()
