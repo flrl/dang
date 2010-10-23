@@ -447,6 +447,57 @@ int inst_ARUNSHFT(struct vm_context_t *context) {
 }
 
 /*
+=item CRREAD ( ref -- a )
+
+Pops a channel reference from the data stack, reads a value from it, and pushes back the value read.
+
+=cut
+ */
+int inst_CRREAD(struct vm_context_t *context) {
+    scalar_t ref, a;
+    
+    anon_scalar_init(&ref);
+    anon_scalar_init(&a);
+    
+    vm_ds_pop(context, &ref);
+    
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_CHANREF);
+    channel_read(anon_scalar_deref_channel_reference(&ref), &a);
+    
+    vm_ds_push(context, &a);
+    
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&ref);
+    return 1;
+}
+
+/*
+=item CRWRITE ( a ref -- )
+
+Pops a channel reference and a value from the data stack, and writes the value to the channel.
+
+=cut
+ */
+int inst_CRWRITE(struct vm_context_t *context) {
+    scalar_t a, ref;
+    
+    anon_scalar_init(&a);
+    anon_scalar_init(&ref);
+    
+    vm_ds_pop(context, &ref);
+    vm_ds_pop(context, &a);
+    
+    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_CHANREF);
+    channel_write(anon_scalar_deref_channel_reference(&ref), &a);
+    
+    anon_scalar_destroy(&ref);
+    anon_scalar_destroy(&a);
+    
+    return 1;
+}
+
+
+/*
  =item INTLIT ( -- a ) 
  
  Reads an integer value from the following bytecode and pushes it onto the data stack.  Transfers execution control to the 

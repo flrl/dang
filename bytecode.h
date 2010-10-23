@@ -34,6 +34,8 @@ typedef enum instruction_t {
     i_ARPOP,
     i_ARSHFT,
     i_ARUNSHFT,
+    i_CRREAD,
+    i_CRWRITE,
     i_INTLIT,
     i_INTADD,
     i_INTSUBT,
