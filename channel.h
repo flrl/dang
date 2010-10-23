@@ -10,8 +10,6 @@
 #ifndef CHANNEL_H
 #define CHANNEL_H
 
-#include <pthread.h>
-
 #include "pool.h"
 
 struct scalar_t;

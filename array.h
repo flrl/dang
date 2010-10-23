@@ -10,8 +10,6 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
-#include <stdint.h>
-
 #include "pool.h"
 
 #ifndef HAVE_ARRAY_HANDLE_T
