@@ -12,20 +12,34 @@
 
 #include <stdint.h>
 
-#include "scalar.h"
+#include "pool.h"
+
+#ifndef HAVE_ARRAY_HANDLE_T
+#define HAVE_ARRAY_HANDLE_T
+typedef POOL_HANDLE(array_t) array_handle_t;
+#endif
+
+#ifndef HAVE_SCALAR_HANDLE_T
+#define HAVE_SCALAR_HANDLE_T
+typedef POOL_HANDLE(scalar_t) scalar_handle_t;
+#endif
 
 typedef struct array_t array_t;
 
-int array_init(array_t *);
-int array_destroy(array_t *);
-int array_reserve(array_t *, size_t);
+int array_pool_init(void);
+int array_pool_destroy(void);
 
-scalar_handle_t array_item_at(array_t *, size_t);
+array_handle_t array_allocate(void);
+array_handle_t array_allocate_many(size_t);
+array_handle_t array_reference(array_handle_t);
+int array_release(array_handle_t);
 
-int array_push(array_t *, scalar_handle_t);
-int array_unshift(array_t *, scalar_handle_t);
+scalar_handle_t array_item_at(array_handle_t, size_t);
 
-scalar_handle_t array_pop(array_t *);
-scalar_handle_t array_shift(array_t *);
+int array_push(array_handle_t, scalar_handle_t);
+int array_unshift(array_handle_t, scalar_handle_t);
+
+scalar_handle_t array_pop(array_handle_t);
+scalar_handle_t array_shift(array_handle_t);
 
 #endif

@@ -16,7 +16,10 @@
 
 struct scalar_t;
 
+#ifndef HAVE_CHANNEL_HANDLE_T
+#define HAVE_CHANNEL_HANDLE_T
 typedef POOL_HANDLE(channel_t) channel_handle_t;
+#endif
 
 int channel_pool_init(void);
 int channel_pool_destroy(void);

@@ -13,6 +13,8 @@
 #include <string.h>
 
 #include "debug.h"
+#include "channel.h"
+
 #include "scalar.h"
 
 #ifdef POOL_INITIAL_SIZE

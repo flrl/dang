@@ -11,7 +11,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "scalar.h"
+
 #include "array.h"
+
+#ifdef POOL_INITIAL_SIZE
+#undef POOL_INITIAL_SIZE
+#endif
+#define POOL_INITIAL_SIZE   (64) /* FIXME arbitrary number */
+#include "pool.h"
+
+#define ARRAY(handle)   POOL_OBJECT(array_t, handle)
 
 struct array_t {
     size_t m_allocated_count;
@@ -20,10 +30,17 @@ struct array_t {
     scalar_handle_t *m_items;
 };
 
+typedef POOL_STRUCT(array_t) array_pool_t;
+
 static const size_t _array_initial_reserve_size = 16;
 
+static int _array_init(array_t *);
+static int _array_destroy(array_t *);
+static int _array_reserve(array_t *, size_t);
 static int _array_grow_back(array_t *, size_t);
 static int _array_grow_front(array_t *, size_t);
+
+POOL_DEFINITIONS(array_t, _array_init, _array_destroy);
 
 /*
 =head1 NAME
@@ -39,61 +56,50 @@ array
 =cut
 */
 
-
 /*
-=item array_init()
+=item array_pool_init()
 
-=item array_destroy()
+=item array_pool_destroy()
 
-Setup and teardown functions for array_t objects
+Setup and teardown functions for the array pool.
 
 =cut
-*/
-int array_init(array_t *self) {
-    assert(self != NULL);
-    
-    memset(self, 0, sizeof(*self));
-    self->m_items = calloc(_array_initial_reserve_size, sizeof(*self->m_items));
-
-    if (self->m_items != NULL) {
-        self->m_allocated_count = _array_initial_reserve_size;
-        return 0;
-    }
-    else {
-        return -1;
-    }
+ */
+int array_pool_init(void) {
+    return POOL_INIT(array_t);
 }
 
-int array_destroy(array_t *self) {
-    assert(self != NULL);
-
-    for (size_t i = self->m_first; i < self->m_first + self->m_count; i++) {
-        scalar_release(self->m_items[i]);
-    }
-    free(self->m_items);
-
-    memset(self, 0, sizeof(*self));
-    return 0;
+int array_pool_destroy(void) {
+    return POOL_DESTROY(array_t);
 }
 
 /*
-=item array_reserve()
+=item array_allocate()
 
-Ensure an array has space for a certain number of items.  Additional space, if any, is allocated at the end of the array.
+=item array_allocate_many()
+
+=item array_reference()
+
+=item array_release()
+
+Functions for managing allocation of arrays.
 
 =cut
-*/
-int array_reserve(array_t *self, size_t target_size) {
-    assert(self != NULL);
+ */
+array_handle_t array_allocate(void) {
+    return POOL_ALLOCATE(array_t, 0);
+}
 
-    size_t effective_size = self->m_allocated_count - self->m_first;
+array_handle_t array_allocate_many(size_t n) {
+    return POOL_ALLOCATE_MANY(array_t, n, 0);
+}
 
-    if (effective_size < target_size) {
-        return _array_grow_back(self, target_size - effective_size);
-    }
-    else {
-        return 0;
-    }
+array_handle_t array_reference(array_handle_t handle) {
+    return POOL_REFERENCE(array_t, handle);
+}
+
+int array_release(array_handle_t handle) {
+    return POOL_RELEASE(array_t, handle);
 }
 
 /*
@@ -108,21 +114,22 @@ done with it.
 
 =cut
 */
-scalar_handle_t array_item_at(array_t *self, size_t index) {
-    assert(self != NULL);
+scalar_handle_t array_item_at(array_handle_t handle, size_t index) {
+    assert(POOL_VALID_HANDLE(array_t, handle));
 
-    if (index >= self->m_first + self->m_count) {
-        if (0 != array_reserve(self, index + 1))  return 0;
+    if (index >= ARRAY(handle).m_first + ARRAY(handle).m_count) {
+        if (0 != _array_reserve(&ARRAY(handle), index + 1))  return 0;
         
-        size_t need = index - (self->m_first + self->m_count - 1);
+        size_t need = index - (ARRAY(handle).m_first + ARRAY(handle).m_count - 1);
         scalar_handle_t handle = scalar_allocate_many(need, 0);  // FIXME flags
         
-        while (self->m_count <= index - self->m_first) {
-            self->m_items[self->m_first + self->m_count++] = handle++;
+        while (ARRAY(handle).m_count <= index - ARRAY(handle).m_first) {
+            ARRAY(handle).m_items[ARRAY(handle).m_first + ARRAY(handle).m_count++] = handle + 1;
+            ++handle;
         }
     }
 
-    return scalar_reference(self->m_items[self->m_first + index]);
+    return scalar_reference(ARRAY(handle).m_items[ARRAY(handle).m_first + index]);
 }
 
 /*
@@ -132,14 +139,14 @@ Adds an item at the end of the array.  The caller still needs to release their o
 
 =cut
 */
-int array_push(array_t *self, scalar_handle_t handle) {
-    assert(self != NULL);
+int array_push(array_handle_t handle, scalar_handle_t s) {
+    assert(POOL_VALID_HANDLE(array_t, handle));
 
-    if (self->m_first + self->m_count == self->m_allocated_count) {
-        if (0 != _array_grow_back(self, self->m_count))  return -1;
+    if (ARRAY(handle).m_first + ARRAY(handle).m_count == ARRAY(handle).m_allocated_count) {
+        if (0 != _array_grow_back(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
     }
 
-    self->m_items[self->m_count++] = scalar_reference(handle);
+    ARRAY(handle).m_items[ARRAY(handle).m_count++] = scalar_reference(s);
     return 0;
 }
 
@@ -150,14 +157,14 @@ Adds an item before the first in the array.  The caller still needs to release t
 
 =cut
 */
-int array_unshift(array_t *self, scalar_handle_t handle) {
-    assert(self != NULL);
+int array_unshift(array_handle_t handle, scalar_handle_t s) {
+    assert(POOL_VALID_HANDLE(array_t, handle));
     
-    if (self->m_first == 0) {
-        if (0 != _array_grow_front(self, self->m_count))  return -1;
+    if (ARRAY(handle).m_first == 0) {
+        if (0 != _array_grow_front(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
     }
     
-    self->m_items[--self->m_first] = scalar_reference(handle);
+    ARRAY(handle).m_items[--ARRAY(handle).m_first] = scalar_reference(s);
     return 0;
 }
 
@@ -169,11 +176,11 @@ done with it.
 
 =cut
 */
-scalar_handle_t array_pop(array_t *self) {
-    assert(self != NULL);
+scalar_handle_t array_pop(array_handle_t handle) {
+    assert(POOL_VALID_HANDLE(array_t, handle));
 
-    if (self->m_count > 0) {
-        return self->m_items[self->m_first + --self->m_count];
+    if (ARRAY(handle).m_count > 0) {
+        return ARRAY(handle).m_items[ARRAY(handle).m_first + --ARRAY(handle).m_count];
     }
     else {
         return 0;
@@ -188,12 +195,12 @@ done with it.
 
 =cut
 */
-scalar_handle_t array_shift(array_t *self) {
-    assert(self != NULL);
+scalar_handle_t array_shift(array_handle_t handle) {
+    assert(POOL_VALID_HANDLE(array_t, handle));
 
-    if (self->m_count > 0) {
-        --self->m_count;
-        return self->m_items[self->m_first++];
+    if (ARRAY(handle).m_count > 0) {
+        --ARRAY(handle).m_count;
+        return ARRAY(handle).m_items[ARRAY(handle).m_first++];
     }
     else {
         return 0;
@@ -209,6 +216,62 @@ scalar_handle_t array_shift(array_t *self) {
 
 =cut
 */
+
+/*
+=item _array_init()
+
+=item _array_destroy()
+
+Setup and teardown functions for array_t objects
+
+=cut
+ */
+int _array_init(array_t *self) {
+    assert(self != NULL);
+    
+    memset(self, 0, sizeof(*self));
+    self->m_items = calloc(_array_initial_reserve_size, sizeof(*self->m_items));
+    
+    if (self->m_items != NULL) {
+        self->m_allocated_count = _array_initial_reserve_size;
+        return 0;
+    }
+    else {
+        return -1;
+    }
+}
+
+int _array_destroy(array_t *self) {
+    assert(self != NULL);
+    
+    for (size_t i = self->m_first; i < self->m_first + self->m_count; i++) {
+        scalar_release(self->m_items[i]);
+    }
+    free(self->m_items);
+    
+    memset(self, 0, sizeof(*self));
+    return 0;
+}
+
+/*
+=item _array_reserve()
+
+Ensure an array has space for a certain number of items.  Additional space, if any, is allocated at the end of the array.
+
+=cut
+ */
+static int _array_reserve(array_t *self, size_t target_size) {
+    assert(self != NULL);
+    
+    size_t effective_size = self->m_allocated_count - self->m_first;
+    
+    if (effective_size < target_size) {
+        return _array_grow_back(self, target_size - effective_size);
+    }
+    else {
+        return 0;
+    }
+}
 
 /*
 =item _array_grow_back()

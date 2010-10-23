@@ -17,7 +17,6 @@
 
 #include "floatptr_t.h"
 #include "pool.h"
-#include "channel.h"
 
 #define SCALAR_UNDEF            0x00000000u
 #define SCALAR_INT              0x01u
@@ -46,7 +45,20 @@
       '-------------------------------------- value is a malloc'd pointer, make sure to free it
  */
 
+#ifndef HAVE_SCALAR_HANDLE_T
+#define HAVE_SCALAR_HANDLE_T
 typedef POOL_HANDLE(scalar_t) scalar_handle_t;
+#endif
+
+#ifndef HAVE_ARRAY_HANDLE_T
+#define HAVE_ARRAY_HANDLE_T
+typedef POOL_HANDLE(array_t) array_handle_t;
+#endif
+
+#ifndef HAVE_CHANNEL_HANDLE_T
+#define HAVE_CHANNEL_HANDLE_T
+typedef POOL_HANDLE(channel_t) channel_handle_t;
+#endif
 
 typedef struct scalar_t {
     uint32_t m_flags;
