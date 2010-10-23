@@ -133,7 +133,32 @@ static inline int type##_STACK_TOP(struct type##_STACK *stack, type *result) {  
     assert(result != NULL);                                                             \
                                                                                         \
     return clone_func(result, &stack->m_items[stack->m_count - 1]);                     \
+}                                                                                       \
+                                                                                        \
+static inline int type##_STACK_SWAP(struct type##_STACK *stack) {                       \
+    assert(stack != NULL);                                                              \
+                                                                                        \
+    type tmp;                                                                           \
+    memcpy(&tmp, &stack->m_items[stack->m_count - 2], sizeof(type));                    \
+    memcpy(&stack->m_items[stack->m_count - 2],                                         \
+           &stack->m_items[stack->m_count - 1], sizeof(type));                          \
+    memcpy(&stack->m_items[stack->m_count - 1], &tmp, sizeof(type));                    \
+                                                                                        \
+    return 0;                                                                           \
+}                                                                                       \
+                                                                                        \
+static inline int type##_STACK_DUP(struct type##_STACK *stack) {                        \
+    assert(stack != NULL);                                                              \
+    assert(stack->m_count > 0);                                                         \
+                                                                                        \
+    return type##_STACK_PUSH(stack, &stack->m_items[stack->m_count - 1]);               \
+}                                                                                       \
+                                                                                        \
+static inline int type##_STACK_OVER(struct type##_STACK *stack) {                       \
+    assert(stack != NULL);                                                              \
+    assert(stack->m_count > 1);                                                         \
+                                                                                        \
+    return type##_STACK_PUSH(stack, &stack->m_items[stack->m_count - 2]);               \
 }
-
 
 #endif
