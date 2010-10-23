@@ -62,7 +62,7 @@ POOL_WRAPPER_STRUCT(type) {                                                     
 static POOL_TYPE(type) POOL_SINGLETON(type);                                                    \
                                                                                                 \
 static inline void _##type##_POOL_ADD_TO_FREE_LIST(POOL_HANDLE(type));                          \
-static inline POOL_HANDLE(type) _##type##_POOL_FIND_FREE_SEQUENCE(size_t);                      \
+static inline POOL_HANDLE(type) _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(size_t);             \
                                                                                                 \
 static inline int type##_POOL_LOCK(POOL_HANDLE(type) handle) {                                  \
     assert(POOL_VALID_HANDLE(type, handle));                                                    \
@@ -199,7 +199,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(uint32_t flags) {          
 static inline POOL_HANDLE(type) type##_POOL_ALLOCATE_MANY(size_t many, uint32_t flags) {        \
     assert(many > 0);                                                                           \
     if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {                     \
-        POOL_HANDLE(type) alloc_start = _##type##_POOL_FIND_FREE_SEQUENCE(many);                \
+        POOL_HANDLE(type) alloc_start = _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(many);       \
                                                                                                 \
         if (alloc_start != 0) {                                                                 \
             /* found a sufficiently long sequence of free items - remove them from free list */ \
@@ -318,7 +318,7 @@ static inline int type##_POOL_RELEASE(POOL_HANDLE(type) handle) {               
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline POOL_HANDLE(type) _##type##_POOL_FIND_FREE_SEQUENCE(size_t len) {                 \
+static inline POOL_HANDLE(type) _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(size_t len) {        \
     assert(len > 0);                                                                            \
                                                                                                 \
     if (POOL_SINGLETON(type).m_free_count > len) {                                              \
