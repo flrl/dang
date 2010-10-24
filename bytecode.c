@@ -235,6 +235,9 @@ int inst_SYMFIND(struct vm_context_t *context) {
             case SYMBOL_ARRAY:
                 anon_scalar_set_array_reference(&ref, symbol->m_referent.as_array);
                 break;
+            case SYMBOL_HASH:
+                anon_scalar_set_hash_reference(&ref, symbol->m_referent.as_hash);
+                break;
             //...
             case SYMBOL_CHANNEL:
                 anon_scalar_set_channel_reference(&ref, symbol->m_referent.as_channel);

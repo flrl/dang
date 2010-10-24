@@ -55,6 +55,11 @@ typedef POOL_HANDLE(scalar_t) scalar_handle_t;
 typedef POOL_HANDLE(array_t) array_handle_t;
 #endif
 
+#ifndef HAVE_HASH_HANDLE_T
+#define HAVE_HASH_HANDLE_T
+typedef POOL_HANDLE(hash_t) hash_handle_t;
+#endif
+
 #ifndef HAVE_CHANNEL_HANDLE_T
 #define HAVE_CHANNEL_HANDLE_T
 typedef POOL_HANDLE(channel_t) channel_handle_t;
@@ -68,6 +73,7 @@ typedef struct scalar_t {
         char     *as_string;
         scalar_handle_t as_scalar_handle;
         array_handle_t as_array_handle;
+        hash_handle_t as_hash_handle;
         channel_handle_t as_channel_handle;
     } m_value;
 } scalar_t;
@@ -93,10 +99,12 @@ void scalar_get_value(scalar_handle_t, scalar_t *);
 
 void scalar_set_scalar_reference(scalar_handle_t, scalar_handle_t);
 void scalar_set_array_reference(scalar_handle_t, array_handle_t);
+void scalar_set_hash_reference(scalar_handle_t, hash_handle_t);
 void scalar_set_channel_reference(scalar_handle_t, channel_handle_t);
 
 scalar_handle_t scalar_deref_scalar_reference(scalar_handle_t);
 array_handle_t scalar_deref_array_reference(scalar_handle_t);
+hash_handle_t scalar_deref_hash_reference(scalar_handle_t);
 channel_handle_t scalar_deref_channel_reference(scalar_handle_t);
 
 
@@ -116,10 +124,12 @@ void anon_scalar_get_string_value(const scalar_t *, char **);
 
 void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
 void anon_scalar_set_array_reference(scalar_t *, array_handle_t);
+void anon_scalar_set_hash_reference(scalar_t *, hash_handle_t);
 void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
 
 scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *);
 array_handle_t anon_scalar_deref_array_reference(const scalar_t *);
+hash_handle_t anon_scalar_deref_hash_reference(const scalar_t *);
 channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *);
 
 #endif

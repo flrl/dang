@@ -13,8 +13,9 @@
 #include <string.h>
 
 #include "array.h"
-#include "debug.h"
 #include "channel.h"
+#include "hash.h"
+#include "debug.h"
 
 #include "scalar.h"
 
@@ -177,6 +178,8 @@ void scalar_set_value(scalar_handle_t handle, const scalar_t *val) {
 
 =item scalar_set_array_reference()
 
+=item scalar_set_hash_reference()
+
 =item scalar_set_channel_reference()
 
 Functions for setting up references
@@ -201,6 +204,16 @@ void scalar_set_array_reference(scalar_handle_t handle, array_handle_t a) {
         anon_scalar_set_array_reference(&SCALAR(handle), a);
         POOL_UNLOCK(scalar_t, handle);
     }    
+}
+
+void scalar_set_hash_reference(scalar_handle_t handle, hash_handle_t h) {
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    assert(POOL_ISINUSE(scalar_t, handle));
+    
+    if (0 == POOL_LOCK(scalar_t, handle)) {
+        anon_scalar_set_hash_reference(&SCALAR(handle), h);
+        POOL_UNLOCK(scalar_t, handle);
+    }
 }
 
 void scalar_set_channel_reference(scalar_handle_t handle, channel_handle_t c) {
@@ -289,6 +302,8 @@ void scalar_get_value(scalar_handle_t handle, scalar_t *result) {
 
 =item scalar_deref_array_reference()
 
+=item scalar_deref_hash_reference()
+
 =item scalar_deref_channel_reference()
 
 Functions for dereferencing references in pooled scalars
@@ -324,6 +339,22 @@ array_handle_t scalar_deref_array_reference(scalar_handle_t handle) {
     }
     return a;    
 }
+
+hash_handle_t scalar_deref_hash_reference(scalar_handle_t handle) {
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    assert(POOL_ISINUSE(scalar_t, handle));
+    
+    hash_handle_t h;
+    if (0 == POOL_LOCK(scalar_t, handle)) {
+        h = anon_scalar_deref_hash_reference(&SCALAR(handle));
+        POOL_UNLOCK(scalar_t, handle);
+    }
+    else {
+        h = 0;
+    }
+    return h;
+}
+
 channel_handle_t scalar_deref_channel_reference(scalar_handle_t handle) {
     assert(POOL_VALID_HANDLE(scalar_t, handle));
     assert(POOL_ISINUSE(scalar_t, handle));
@@ -497,6 +528,8 @@ inline void anon_scalar_set_string_value(scalar_t *self, const char *sval) {
 
 =item anon_scalar_set_array_reference()
 
+=item anon_scalar_set_hash_reference()
+
 =item anon_scalar_set_channel_reference()
 
 Functions for setting up anonymous scalar_t objects to reference other objects.  Any previous value is properly
@@ -519,6 +552,14 @@ inline void anon_scalar_set_array_reference(scalar_t *self, array_handle_t handl
     
     self->m_flags = SCALAR_ARRREF;
     self->m_value.as_array_handle = array_reference(handle);
+}
+
+inline void anon_scalar_set_hash_reference(scalar_t *self, hash_handle_t handle) {
+    assert(self != NULL);
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+    
+    self->m_flags = SCALAR_HASHREF;
+    self->m_value.as_hash_handle = hash_reference(handle);
 }
 
 inline void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) {
@@ -593,23 +634,42 @@ inline floatptr_t anon_scalar_get_float_value(const scalar_t *self) {
 inline void anon_scalar_get_string_value(const scalar_t *self, char **result) {
     assert(self != NULL);
     
-    char numeric[100];
+    char buffer[100];
     
     switch(self->m_flags & SCALAR_TYPE_MASK) {
+        case SCALAR_UNDEF:
+            *result = strdup("");
+            break;
         case SCALAR_INT:
-            snprintf(numeric, sizeof(numeric), "%"PRIiPTR"", self->m_value.as_int);
-            *result = strdup(numeric);
+            snprintf(buffer, sizeof(buffer), "%"PRIiPTR"", self->m_value.as_int);
+            *result = strdup(buffer);
             break;
         case SCALAR_FLOAT:
-            snprintf(numeric, sizeof(numeric), "%f", self->m_value.as_float);
-            *result = strdup(numeric);
+            snprintf(buffer, sizeof(buffer), "%f", self->m_value.as_float);
+            *result = strdup(buffer);
             break;
         case SCALAR_STRING:
             *result = strdup(self->m_value.as_string);
             break;
-        case SCALAR_UNDEF:
-            *result = strdup("");
+
+        case SCALAR_SCAREF:
+            snprintf(buffer, sizeof(buffer), "SCALAR(%"PRIuPTR"", self->m_value.as_scalar_handle);
+            *result = strdup(buffer);
             break;
+        case SCALAR_ARRREF:
+            snprintf(buffer, sizeof(buffer), "ARRAY(%"PRIuPTR"", self->m_value.as_array_handle);
+            *result = strdup(buffer);
+            break;
+        case SCALAR_HASHREF:
+            snprintf(buffer, sizeof(buffer), "HASH(%"PRIuPTR"", self->m_value.as_hash_handle);
+            *result = strdup(buffer);
+            break;
+        //...
+        case SCALAR_CHANREF:
+            snprintf(buffer, sizeof(buffer), "CHANNEL(%"PRIuPTR"", self->m_value.as_channel_handle);
+            *result = strdup(buffer);
+            break;
+        
         default:
             debug("unexpected type value %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
             *result = strdup("");
@@ -623,6 +683,8 @@ inline void anon_scalar_get_string_value(const scalar_t *self, char **result) {
 =item anon_scalar_deref_scalar_reference()
 
 =item anon_scalar_deref_array_reference()
+
+=item anon_scalar_deref_hash_reference()
 
 =item anon_scalar_deref_channel_reference()
 
@@ -642,6 +704,13 @@ inline array_handle_t anon_scalar_deref_array_reference(const scalar_t *self) {
     assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
     
     return self->m_value.as_array_handle;
+}
+
+inline hash_handle_t anon_scalar_deref_hash_reference(const scalar_t *self) {
+    assert(self != NULL);
+    assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
+    
+    return self->m_value.as_hash_handle;
 }
 
 inline channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *self) {

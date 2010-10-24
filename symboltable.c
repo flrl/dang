@@ -203,6 +203,10 @@ int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags)
             symbol->m_flags = SYMBOL_ARRAY;
             symbol->m_referent.as_array = array_allocate();
             break;
+        case SYMBOL_HASH:
+            symbol->m_flags = SYMBOL_HASH;
+            symbol->m_referent.as_hash = hash_allocate();
+            break;
         //...
         case SYMBOL_CHANNEL:
             symbol->m_flags = SYMBOL_SCALAR;
@@ -262,6 +266,10 @@ int symbol_clone(symboltable_t *table, identifier_t identifier) {
             case SYMBOL_ARRAY:
                 symbol->m_flags = SYMBOL_ARRAY;
                 symbol->m_referent.as_array = array_reference(remote_symbol->m_referent.as_array);
+                break;
+            case SYMBOL_HASH:
+                symbol->m_flags = SYMBOL_HASH;
+                symbol->m_referent.as_hash = hash_reference(remote_symbol->m_referent.as_hash);
                 break;
             //...
             case SYMBOL_CHANNEL:
@@ -515,6 +523,9 @@ int _symbol_destroy(symbol_t *self) {
             break;
         case SYMBOL_ARRAY:
             array_release(self->m_referent.as_array);
+            break;
+        case SYMBOL_HASH:
+            hash_release(self->m_referent.as_hash);
             break;
         //...
         case SYMBOL_CHANNEL:

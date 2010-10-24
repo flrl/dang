@@ -14,6 +14,7 @@
 
 #include "array.h"
 #include "channel.h"
+#include "hash.h"
 #include "scalar.h"
 
 #define SYMBOL_SCALAR       0x01u
@@ -36,7 +37,7 @@ typedef struct symbol_t {
     union {
         scalar_handle_t as_scalar;
         array_handle_t as_array;
-//        hash_handle_t as_hash;
+        hash_handle_t as_hash;
         channel_handle_t as_channel;
     } m_referent;
 } symbol_t;
