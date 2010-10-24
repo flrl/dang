@@ -497,7 +497,7 @@ Functions for setting the value of anonymous scalar_t objects.  Any previous val
 
 =cut
 */
-inline void anon_scalar_set_int_value(scalar_t *self, intptr_t ival) {
+void anon_scalar_set_int_value(scalar_t *self, intptr_t ival) {
     assert(self != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
 
@@ -505,7 +505,7 @@ inline void anon_scalar_set_int_value(scalar_t *self, intptr_t ival) {
     self->m_value.as_int = ival;
 }
 
-inline void anon_scalar_set_float_value(scalar_t *self, floatptr_t fval) {
+void anon_scalar_set_float_value(scalar_t *self, floatptr_t fval) {
     assert(self != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
 
@@ -513,7 +513,7 @@ inline void anon_scalar_set_float_value(scalar_t *self, floatptr_t fval) {
     self->m_value.as_float = fval;
 }
 
-inline void anon_scalar_set_string_value(scalar_t *self, const char *sval) {
+void anon_scalar_set_string_value(scalar_t *self, const char *sval) {
     assert(self != NULL);
     assert(sval != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
@@ -538,7 +538,7 @@ cleaned up.
 =cut
 */
 
-inline void anon_scalar_set_scalar_reference(scalar_t *self, scalar_handle_t handle) {
+void anon_scalar_set_scalar_reference(scalar_t *self, scalar_handle_t handle) {
     assert(self != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
@@ -546,7 +546,7 @@ inline void anon_scalar_set_scalar_reference(scalar_t *self, scalar_handle_t han
     self->m_value.as_scalar_handle = scalar_reference(handle);
 }
 
-inline void anon_scalar_set_array_reference(scalar_t *self, array_handle_t handle) {
+void anon_scalar_set_array_reference(scalar_t *self, array_handle_t handle) {
     assert(self != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
@@ -554,7 +554,7 @@ inline void anon_scalar_set_array_reference(scalar_t *self, array_handle_t handl
     self->m_value.as_array_handle = array_reference(handle);
 }
 
-inline void anon_scalar_set_hash_reference(scalar_t *self, hash_handle_t handle) {
+void anon_scalar_set_hash_reference(scalar_t *self, hash_handle_t handle) {
     assert(self != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
@@ -562,7 +562,7 @@ inline void anon_scalar_set_hash_reference(scalar_t *self, hash_handle_t handle)
     self->m_value.as_hash_handle = hash_reference(handle);
 }
 
-inline void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) {
+void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) {
     assert(self != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
@@ -581,7 +581,7 @@ Functions for getting values from anonymous scalar_t objects.
 
 =cut
 */
-inline intptr_t anon_scalar_get_int_value(const scalar_t *self) {
+intptr_t anon_scalar_get_int_value(const scalar_t *self) {
     assert(self != NULL);
     intptr_t value;
     switch(self->m_flags & SCALAR_TYPE_MASK) {
@@ -605,7 +605,7 @@ inline intptr_t anon_scalar_get_int_value(const scalar_t *self) {
     return value;
 }
 
-inline floatptr_t anon_scalar_get_float_value(const scalar_t *self) {
+floatptr_t anon_scalar_get_float_value(const scalar_t *self) {
     assert(self != NULL);
     floatptr_t value;
     
@@ -631,7 +631,7 @@ inline floatptr_t anon_scalar_get_float_value(const scalar_t *self) {
     return value;    
 }
 
-inline void anon_scalar_get_string_value(const scalar_t *self, char **result) {
+void anon_scalar_get_string_value(const scalar_t *self, char **result) {
     assert(self != NULL);
     
     char buffer[100];
@@ -692,28 +692,28 @@ Dereference reference type anonymous scalars
 
 =cut
 */
-inline scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *self) {
+scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *self) {
     assert(self != NULL);
     assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_SCAREF);
     
     return self->m_value.as_scalar_handle;
 }
 
-inline array_handle_t anon_scalar_deref_array_reference(const scalar_t *self) {
+array_handle_t anon_scalar_deref_array_reference(const scalar_t *self) {
     assert(self != NULL);
     assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
     
     return self->m_value.as_array_handle;
 }
 
-inline hash_handle_t anon_scalar_deref_hash_reference(const scalar_t *self) {
+hash_handle_t anon_scalar_deref_hash_reference(const scalar_t *self) {
     assert(self != NULL);
     assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
     
     return self->m_value.as_hash_handle;
 }
 
-inline channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *self) {
+channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *self) {
     assert(self != NULL);
     assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_CHANREF);
     
