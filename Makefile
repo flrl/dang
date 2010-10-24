@@ -10,7 +10,7 @@ GENS := floatptr_t.h instruction_table.h instruction_table.c
 
 CFLAGS += --std=c99 -g -Wall -Wno-unknown-pragmas
 CXXFLAGS += -g -Wall -Wno-unknown-pragmas
-LDFLAGS += 
+LDFLAGS += -lm
 
 MACHINE := $(shell uname -s)
 -include $(MACHINE).mk
