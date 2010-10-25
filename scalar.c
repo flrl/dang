@@ -375,16 +375,24 @@ channel_handle_t scalar_deref_channel_reference(scalar_handle_t handle) {
 
 =head2 Anonymous Scalar Functions
 
+With the exception of C<anon_scalar_init()>, these functions will all correctly clean up any previous value the object may
+have held before setting a new one.
+
 =over
 
+=cut
+ */
+
+/*
 =item anon_scalar_init()
 
-=item anon_scalar_destroy()
+Initialises a scalar_t object.  
 
-Setup and teardown functions for anonymous scalar_t objects
+This function is functionally equivalent to setting all its fields to zero, so if the object was allocated with C<calloc()>,
+or initialised with {0}, then you do not need to also call C<anon_scalar_init()>
 
 =cut
-*/
+ */
 int anon_scalar_init(scalar_t *self) {
     assert(self != NULL);
     self->m_flags = SCALAR_UNDEF;
@@ -392,6 +400,15 @@ int anon_scalar_init(scalar_t *self) {
     return 0;
 }
 
+/*
+=item anon_scalar_destroy()
+
+Cleans up a scalar_t object.
+
+This properly releases any references the object may hold.
+
+=cut
+ */
 int anon_scalar_destroy(scalar_t *self) {
     assert(self != NULL);
     if (self->m_flags & SCALAR_FLAG_PTR) {
