@@ -34,10 +34,7 @@ bytecode
 #define NEXT_BYTE(x) (const uint8_t*)(&(x)->m_bytecode[(x)->m_counter + 1])
 
 #define BYTECODE_NUMERIC_OP(type, op) do {                                          \
-    scalar_t a, b, c;                                                               \
-    anon_scalar_init(&a);                                                           \
-    anon_scalar_init(&b);                                                           \
-    anon_scalar_init(&c);                                                           \
+    scalar_t a = {0}, b = {0}, c = {0};                                             \
     vm_ds_pop(context, &b);                                                         \
     vm_ds_pop(context, &b);                                                         \
     anon_scalar_set_##type##_value(&c,                                              \
@@ -128,7 +125,7 @@ Swaps the two items at the top of the data stack
 =cut
  */
 int inst_SWAP(vm_context_t *context) {
-    scalar_t a, b;
+    scalar_t a = {0}, b = {0};
     vm_ds_pop(context, &b);
     vm_ds_pop(context, &a);
     vm_ds_push(context, &b);
@@ -146,7 +143,7 @@ Duplicates the item on the top of the data stack
 =cut
  */
 int inst_DUP(vm_context_t *context) {
-    scalar_t a;
+    scalar_t a = {0};
     vm_ds_top(context, &a);
     vm_ds_push(context, &a);
     anon_scalar_destroy(&a);
@@ -177,7 +174,7 @@ int inst_0BRANCH(vm_context_t *context) {
     const intptr_t branch_offset = *(const intptr_t *) NEXT_BYTE(context);
     int incr = 0;
 
-    scalar_t a;
+    scalar_t a = {0};
     vm_ds_pop(context, &a);
 
     if (anon_scalar_get_int_value(&a) == 0) {
@@ -224,8 +221,7 @@ int inst_SYMFIND(struct vm_context_t *context) {
     
     const symbol_t *symbol = symbol_lookup(context->m_symboltable, identifier);
 
-    scalar_t ref;
-    anon_scalar_init(&ref);
+    scalar_t ref = {0};
     
     if (symbol != NULL) {
         switch(symbol->m_flags & SYMBOL_TYPE_MASK) {
@@ -277,9 +273,7 @@ Pops a scalar reference from the data stack.  Pushes the value of the referenced
 =cut
  */
 int inst_SRREAD(struct vm_context_t *context) {
-    scalar_t ref, a;
-    anon_scalar_init(&ref);
-    anon_scalar_init(&a);
+    scalar_t ref = {0}, a = {0};
 
     vm_ds_pop(context, &ref);
     scalar_get_value(anon_scalar_deref_scalar_reference(&ref), &a);
@@ -299,10 +293,7 @@ Pops a scalar reference and a scalar value from the data stack.  Stores the valu
 =cut
  */
 int inst_SRWRITE(struct vm_context_t *context) {
-    scalar_t ref, a;
-    
-    anon_scalar_init(&ref);
-    anon_scalar_init(&a);
+    scalar_t ref = {0}, a = {0};
     
     vm_ds_pop(context, &ref);
     vm_ds_pop(context, &a);
@@ -325,11 +316,7 @@ If the index is out of range, the array automatically grows to accomodate it.
 =cut
  */
 int inst_ARIND(struct vm_context_t *context) {
-    scalar_t ar, i, sr;
-    
-    anon_scalar_init(&ar);
-    anon_scalar_init(&i);
-    anon_scalar_init(&sr);
+    scalar_t ar = {0}, i = {0}, sr = {0};
     
     vm_ds_pop(context, &i);
     vm_ds_pop(context, &ar);
@@ -355,10 +342,7 @@ Pops an array reference and a scalar value from the data stack, and adds the sca
 =cut
  */
 int inst_ARPUSH(struct vm_context_t *context) {
-    scalar_t a, ref;
-    
-    anon_scalar_init(&a);
-    anon_scalar_destroy(&ref);
+    scalar_t a = {0}, ref = {0};
     
     vm_ds_pop(context, &ref);
     vm_ds_pop(context, &a);
@@ -381,10 +365,7 @@ data stack.
 =cut
  */
 int inst_ARPOP(struct vm_context_t *context) {
-    scalar_t ref, a;
-    
-    anon_scalar_init(&ref);
-    anon_scalar_init(&a);
+    scalar_t ref = {0}, a = {0};
     
     vm_ds_pop(context, &ref);
     
@@ -408,10 +389,7 @@ data stack.
 =cut
  */
 int inst_ARSHFT(struct vm_context_t *context) {
-    scalar_t ref, a;
-    
-    anon_scalar_init(&ref);
-    anon_scalar_init(&a);
+    scalar_t ref = {0}, a = {0};
     
     vm_ds_pop(context, &ref);
     
@@ -434,10 +412,7 @@ Pops an array reference and a scalar value from the data stack, and adds the sca
 =cut
  */
 int inst_ARUNSHFT(struct vm_context_t *context) {
-    scalar_t a, ref;
-    
-    anon_scalar_init(&a);
-    anon_scalar_destroy(&ref);
+    scalar_t a = {0}, ref = {0};
     
     vm_ds_pop(context, &ref);
     vm_ds_pop(context, &a);
@@ -459,10 +434,7 @@ Pops a channel reference from the data stack, reads a value from it, and pushes 
 =cut
  */
 int inst_CRREAD(struct vm_context_t *context) {
-    scalar_t ref, a;
-    
-    anon_scalar_init(&ref);
-    anon_scalar_init(&a);
+    scalar_t ref = {0}, a = {0};
     
     vm_ds_pop(context, &ref);
     
@@ -484,10 +456,7 @@ Pops a channel reference and a value from the data stack, and writes the value t
 =cut
  */
 int inst_CRWRITE(struct vm_context_t *context) {
-    scalar_t a, ref;
-    
-    anon_scalar_init(&a);
-    anon_scalar_init(&ref);
+    scalar_t a = {0}, ref = {0};
     
     vm_ds_pop(context, &ref);
     vm_ds_pop(context, &a);
@@ -513,8 +482,7 @@ int inst_CRWRITE(struct vm_context_t *context) {
 int inst_INTLIT(vm_context_t *context) {
     const intptr_t lit = *(const intptr_t *) NEXT_BYTE(context);
     
-    scalar_t a;
-    anon_scalar_init(&a);
+    scalar_t a = {0};
     anon_scalar_set_int_value(&a, lit);
     vm_ds_push(context, &a);
     anon_scalar_destroy(&a);
@@ -599,8 +567,7 @@ int inst_STRLIT(struct vm_context_t *context) {
     const uint16_t len = *(uint16_t *) (&context->m_bytecode[context->m_counter + 1]);
     const char *str = (const char *) (&context->m_bytecode[context->m_counter + 1 + sizeof(len)]);
     
-    scalar_t s;
-    anon_scalar_init(&s);
+    scalar_t s = {0};
     
     if (len > 0) {
         char *buf = calloc(len + 1, sizeof(*buf));
@@ -627,12 +594,8 @@ Pops two strings from the stack, and pushes back their concatenation.
 =cut
  */
 int inst_STRCAT(struct vm_context_t *context) {
-    scalar_t a, b, c;
+    scalar_t a = {0}, b = {0}, c = {0};
     char *str_a, *str_b, *str_c;
-
-    anon_scalar_init(&a);
-    anon_scalar_init(&b);
-    anon_scalar_init(&c);
 
     vm_ds_pop(context, &b);
     vm_ds_pop(context, &a);
@@ -669,8 +632,7 @@ Reads a floating point literal from the following bytecode and pushes it onto th
 int inst_FLTLIT(struct vm_context_t *context) {
     const floatptr_t lit = *(const floatptr_t *) (&context->m_bytecode[context->m_counter + 1]);
     
-    scalar_t a;
-    anon_scalar_init(&a);
+    scalar_t a = {0};
     anon_scalar_set_float_value(&a, lit);
     vm_ds_push(context, &a);
     anon_scalar_destroy(&a);
@@ -734,11 +696,7 @@ Pops two floating point values from the data stack and pushes back their remaind
 =cut
  */
 int inst_FLTMOD(struct vm_context_t *context) {
-    scalar_t a, b, c;
-    
-    anon_scalar_init(&a);
-    anon_scalar_init(&b);
-    anon_scalar_init(&c);
+    scalar_t a = {0}, b = {0}, c = {0};
     
     vm_ds_pop(context, &b);
     vm_ds_pop(context, &a);
