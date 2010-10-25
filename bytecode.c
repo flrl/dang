@@ -311,7 +311,7 @@ int inst_SRWRITE(struct vm_context_t *context) {
 }
 
 /*
-=item ARIND ( ar i -- sr )
+=item ARINDEX ( ar i -- sr )
 
 Pops an index and an array reference from the data stack.  Pushes back a reference to the item in the array at index.
 
@@ -319,7 +319,7 @@ If the index is out of range, the array automatically grows to accomodate it.
 
 =cut
  */
-int inst_ARIND(struct vm_context_t *context) {
+int inst_ARINDEX(struct vm_context_t *context) {
     scalar_t ar = {0}, i = {0}, sr = {0};
     
     vm_ds_pop(context, &i);
@@ -429,6 +429,84 @@ int inst_ARUNSHFT(struct vm_context_t *context) {
     
     return 1;    
 }
+
+/*
+=item HRINDEX ( hr k - sr )
+
+Pops a key and a hash reference from the data stack, and pushes a reference to the value for that key.
+
+If the key does not exist, it is automatically created and its value set to undefined.
+
+=cut
+ */
+int inst_HRINDEX(struct vm_context_t *context) {
+    scalar_t hr = {0}, k = {0}, sr = {0};
+    
+    vm_ds_pop(context, &k);
+    vm_ds_pop(context, &hr);
+    
+    assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
+    scalar_handle_t s = hash_key_item(anon_scalar_deref_hash_reference(&hr), &k);
+    anon_scalar_set_scalar_reference(&sr, s);
+    scalar_release(s);
+    
+    vm_ds_push(context, &sr);
+    
+    anon_scalar_destroy(&sr);
+    anon_scalar_destroy(&k);
+    anon_scalar_destroy(&hr);
+    
+    return 1;
+}
+
+/*
+=item HRKEYEX ( hr k - b )
+
+Pops a key and a hash reference from the data stack.  If the key exists in the hash, pushes back the value 1.
+If it does not, pushes back the value 0.
+
+=cut
+ */
+int inst_HRKEYEX(struct vm_context_t *context) {
+    scalar_t hr = {0}, k = {0}, b = {0};
+    
+    vm_ds_pop(context, &k);
+    vm_ds_pop(context, &hr);
+    
+    assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
+    anon_scalar_set_int_value(&b, hash_key_exists(anon_scalar_deref_hash_reference(&hr), &k));
+    
+    vm_ds_push(context, &b);
+    
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&k);
+    anon_scalar_destroy(&hr);
+    
+    return 1;
+}
+
+/*
+=item HRKEYDEL ( hr k - )
+
+Pops a key and a hash reference from the data stack.  Deletes the key from the hash.
+
+=cut
+ */
+int inst_HRKEYDEL(struct vm_context_t *context) {
+    scalar_t hr = {0}, k = {0};
+    
+    vm_ds_pop(context, &k);
+    vm_ds_pop(context, &hr);
+    
+    assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
+    hash_key_delete(anon_scalar_deref_hash_reference(&hr), &k);
+    
+    anon_scalar_destroy(&hr);
+    anon_scalar_destroy(&k);
+    
+    return 1;
+}
+
 
 /*
 =item CRREAD ( ref -- a )
