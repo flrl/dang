@@ -41,9 +41,9 @@
 #define STACK_NPUSH(type, stack, count, values) type##_STACK_PUSH(stack, count, values)
 #define STACK_NPOP(type, stack, count, results) type##_STACK_POP(stack, count, results)
 #define STACK_TOP(type, stack, result)          type##_STACK_TOP(stack, result)
-#define STACK_SWAP(type, stack, result)         type##_STACK_SWAP(stack, result)
-#define STACK_DUP(type, stack, result)          type##_STACK_DUP(stack, result)
-#define STACK_OVER(type, stack, result)         type##_STACK_OVER(stack, result)
+#define STACK_SWAP(type, stack)                 type##_STACK_SWAP(stack)
+#define STACK_DUP(type, stack)                  type##_STACK_DUP(stack)
+#define STACK_OVER(type, stack)                 type##_STACK_OVER(stack)
 
 /*
  These macros provide basic implementations of the init, destroy, clone and assign
