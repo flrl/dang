@@ -84,6 +84,16 @@ void *vm_execute(void *ptr) {
 
 =item vm_ds_top()
 
+=item vm_ds_npush()
+
+=item vm_ds_npop()
+
+=item vm_ds_swap()
+
+=item vm_ds_dup()
+
+=item vm_ds_over()
+
 Data stack management functions
 
 =cut
@@ -106,6 +116,37 @@ int vm_ds_top(vm_context_t *context, scalar_t *result) {
     assert(result != NULL);
     
     return STACK_TOP(scalar_t, &context->m_data_stack, result);
+}
+
+int vm_ds_npush(vm_context_t *context, size_t count, const scalar_t *value) {
+    assert(context != NULL);
+    assert(value != NULL);
+    
+    return STACK_NPUSH(scalar_t, &context->m_data_stack, count, value);
+}
+
+int vm_ds_npop(vm_context_t *context, size_t count, scalar_t *result) {
+    assert(context != NULL);
+    
+    return STACK_NPOP(scalar_t, &context->m_data_stack, count, result);
+}
+
+int vm_ds_swap(vm_context_t *context) {
+    assert(context != NULL);
+    
+    return STACK_SWAP(scalar_t, &context->m_data_stack);
+}
+
+int vm_ds_dup(vm_context_t *context) {
+    assert(context != NULL);
+    
+    return STACK_DUP(scalar_t, &context->m_data_stack);
+}
+
+int vm_ds_over(vm_context_t *context) {
+    assert(context != NULL);
+    
+    return STACK_OVER(scalar_t, &context->m_data_stack);
 }
 
 

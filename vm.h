@@ -31,6 +31,11 @@ void *vm_execute(void *);
 int vm_ds_push(vm_context_t *, const scalar_t *);
 int vm_ds_pop(vm_context_t *, scalar_t *);
 int vm_ds_top(vm_context_t *, scalar_t *);
+int vm_ds_npush(vm_context_t *, size_t, const scalar_t *);
+int vm_ds_npop(vm_context_t *, size_t, scalar_t *);
+int vm_ds_swap(vm_context_t *);
+int vm_ds_dup(vm_context_t *);
+int vm_ds_over(vm_context_t *);
 
 int vm_rs_push(vm_context_t *, size_t);
 int vm_rs_pop(vm_context_t *, size_t *);
