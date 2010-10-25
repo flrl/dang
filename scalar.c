@@ -228,6 +228,8 @@ void scalar_set_channel_reference(scalar_handle_t handle, channel_handle_t c) {
 
 
 /*
+=item scalar_get_bool_value()
+ 
 =item scalar_get_int_value()
 
 =item scalar_get_float_value()
@@ -240,6 +242,23 @@ Functions for getting values from a pooled scalar.  Atomic when scalar was alloc
 
 =cut
 */
+intptr_t scalar_get_bool_value(scalar_handle_t handle) {
+    assert(POOL_VALID_HANDLE(scalar_t, handle));
+    assert(POOL_ISINUSE(scalar_t, handle));
+    
+    intptr_t value;
+    
+    if (0 == POOL_LOCK(scalar_t, handle)) {
+        value = anon_scalar_get_bool_value(&SCALAR(handle));
+        POOL_UNLOCK(scalar_t, handle);
+    }
+    else {
+        value = 0;
+    }
+    
+    return value;
+}
+
 intptr_t scalar_get_int_value(scalar_handle_t handle) {
     assert(POOL_VALID_HANDLE(scalar_t, handle));
     assert(POOL_ISINUSE(scalar_t, handle));
@@ -247,7 +266,7 @@ intptr_t scalar_get_int_value(scalar_handle_t handle) {
     intptr_t value;
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
-        value = anon_scalar_get_int_value((scalar_t *) &SCALAR(handle));
+        value = anon_scalar_get_int_value(&SCALAR(handle));
         POOL_UNLOCK(scalar_t, handle);
     }
     else {
@@ -264,7 +283,7 @@ floatptr_t scalar_get_float_value(scalar_handle_t handle) {
     floatptr_t value;
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
-        value = anon_scalar_get_float_value((scalar_t *) &SCALAR(handle));
+        value = anon_scalar_get_float_value(&SCALAR(handle));
         POOL_UNLOCK(scalar_t, handle);
     }
     else {
@@ -279,7 +298,7 @@ void scalar_get_string_value(scalar_handle_t handle, char **result) {
     assert(POOL_ISINUSE(scalar_t, handle));
 
     if (0 == POOL_LOCK(scalar_t, handle)) {
-        anon_scalar_get_string_value((scalar_t *) &SCALAR(handle), result);
+        anon_scalar_get_string_value(&SCALAR(handle), result);
         POOL_UNLOCK(scalar_t, handle);
     }
 }
@@ -588,6 +607,9 @@ void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) 
 }
 
 /*
+
+=item anon_scalar_get_bool_value()
+
 =item anon_scalar_get_int_value()
 
 =item anon_scalar_get_float_value()
@@ -598,10 +620,39 @@ Functions for getting values from anonymous scalar_t objects.
 
 =cut
 */
+intptr_t anon_scalar_get_bool_value(const scalar_t *self) {
+    assert(self != NULL);
+    switch (self->m_flags & SCALAR_TYPE_MASK) {
+        case SCALAR_UNDEF:
+            return 0;
+        case SCALAR_INT:
+        case SCALAR_SCAREF:
+        case SCALAR_ARRREF:
+        case SCALAR_HASHREF:
+        //...
+        case SCALAR_CHANREF:
+            return (self->m_value.as_int != 0);
+        case SCALAR_FLOAT:
+            return (self->m_value.as_float != 0);
+            break;
+        case SCALAR_STRING:
+            if (self->m_value.as_string != NULL && self->m_value.as_string[0] != '\0') {
+                if (self->m_value.as_string[0] == 0 && self->m_value.as_string[1] == '\0') {
+                    return 0;   
+                }
+                return 1;
+            }
+            return 0;
+        default:
+            debug("unhandled scalar type: %"PRIu32"\n", self->m_flags);
+            return 0;
+    }
+}
+
 intptr_t anon_scalar_get_int_value(const scalar_t *self) {
     assert(self != NULL);
     intptr_t value;
-    switch(self->m_flags & SCALAR_TYPE_MASK) {
+    switch (self->m_flags & SCALAR_TYPE_MASK) {
         case SCALAR_INT:
             value = self->m_value.as_int;
             break;
