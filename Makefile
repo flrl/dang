@@ -8,7 +8,7 @@ OBJS := $(CSRCS:.c=.o) $(CXXSRCS:.cpp=.o)
 DEPS := $(CSRCS:.c=.d) $(CXXSRCS:.cpp=.d)
 GENS := floatptr_t.h instruction_table.h instruction_table.c
 
-CFLAGS += --std=c99 -g -Wall -Wno-unknown-pragmas
+CFLAGS += --std=gnu99 -g -Wall -Wno-unknown-pragmas
 CXXFLAGS += -g -Wall -Wno-unknown-pragmas
 LDFLAGS += -lm
 
