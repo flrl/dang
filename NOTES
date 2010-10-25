@@ -107,6 +107,15 @@ symbol table
             
         
 
-
-
+bytecode operations
+    - SRLOCK/SRUNLOCK (and ditto for AR/HR/CR...) to expose lock/unlock semantics to the user
+        - if this is exposed, it's not safe for scalar_*, channel_*, array_*, hash_* etc functions to do their own
+          lock/unlocking, cause the thread might already hold that mutex.
+            - if they don't do their own locking, there's not much they do need to do, so particularly for scalars, it would be
+              nice if they could just be inlined wrappers around the actual anon_scalar_* functions doing the work
+                - this would need changes to the pool so that the pool singletons are extern rather than static.  pool.h would
+                  declare its singleton as extern whatever in the DEFINITIONS macro, and would also need to provide a macro that
+                  the actual module responsible for the singleton can use to define the actual object in its translation unit.
+        - what's the use case in terms of ( -- ) for these ops, and how would someone use them to perform an actual task (e.g.
+          lock the referenced object, read its current value, do some work, set a new value, unlock)
 
