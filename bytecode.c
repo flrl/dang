@@ -125,13 +125,7 @@ Swaps the two items at the top of the data stack
 =cut
  */
 int inst_SWAP(vm_context_t *context) {
-    scalar_t a = {0}, b = {0};
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
-    vm_ds_push(context, &b);
-    vm_ds_push(context, &b);
-    anon_scalar_destroy(&a);
-    anon_scalar_destroy(&b);
+    vm_ds_swap(context);
     return 1;
 }
 
@@ -143,12 +137,22 @@ Duplicates the item on the top of the data stack
 =cut
  */
 int inst_DUP(vm_context_t *context) {
-    scalar_t a = {0};
-    vm_ds_top(context, &a);
-    vm_ds_push(context, &a);
-    anon_scalar_destroy(&a);
+    vm_ds_dup(context);
     return 1;
 }
+
+/*
+=item OVER ( a b -- a b a )
+
+Duplicates the next from top item on the data stack
+
+=cut
+ */
+int inst_OVER(vm_context_t *context) {
+    vm_ds_over(context);
+    return 1;
+}
+
 
 /*
 =item BRANCH ( -- )

@@ -22,6 +22,7 @@ typedef enum instruction_t {
     i_DROP,
     i_SWAP,
     i_DUP,
+    i_OVER,
     i_BRANCH,
     i_0BRANCH,
     i_SYMDEF,
