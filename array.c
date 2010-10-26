@@ -15,32 +15,15 @@
 
 #include "array.h"
 
-#ifdef POOL_INITIAL_SIZE
-#undef POOL_INITIAL_SIZE
-#endif
-#define POOL_INITIAL_SIZE   (64) /* FIXME arbitrary number */
-#include "pool.h"
-
 #define ARRAY(handle)   POOL_OBJECT(array_t, handle)
 
-struct array_t {
-    size_t m_allocated_count;
-    size_t m_count;
-    size_t m_first;
-    scalar_handle_t *m_items;
-};
-
-typedef POOL_STRUCT(array_t) array_pool_t;
+POOL_SOURCE_CONTENTS(array_t);
 
 static const size_t _array_initial_reserve_size = 16;
 
-static int _array_init(array_t *);
-static int _array_destroy(array_t *);
 static int _array_reserve(array_t *, size_t);
 static int _array_grow_back(array_t *, size_t);
 static int _array_grow_front(array_t *, size_t);
-
-POOL_DEFINITIONS(array_t, _array_init, _array_destroy);
 
 /*
 =head1 NAME
@@ -115,7 +98,7 @@ done with it.
 =cut
 */
 scalar_handle_t array_item_at(array_handle_t handle, size_t index) {
-    assert(POOL_VALID_HANDLE(array_t, handle));
+    assert(POOL_HANDLE_VALID(array_t, handle));
 
     if (index >= ARRAY(handle).m_first + ARRAY(handle).m_count) {
         if (0 != _array_reserve(&ARRAY(handle), index + 1))  return 0;
@@ -140,7 +123,7 @@ Adds an item at the end of the array.
 =cut
 */
 int array_push(array_handle_t handle, const scalar_t *value) {
-    assert(POOL_VALID_HANDLE(array_t, handle));
+    assert(POOL_HANDLE_VALID(array_t, handle));
 
     if (ARRAY(handle).m_first + ARRAY(handle).m_count == ARRAY(handle).m_allocated_count) {
         if (0 != _array_grow_back(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
@@ -160,7 +143,7 @@ Adds an item at the start of the array.
 =cut
 */
 int array_unshift(array_handle_t handle, const scalar_t *value) {
-    assert(POOL_VALID_HANDLE(array_t, handle));
+    assert(POOL_HANDLE_VALID(array_t, handle));
     
     if (ARRAY(handle).m_first == 0) {
         if (0 != _array_grow_front(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
@@ -181,7 +164,7 @@ done with it.
 =cut
 */
 int array_pop(array_handle_t handle, scalar_t *result) {
-    assert(POOL_VALID_HANDLE(array_t, handle));
+    assert(POOL_HANDLE_VALID(array_t, handle));
 
     if (ARRAY(handle).m_count > 0) {
         scalar_handle_t s = ARRAY(handle).m_items[ARRAY(handle).m_first + --ARRAY(handle).m_count];
@@ -203,7 +186,7 @@ done with it.
 =cut
 */
 int array_shift(array_handle_t handle, scalar_t *result) {
-    assert(POOL_VALID_HANDLE(array_t, handle));
+    assert(POOL_HANDLE_VALID(array_t, handle));
 
     if (ARRAY(handle).m_count > 0) {
         --ARRAY(handle).m_count;

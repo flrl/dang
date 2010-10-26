@@ -16,6 +16,11 @@
 #include <stdio.h>
 
 #include "floatptr_t.h"
+
+#ifdef POOL_INITIAL_SIZE
+#undef POOL_INITIAL_SIZE
+#endif
+#define POOL_INITIAL_SIZE   (1024) /* FIXME arbitrary number */
 #include "pool.h"
 
 #define SCALAR_UNDEF            0x00000000u
@@ -78,6 +83,35 @@ typedef struct scalar_t {
     } m_value;
 } scalar_t;
 
+int anon_scalar_init(scalar_t *);
+int anon_scalar_destroy(scalar_t *);
+
+POOL_HEADER_CONTENTS(scalar_t, anon_scalar_init, anon_scalar_destroy);
+
+int anon_scalar_clone(scalar_t * restrict, const scalar_t * restrict);
+int anon_scalar_assign(scalar_t * restrict, const scalar_t * restrict);
+
+void anon_scalar_set_int_value(scalar_t *, intptr_t);
+void anon_scalar_set_float_value(scalar_t *, floatptr_t);
+void anon_scalar_set_string_value(scalar_t *, const char *);
+
+intptr_t anon_scalar_get_bool_value(const scalar_t *);
+intptr_t anon_scalar_get_int_value(const scalar_t *);
+floatptr_t anon_scalar_get_float_value(const scalar_t *);
+void anon_scalar_get_string_value(const scalar_t *, char **);
+
+void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
+void anon_scalar_set_array_reference(scalar_t *, array_handle_t);
+void anon_scalar_set_hash_reference(scalar_t *, hash_handle_t);
+void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
+
+scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *);
+array_handle_t anon_scalar_deref_array_reference(const scalar_t *);
+hash_handle_t anon_scalar_deref_hash_reference(const scalar_t *);
+channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *);
+
+
+
 int scalar_pool_init(void);
 int scalar_pool_destroy(void);
 
@@ -108,30 +142,5 @@ array_handle_t scalar_deref_array_reference(scalar_handle_t);
 hash_handle_t scalar_deref_hash_reference(scalar_handle_t);
 channel_handle_t scalar_deref_channel_reference(scalar_handle_t);
 
-
-int anon_scalar_init(scalar_t *);
-int anon_scalar_destroy(scalar_t *);
-
-int anon_scalar_clone(scalar_t * restrict, const scalar_t * restrict);
-int anon_scalar_assign(scalar_t * restrict, const scalar_t * restrict);
-
-void anon_scalar_set_int_value(scalar_t *, intptr_t);
-void anon_scalar_set_float_value(scalar_t *, floatptr_t);
-void anon_scalar_set_string_value(scalar_t *, const char *);
-
-intptr_t anon_scalar_get_bool_value(const scalar_t *);
-intptr_t anon_scalar_get_int_value(const scalar_t *);
-floatptr_t anon_scalar_get_float_value(const scalar_t *);
-void anon_scalar_get_string_value(const scalar_t *, char **);
-
-void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
-void anon_scalar_set_array_reference(scalar_t *, array_handle_t);
-void anon_scalar_set_hash_reference(scalar_t *, hash_handle_t);
-void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
-
-scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *);
-array_handle_t anon_scalar_deref_array_reference(const scalar_t *);
-hash_handle_t anon_scalar_deref_hash_reference(const scalar_t *);
-channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *);
 
 #endif

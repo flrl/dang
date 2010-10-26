@@ -41,27 +41,6 @@ This also means that it's generally not useful to use a reference type as a hash
 
 #define HASH(handle)    POOL_OBJECT(hash_t, handle)
 
-#define HASH_BUCKETS    (256)
-
-typedef struct hash_item_t {
-    char *m_key;
-    scalar_handle_t m_value;
-    struct hash_item_t *m_next_item;
-} hash_item_t;
-
-typedef struct hash_bucket_t {
-    size_t m_count;
-    hash_item_t *m_first_item;
-} hash_bucket_t;
-
-struct hash_t {
-    hash_bucket_t m_buckets[HASH_BUCKETS];
-};
-
-typedef POOL_STRUCT(hash_t) hash_pool_t;
-
-static int _hash_init(hash_t *);
-static int _hash_destroy(hash_t *);
 static int _hash_bucket_init(hash_bucket_t *);
 static int _hash_bucket_destroy(hash_bucket_t *);
 static int _hash_item_init(hash_item_t *, const char *);
@@ -72,7 +51,7 @@ static int _hash_key_delete_unlocked(hash_t *, const char *);
 static int _hash_key_exists_unlocked(hash_t *, const char *);
 static inline uint32_t _hash_key(const char *);
 
-POOL_DEFINITIONS(hash_t, _hash_init, _hash_destroy);
+POOL_SOURCE_CONTENTS(hash_t);
 
 /*
 =item hash_pool_init()
@@ -130,7 +109,7 @@ The caller must release the returned handle with C<scalar_release()> when they a
 =cut
  */
 scalar_handle_t hash_key_item(hash_handle_t handle, const struct scalar_t *key) {
-    assert(POOL_VALID_HANDLE(hash_t, handle));
+    assert(POOL_HANDLE_VALID(hash_t, handle));
     assert(key != NULL);
     
     if (0 == POOL_LOCK(hash_t, handle)) {
@@ -154,7 +133,7 @@ Deletes the item in the hash with the given scalar key.  If the key is not curre
 =cut 
  */
 int hash_key_delete(hash_handle_t handle, const struct scalar_t *key) {
-    assert(POOL_VALID_HANDLE(hash_t, handle));
+    assert(POOL_HANDLE_VALID(hash_t, handle));
     assert(key != NULL);
     
     int status;
@@ -179,7 +158,7 @@ Checks whether a given key exists in the hash or not.  Returns 1 if it exists, 0
 =cut
  */
 int hash_key_exists(hash_handle_t handle, const struct scalar_t *key) {
-    assert(POOL_VALID_HANDLE(hash_t, handle));
+    assert(POOL_HANDLE_VALID(hash_t, handle));
     assert(key != NULL);
     
     int status = 0;
@@ -214,7 +193,7 @@ Setup and teardown functions for hash_t objects
 
 =cut
  */
-static int _hash_init(hash_t *self) {
+int _hash_init(hash_t *self) {
     assert(self != NULL);
     
     for (size_t i = 0; i < HASH_BUCKETS; i++) {
@@ -224,7 +203,7 @@ static int _hash_init(hash_t *self) {
     return 0;
 }
 
-static int _hash_destroy(hash_t *self) {
+int _hash_destroy(hash_t *self) {
     assert(self != NULL);
     
     for (size_t i = 0; i < HASH_BUCKETS; i++) {

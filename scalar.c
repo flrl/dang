@@ -19,17 +19,9 @@
 
 #include "scalar.h"
 
-#ifdef POOL_INITIAL_SIZE
-#undef POOL_INITIAL_SIZE
-#endif
-#define POOL_INITIAL_SIZE   (1024) /* FIXME arbitrary number */
-#include "pool.h"
-
 #define SCALAR(handle)      POOL_OBJECT(scalar_t, handle)
 
-typedef POOL_STRUCT(scalar_t) scalar_pool_t;
-
-POOL_DEFINITIONS(scalar_t, anon_scalar_init, anon_scalar_destroy);
+POOL_SOURCE_CONTENTS(scalar_t)
 
 /*
 =head1 NAME
@@ -98,6 +90,10 @@ int scalar_release(scalar_handle_t handle) {
 /*
 =back
 
+=cut
+*/
+
+/*
 =head2 Pooled Scalar Functions
 
 =over
@@ -122,8 +118,8 @@ value is properly cleaned up.
 =cut
 */
 void scalar_set_undef(scalar_handle_t handle) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
         anon_scalar_destroy(&SCALAR(handle));
@@ -132,8 +128,8 @@ void scalar_set_undef(scalar_handle_t handle) {
 }
 
 void scalar_set_int_value(scalar_handle_t handle, intptr_t ival) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
         anon_scalar_set_int_value(&SCALAR(handle), ival);
@@ -142,8 +138,8 @@ void scalar_set_int_value(scalar_handle_t handle, intptr_t ival) {
 }
 
 void scalar_set_float_value(scalar_handle_t handle, floatptr_t fval) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
         anon_scalar_set_float_value(&SCALAR(handle), fval);
@@ -152,8 +148,8 @@ void scalar_set_float_value(scalar_handle_t handle, floatptr_t fval) {
 }
 
 void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     assert(sval != NULL);
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
@@ -163,8 +159,8 @@ void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
 }
 
 void scalar_set_value(scalar_handle_t handle, const scalar_t *val) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     assert(val != NULL);
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
@@ -187,8 +183,8 @@ Functions for setting up references
 =cut
 */
 void scalar_set_scalar_reference(scalar_handle_t handle, scalar_handle_t s) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
         anon_scalar_set_scalar_reference(&SCALAR(handle), s);
@@ -197,8 +193,8 @@ void scalar_set_scalar_reference(scalar_handle_t handle, scalar_handle_t s) {
 }
 
 void scalar_set_array_reference(scalar_handle_t handle, array_handle_t a) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
         anon_scalar_set_array_reference(&SCALAR(handle), a);
@@ -207,8 +203,8 @@ void scalar_set_array_reference(scalar_handle_t handle, array_handle_t a) {
 }
 
 void scalar_set_hash_reference(scalar_handle_t handle, hash_handle_t h) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
         anon_scalar_set_hash_reference(&SCALAR(handle), h);
@@ -217,8 +213,8 @@ void scalar_set_hash_reference(scalar_handle_t handle, hash_handle_t h) {
 }
 
 void scalar_set_channel_reference(scalar_handle_t handle, channel_handle_t c) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     if (0 == POOL_LOCK(scalar_t, handle)) {
         anon_scalar_set_channel_reference(&SCALAR(handle), c);
@@ -243,8 +239,8 @@ Functions for getting values from a pooled scalar.  Atomic when scalar was alloc
 =cut
 */
 intptr_t scalar_get_bool_value(scalar_handle_t handle) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     intptr_t value;
     
@@ -260,8 +256,8 @@ intptr_t scalar_get_bool_value(scalar_handle_t handle) {
 }
 
 intptr_t scalar_get_int_value(scalar_handle_t handle) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
 
     intptr_t value;
     
@@ -277,8 +273,8 @@ intptr_t scalar_get_int_value(scalar_handle_t handle) {
 }
 
 floatptr_t scalar_get_float_value(scalar_handle_t handle) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
 
     floatptr_t value;
     
@@ -294,8 +290,8 @@ floatptr_t scalar_get_float_value(scalar_handle_t handle) {
 }
 
 void scalar_get_string_value(scalar_handle_t handle, char **result) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
 
     if (0 == POOL_LOCK(scalar_t, handle)) {
         anon_scalar_get_string_value(&SCALAR(handle), result);
@@ -304,8 +300,8 @@ void scalar_get_string_value(scalar_handle_t handle, char **result) {
 }
 
 void scalar_get_value(scalar_handle_t handle, scalar_t *result) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     assert(result != NULL);
     
     if ((result->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(result);
@@ -330,8 +326,8 @@ Functions for dereferencing references in pooled scalars
 =cut
  */
 scalar_handle_t scalar_deref_scalar_reference(scalar_handle_t handle) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
 
     scalar_handle_t s;
     if (0 == POOL_LOCK(scalar_t, handle)) {
@@ -345,8 +341,8 @@ scalar_handle_t scalar_deref_scalar_reference(scalar_handle_t handle) {
 }
 
 array_handle_t scalar_deref_array_reference(scalar_handle_t handle) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     array_handle_t a;
     if (0 == POOL_LOCK(scalar_t, handle)) {
@@ -360,8 +356,8 @@ array_handle_t scalar_deref_array_reference(scalar_handle_t handle) {
 }
 
 hash_handle_t scalar_deref_hash_reference(scalar_handle_t handle) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     hash_handle_t h;
     if (0 == POOL_LOCK(scalar_t, handle)) {
@@ -375,8 +371,8 @@ hash_handle_t scalar_deref_hash_reference(scalar_handle_t handle) {
 }
 
 channel_handle_t scalar_deref_channel_reference(scalar_handle_t handle) {
-    assert(POOL_VALID_HANDLE(scalar_t, handle));
-    assert(POOL_ISINUSE(scalar_t, handle));
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
     channel_handle_t c;
     if (0 == POOL_LOCK(scalar_t, handle)) {

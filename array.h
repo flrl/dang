@@ -10,7 +10,12 @@
 #ifndef ARRAY_H
 #define ARRAY_H
 
+#ifdef POOL_INITIAL_SIZE
+#undef POOL_INITIAL_SIZE
+#endif
+#define POOL_INITIAL_SIZE   (64) /* FIXME arbitrary number */
 #include "pool.h"
+
 
 #ifndef HAVE_ARRAY_HANDLE_T
 #define HAVE_ARRAY_HANDLE_T
@@ -22,7 +27,17 @@ typedef POOL_HANDLE(array_t) array_handle_t;
 typedef POOL_HANDLE(scalar_t) scalar_handle_t;
 #endif
 
-typedef struct array_t array_t;
+typedef struct array_t {
+    size_t m_allocated_count;
+    size_t m_count;
+    size_t m_first;
+    scalar_handle_t *m_items;
+} array_t;
+
+int _array_init(array_t *);
+int _array_destroy(array_t *);
+POOL_HEADER_CONTENTS(array_t, _array_init, _array_destroy);
+
 struct scalar_t;
 
 int array_pool_init(void);

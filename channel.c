@@ -20,14 +20,10 @@
 
 #include "channel.h"
 
-#ifdef POOL_INITIAL_SIZE
-#undef POOL_INITIAL_SIZE
-#endif
-#define POOL_INITIAL_SIZE           (64)
-#include "pool.h"
-
 #define CHANNEL(handle)         POOL_OBJECT(channel_t, (handle))
 #define CHANNEL_MUTEX(handle)   POOL_WRAPPER(channel_t, (handle)).m_mutex
+
+POOL_SOURCE_CONTENTS(channel_t);
 
 /*
 =head1 NAME
@@ -45,28 +41,12 @@ channel
 =cut
  */
 
-typedef struct channel_t {
-    size_t m_allocated_count;
-    size_t m_count;
-    scalar_t *m_items;
-    size_t m_start;
-    pthread_cond_t m_has_items;
-    pthread_cond_t m_has_space;
-} channel_t;
-
-typedef POOL_STRUCT(channel_t) channel_pool_t;
-
 static const size_t _channel_initial_size = 16;
 
-static int _channel_init(channel_t *);
-static int _channel_destroy(channel_t *);
 static int _channel_reserve_unlocked(channel_t *, size_t);
 
 static inline int _channel_lock(channel_handle_t);
 static inline int _channel_unlock(channel_handle_t);
-
-POOL_DEFINITIONS(channel_t, _channel_init, _channel_destroy);
-
 
 /*
 =item channel_pool_init()
@@ -139,8 +119,8 @@ Read a scalar from a channel.  If the channel is currently empty, blocks until a
 =cut
 */
 int channel_read(channel_handle_t handle, scalar_t *result) {
-    assert(POOL_VALID_HANDLE(channel_t, handle));
-    assert(POOL_ISINUSE(channel_t, handle));
+    assert(POOL_HANDLE_VALID(channel_t, handle));
+    assert(POOL_HANDLE_IN_USE(channel_t, handle));
     assert(result != NULL);
     
     if (0 == _channel_lock(handle)) {
@@ -172,8 +152,8 @@ result unless a scalar is successfully read.
 =cut
  */
 int channel_tryread(channel_handle_t handle, scalar_t *result) {
-    assert(POOL_VALID_HANDLE(channel_t, handle));
-    assert(POOL_ISINUSE(channel_t, handle));
+    assert(POOL_HANDLE_VALID(channel_t, handle));
+    assert(POOL_HANDLE_IN_USE(channel_t, handle));
     assert(result != NULL);
     
     if (0 == _channel_lock(handle)) {
@@ -204,8 +184,8 @@ expires.  If the timeout expires, allocates additional space in the channel, wri
 =cut
  */
 int channel_write(channel_handle_t handle, const scalar_t *value) {
-    assert(POOL_VALID_HANDLE(channel_t, handle));
-    assert(POOL_ISINUSE(channel_t, handle));
+    assert(POOL_HANDLE_VALID(channel_t, handle));
+    assert(POOL_HANDLE_IN_USE(channel_t, handle));
     assert(value != NULL);
     
     static const struct timespec wait_timeout = { 0, 250000 };
@@ -248,7 +228,7 @@ Setup and teardown functions for channel_t objects
 
 =cut
  */
-static int _channel_init(channel_t *self) {
+int _channel_init(channel_t *self) {
     assert(self != NULL);
     
     if (0 == pthread_cond_init(&self->m_has_items, NULL)) {
@@ -269,7 +249,7 @@ static int _channel_init(channel_t *self) {
     return -1;
 }
 
-static int _channel_destroy(channel_t *self) { // FIXME implement this
+int _channel_destroy(channel_t *self) { // FIXME implement this
     assert(self != NULL);
     
     return 0;
@@ -285,13 +265,13 @@ Lock and unlock a channel_t object
 =cut
 */
 static inline int _channel_lock(channel_handle_t handle) {
-    assert(POOL_VALID_HANDLE(channel_t, handle));
+    assert(POOL_HANDLE_VALID(channel_t, handle));
 
     return POOL_LOCK(channel_t, handle);
 }
 
 static inline int _channel_unlock(channel_handle_t handle) {
-    assert(POOL_VALID_HANDLE(channel_t, handle));
+    assert(POOL_HANDLE_VALID(channel_t, handle));
     
     return POOL_LOCK(channel_t, handle);
 }
