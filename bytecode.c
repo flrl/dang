@@ -169,7 +169,7 @@ int inst_BRANCH(vm_context_t *context) {
 /*
 =item 0BRANCH ( a -- )
 
-Reads a jump destination from the following bytecode.  Pops a value from the data stack.  If the value popped is zero, transfers
+Reads a jump destination from the following bytecode.  Pops a value from the data stack.  If the value popped is false, transfers
 execution control to the jump destination.  Otherwise, transfers execution control to the next instruction.
  
 =cut
@@ -181,7 +181,7 @@ int inst_0BRANCH(vm_context_t *context) {
     scalar_t a = {0};
     vm_ds_pop(context, &a);
 
-    if (anon_scalar_get_int_value(&a) == 0) {
+    if (anon_scalar_get_bool_value(&a) == 0) {
         // branch by offset
         incr = branch_offset;
     }
@@ -302,7 +302,6 @@ int inst_SRUNLOCK(struct vm_context_t *context) {
     anon_scalar_destroy(&sr);
     return 1;
 }
-
 
 /*
 =item SRREAD ( ref -- a )
