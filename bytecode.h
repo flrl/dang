@@ -28,6 +28,8 @@ typedef enum instruction_t {
     i_SYMDEF,
     i_SYMFIND,
     i_SYMUNDEF,
+    i_SRLOCK,
+    i_SRUNLOCK,
     i_SRREAD,
     i_SRWRITE,
     i_ARINDEX,

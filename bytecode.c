@@ -270,6 +270,41 @@ int inst_SYMUNDEF(struct vm_context_t *context) {
 }
 
 /*
+=item SRLOCK ( sr -- )  FIXME interface
+
+Pops a scalar reference from the data stack and arranges for the referenced scalar to be locked if it is shared.
+
+=cut
+ */
+int inst_SRLOCK(struct vm_context_t *context) {
+    scalar_t sr = {0};
+    
+    vm_ds_pop(context, &sr);
+    scalar_lock(anon_scalar_deref_scalar_reference(&sr));
+    
+    anon_scalar_destroy(&sr);
+    return 1;
+}
+
+/*
+item SRUNLOCK ( sr -- )  FIXME interface
+
+Pops a scalar reference from the data stack and arranges for the referenced scalar to be unlocked if it is shared.
+
+=cut
+ */
+int inst_SRUNLOCK(struct vm_context_t *context) {
+    scalar_t sr = {0};
+    
+    vm_ds_pop(context, &sr);
+    scalar_unlock(anon_scalar_deref_scalar_reference(&sr));
+    
+    anon_scalar_destroy(&sr);
+    return 1;
+}
+
+
+/*
 =item SRREAD ( ref -- a )
 
 Pops a scalar reference from the data stack.  Pushes the value of the referenced scalar.
