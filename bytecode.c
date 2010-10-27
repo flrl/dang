@@ -345,9 +345,9 @@ int inst_SRWRITE(struct vm_context_t *context) {
 }
 
 /*
-=item ARINDEX ( ar i -- sr )
+=item ARINDEX ( i ar -- sr )
 
-Pops an index and an array reference from the data stack.  Pushes back a reference to the item in the array at index.
+Pops an array reference and an index from the data stack.  Pushes back a reference to the item in the array at index.
 
 If the index is out of range, the array automatically grows to accomodate it.
 
@@ -356,8 +356,8 @@ If the index is out of range, the array automatically grows to accomodate it.
 int inst_ARINDEX(struct vm_context_t *context) {
     scalar_t ar = {0}, i = {0}, sr = {0};
     
-    vm_ds_pop(context, &i);
     vm_ds_pop(context, &ar);
+    vm_ds_pop(context, &i);
     
     assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
     scalar_handle_t s = array_item_at(anon_scalar_deref_array_reference(&ar), (size_t) anon_scalar_get_int_value(&i));
@@ -373,29 +373,29 @@ int inst_ARINDEX(struct vm_context_t *context) {
 }
 
 /*
-=item ARPUSH ( a ref -- )
+=item ARPUSH ( a ar -- )
 
 Pops an array reference and a scalar value from the data stack, and adds the scalar value to the end of the array.
 
 =cut
  */
 int inst_ARPUSH(struct vm_context_t *context) {
-    scalar_t a = {0}, ref = {0};
+    scalar_t a = {0}, ar = {0};
     
-    vm_ds_pop(context, &ref);
+    vm_ds_pop(context, &ar);
     vm_ds_pop(context, &a);
     
-    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    array_push(ref.m_value.as_array_handle, &a);
+    assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    array_push(ar.m_value.as_array_handle, &a);
     
-    anon_scalar_destroy(&ref);
+    anon_scalar_destroy(&ar);
     anon_scalar_destroy(&a);
     
     return 1;
 }
 
 /*
-=item ARPOP ( ref -- a )
+=item ARPOP ( ar -- a )
 
 Pops an array reference from the data stack.  Pops the last item off the referenced array, and pushes its value back to the
 data stack.
@@ -403,23 +403,23 @@ data stack.
 =cut
  */
 int inst_ARPOP(struct vm_context_t *context) {
-    scalar_t ref = {0}, a = {0};
+    scalar_t ar = {0}, a = {0};
     
-    vm_ds_pop(context, &ref);
+    vm_ds_pop(context, &ar);
     
-    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    array_pop(ref.m_value.as_array_handle, &a);
+    assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    array_pop(ar.m_value.as_array_handle, &a);
     
     vm_ds_push(context, &a);
 
     anon_scalar_destroy(&a);
-    anon_scalar_destroy(&ref);
+    anon_scalar_destroy(&ar);
     
     return 1;
 }
 
 /*
-=item ARSHFT ( ref -- a )
+=item ARSHFT ( ar -- a )
 
 Pops an array reference from the data stack.  Shifts the first item off the referenced array, and pushes its value back to the
 data stack.
@@ -427,47 +427,47 @@ data stack.
 =cut
  */
 int inst_ARSHFT(struct vm_context_t *context) {
-    scalar_t ref = {0}, a = {0};
+    scalar_t ar = {0}, a = {0};
     
-    vm_ds_pop(context, &ref);
+    vm_ds_pop(context, &ar);
     
-    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    array_shift(ref.m_value.as_array_handle, &a);
+    assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    array_shift(ar.m_value.as_array_handle, &a);
     
     vm_ds_push(context, &a);
     
     anon_scalar_destroy(&a);
-    anon_scalar_destroy(&ref);
+    anon_scalar_destroy(&ar);
     
     return 1;    
 }
 
 /*
-=item ARUNSHFT ( a ref -- )
+=item ARUNSHFT ( a ar -- )
 
 Pops an array reference and a scalar value from the data stack, and adds the scalar value to the start of the array.
 
 =cut
  */
 int inst_ARUNSHFT(struct vm_context_t *context) {
-    scalar_t a = {0}, ref = {0};
+    scalar_t a = {0}, ar = {0};
     
-    vm_ds_pop(context, &ref);
+    vm_ds_pop(context, &ar);
     vm_ds_pop(context, &a);
     
-    assert((ref.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    array_unshift(ref.m_value.as_array_handle, &a);
+    assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    array_unshift(ar.m_value.as_array_handle, &a);
     
-    anon_scalar_destroy(&ref);
+    anon_scalar_destroy(&ar);
     anon_scalar_destroy(&a);
     
     return 1;    
 }
 
 /*
-=item HRINDEX ( hr k - sr )
+=item HRINDEX ( k hr - sr )
 
-Pops a key and a hash reference from the data stack, and pushes a reference to the value for that key.
+Pops a hash reference and a key from the data stack, and pushes a reference to the value for that key.
 
 If the key does not exist, it is automatically created and its value set to undefined.
 
@@ -476,8 +476,8 @@ If the key does not exist, it is automatically created and its value set to unde
 int inst_HRINDEX(struct vm_context_t *context) {
     scalar_t hr = {0}, k = {0}, sr = {0};
     
-    vm_ds_pop(context, &k);
     vm_ds_pop(context, &hr);
+    vm_ds_pop(context, &k);
     
     assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
     scalar_handle_t s = hash_key_item(anon_scalar_deref_hash_reference(&hr), &k);
@@ -494,9 +494,9 @@ int inst_HRINDEX(struct vm_context_t *context) {
 }
 
 /*
-=item HRKEYEX ( hr k - b )
+=item HRKEYEX ( k hr - b )
 
-Pops a key and a hash reference from the data stack.  If the key exists in the hash, pushes back the value 1.
+Pops a hash reference and a key from the data stack.  If the key exists in the hash, pushes back the value 1.
 If it does not, pushes back the value 0.
 
 =cut
@@ -504,8 +504,8 @@ If it does not, pushes back the value 0.
 int inst_HRKEYEX(struct vm_context_t *context) {
     scalar_t hr = {0}, k = {0}, b = {0};
     
-    vm_ds_pop(context, &k);
     vm_ds_pop(context, &hr);
+    vm_ds_pop(context, &k);
     
     assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
     anon_scalar_set_int_value(&b, hash_key_exists(anon_scalar_deref_hash_reference(&hr), &k));
@@ -520,17 +520,17 @@ int inst_HRKEYEX(struct vm_context_t *context) {
 }
 
 /*
-=item HRKEYDEL ( hr k - )
+=item HRKEYDEL ( k hr - )
 
-Pops a key and a hash reference from the data stack.  Deletes the key from the hash.
+Pops a hash reference and a key from the data stack.  Deletes the key from the hash.
 
 =cut
  */
 int inst_HRKEYDEL(struct vm_context_t *context) {
     scalar_t hr = {0}, k = {0};
     
-    vm_ds_pop(context, &k);
     vm_ds_pop(context, &hr);
+    vm_ds_pop(context, &k);
     
     assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
     hash_key_delete(anon_scalar_deref_hash_reference(&hr), &k);
