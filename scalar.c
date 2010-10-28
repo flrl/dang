@@ -156,6 +156,9 @@ int anon_scalar_destroy(scalar_t *self) {
             case SCALAR_CHANREF:
                 channel_release(self->m_value.as_channel_handle);
                 break;
+            case SCALAR_FUNCREF:
+                /* function references aren't allocated anywhere, and don't need to be released */
+                break;
             default:
                 debug("unexpected anon scalar type: %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
                 break;
@@ -199,6 +202,10 @@ int anon_scalar_clone(scalar_t * restrict self, const scalar_t * restrict other)
         case SCALAR_CHANREF:
             self->m_flags = SCALAR_CHANREF;
             self->m_value.as_channel_handle = channel_reference(other->m_value.as_channel_handle);
+            break;
+        case SCALAR_FUNCREF:
+            self->m_flags = SCALAR_FUNCREF;
+            self->m_value.as_function_handle = other->m_value.as_function_handle;
             break;
         default:
             memcpy(self, other, sizeof(*self));
@@ -271,6 +278,8 @@ void anon_scalar_set_string_value(scalar_t *self, const char *sval) {
 
 =item anon_scalar_set_channel_reference()
 
+=item anon_scalar_set_function_reference()
+
 Functions for setting up anonymous scalar_t objects to reference other objects.  Any previous value is properly
 cleaned up.
 
@@ -309,6 +318,14 @@ void anon_scalar_set_channel_reference(scalar_t *self, channel_handle_t handle) 
     self->m_value.as_channel_handle = channel_reference(handle);
 }
 
+void anon_scalar_set_function_reference(scalar_t *self, function_handle_t handle) {
+    assert(self != NULL);
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+    
+    self->m_flags = SCALAR_FUNCREF;
+    self->m_value.as_function_handle = handle;
+}
+
 /*
 
 =item anon_scalar_get_bool_value()
@@ -334,6 +351,7 @@ intptr_t anon_scalar_get_bool_value(const scalar_t *self) {
         case SCALAR_HASHREF:
         //...
         case SCALAR_CHANREF:
+        case SCALAR_FUNCREF:
             return (self->m_value.as_int != 0);
         case SCALAR_FLOAT:
             return (self->m_value.as_float != 0);
@@ -440,6 +458,10 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
             snprintf(buffer, sizeof(buffer), "CHANNEL(%"PRIuPTR"", self->m_value.as_channel_handle);
             *result = strdup(buffer);
             break;
+        case SCALAR_FUNCREF:
+            snprintf(buffer, sizeof(buffer), "FUNCTION(%"PRIuPTR"", self->m_value.as_function_handle);
+            *result = strdup(buffer);
+            break;
         
         default:
             debug("unexpected type value %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
@@ -458,6 +480,8 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
 =item anon_scalar_deref_hash_reference()
 
 =item anon_scalar_deref_channel_reference()
+
+=item anon_scalar_deref_function_reference()
 
 Dereference reference type anonymous scalars
 
@@ -491,6 +515,12 @@ channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *self) {
     return self->m_value.as_channel_handle;    
 }
 
+function_handle_t anon_scalar_deref_function_reference(const scalar_t *self) {
+    assert(self != NULL);
+    assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_FUNCREF);
+    
+    return self->m_value.as_function_handle;
+}
 
 /*
 =back
