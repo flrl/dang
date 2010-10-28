@@ -15,7 +15,7 @@
 #include "symboltable.h"
 
 typedef STACK_STRUCT(scalar_t) data_stack_t;
-typedef STACK_STRUCT(size_t) return_stack_t;
+typedef STACK_STRUCT(function_handle_t) return_stack_t;
 
 typedef struct vm_context_t {
     uint8_t *m_bytecode;

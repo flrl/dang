@@ -33,7 +33,7 @@ vm
 */
 
 STACK_DEFINITIONS(scalar_t, anon_scalar_init, anon_scalar_destroy, anon_scalar_clone, anon_scalar_assign);
-STACK_DEFINITIONS(size_t, STACK_basic_init, STACK_basic_destroy, STACK_basic_clone, STACK_basic_assign);
+STACK_DEFINITIONS(function_handle_t, STACK_basic_init, STACK_basic_destroy, STACK_basic_clone, STACK_basic_assign);
 
 /*
 =head2 The Virtual Machine
@@ -164,20 +164,20 @@ Return stack management functions
 int vm_rs_push(vm_context_t *context, size_t value) {
     assert(context != NULL);
     
-    return STACK_PUSH(size_t, &context->m_return_stack, &value);
+    return STACK_PUSH(function_handle_t, &context->m_return_stack, &value);
 }
 
 int vm_rs_pop(vm_context_t *context, size_t *result) {
     assert(context != NULL);
     
-    return STACK_POP(size_t, &context->m_return_stack, result);
+    return STACK_POP(function_handle_t, &context->m_return_stack, result);
 }
 
 int vm_rs_top(vm_context_t *context, size_t *result) {
     assert(context != NULL);
     assert(result != NULL);
     
-    return STACK_TOP(size_t, &context->m_return_stack, result);
+    return STACK_TOP(function_handle_t, &context->m_return_stack, result);
 }
 
 /*
@@ -242,7 +242,7 @@ int vm_context_init(vm_context_t *self) {
     memset(self, 0, sizeof(*self));
     
     if (0 == STACK_INIT(scalar_t, &self->m_data_stack)) {
-        if (0 == STACK_INIT(size_t, &self->m_return_stack)) {
+        if (0 == STACK_INIT(function_handle_t, &self->m_return_stack)) {
             return 0;
         }
         else {
@@ -259,7 +259,7 @@ int vm_context_destroy(vm_context_t *self) {
     assert(self != NULL);
     
     STACK_DESTROY(scalar_t, &self->m_data_stack);
-    STACK_DESTROY(size_t, &self->m_return_stack);
+    STACK_DESTROY(function_handle_t, &self->m_return_stack);
     
     if (0 == symboltable_destroy(self->m_symboltable)) {
         free(self->m_symboltable);
