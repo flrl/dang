@@ -73,19 +73,23 @@ int inst_NOOP(vm_context_t *context) {
 }
 
 /*
-=item CALL ( [params] -- ) ( -- addr )
+=item CALL ( [params] fr -- ) ( -- addr )
 
-Reads a jump destination from the following bytecode.  Pushes the location of the bytecode following the jump destination
-to the return stack, starts a new symbol table scope, then transfers execution control to the jump destination.
+Pops a function reference from the data stack.  Pushes the instruction to be jumped to upon return to the return stack, 
+starts a new symbol table scope, then transfers execution control to the instruction referenced by the function reference.
  
 =cut
  */
 int inst_CALL(vm_context_t *context) {
-    const size_t jump_dest = *(const size_t *) NEXT_BYTE(context);
+    scalar_t fr = {0};
+    vm_ds_pop(context, &fr);
+    function_handle_t jump_dest = anon_scalar_deref_function_reference(&fr);
+    anon_scalar_destroy(&fr);
+    
+    vm_rs_push(context, context->m_counter + 1);
     
     vm_start_scope(context);
-
-    vm_rs_push(context, context->m_counter + 1 + sizeof(size_t));
+    
     return jump_dest - context->m_counter;
 }
 
@@ -97,7 +101,7 @@ Ends the current symbol table scope.  Pops a return destination from the return 
 =cut
  */
 int inst_RETURN(vm_context_t *context) {
-    size_t jump_dest;
+    function_handle_t jump_dest;
     
     vm_end_scope(context);
     
@@ -824,4 +828,22 @@ int inst_FLTMOD(struct vm_context_t *context) {
     anon_scalar_destroy(&a);
     
     return 1;    
+}
+
+/*
+=item FUNLIT ( -- fr )
+
+Reads a function reference literal from the following bytecode and pushes it onto the data stack.
+
+=cut
+ */
+int inst_FUNLIT(struct vm_context_t *context) {
+    const function_handle_t lit = *(const function_handle_t *) (&context->m_bytecode[context->m_counter + 1]);
+    
+    scalar_t a = {0};
+    anon_scalar_set_function_reference(&a, lit);
+    vm_ds_push(context, &a);
+    anon_scalar_destroy(&a);
+    
+    return 1 + sizeof(lit);
 }
