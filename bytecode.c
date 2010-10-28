@@ -588,6 +588,28 @@ int inst_CRWRITE(struct vm_context_t *context) {
 
 
 /*
+=item FRCALL ( [params] fr -- [results] )
+
+Pops a function reference from the data stack.  Pushes the location of the following instruction to the return stack, 
+starts a new symbol table scope, then transfers execution control to the destination reference by the function reference.
+
+=cut
+ */
+int inst_FRCALL(struct vm_context_t *context) {
+    scalar_t fr = {0};
+    vm_ds_pop(context, &fr);
+    function_handle_t jump_dest = anon_scalar_deref_function_reference(&fr);
+    anon_scalar_destroy(&fr);
+    
+    vm_rs_push(context, context->m_counter + 1);
+    
+    vm_start_scope(context);
+    
+    return jump_dest - context->m_counter;
+}
+
+
+/*
  =item INTLIT ( -- a ) 
  
  Reads an integer value from the following bytecode and pushes it onto the data stack.  Transfers execution control to the 

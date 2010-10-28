@@ -42,6 +42,7 @@ typedef enum instruction_t {
     i_HRKEYDEL,
     i_CRREAD,
     i_CRWRITE,
+    i_FRCALL,
     i_INTLIT,
     i_INTADD,
     i_INTSUBT,
