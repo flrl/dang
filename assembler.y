@@ -55,7 +55,11 @@ label   :   /* empty */
         ;
 
 params  :   /* empty */
-        |   params ',' param
+        |   params1
+        ;
+
+params1 :   param
+        |   params1 ',' param
         ;
 
 param   :   INTEGER
