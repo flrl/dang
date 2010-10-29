@@ -24,51 +24,135 @@
     char *read_quoted(void);
     int read_hex_byte(void);
     int read_octal_byte(void);
+    
+    typedef struct line_t line_t;
+    typedef struct param_t param_t;
+    typedef struct label_t label_t;
+    typedef struct label_ref_t label_ref_t;
+    
+    label_t *get_label(const char *);
+    line_t *get_line(label_t *, intptr_t, param_t *);
+
+    static line_t *g_lines = NULL;
+    static line_t *g_last_line = NULL;
+    static label_t *g_labels = NULL;
+    static label_t *g_last_label = NULL;
+
+    struct label_ref_t {
+        label_ref_t *m_next;
+        param_t *m_param;
+    };
+    
+    struct label_t {
+        label_t *m_next;
+        char *m_label;
+        line_t *m_line;
+        label_ref_t *m_refs;
+    };
+    
+    struct param_t {
+        param_t *m_next;
+        enum param_type_t { P_INTEGER, P_FLOAT, P_STRING, P_LABEL, } m_type;
+        union param_value_t {
+            intptr_t as_integer;
+            floatptr_t as_float;
+            char *as_string;
+            label_t *as_label;
+        } m_value;
+    };
+    
+    struct line_t {
+        line_t *m_next;
+        uintptr_t m_position;
+        uintptr_t m_length;
+        label_t *m_label;
+        param_t *m_params;
+        intptr_t m_instruction;
+    };
+    
+    
 %}
 
 %union {
     intptr_t ival;
     floatptr_t fval;
     char *sval;
-    uint8_t instruction;
-    void *id;
+    intptr_t instruction;
+    label_t *label;
+    line_t *line;
+    param_t *param;
 }
 
 %token <ival> INTEGER
 %token <fval> FLOAT
 %token <sval> STRING
 %token <instruction> INST
-%token <sval> ID
+%token <sval> LABEL 
+
+%type <label> label
+%type <line> line
+%type <param> params params1 param
 
 %%
 
 program :   /* empty */
-        |   program line
+        |   program line                { if (!g_lines) g_lines = $2; if (g_last_line) g_last_line->m_next = $2; g_last_line = $2; }
         ;
 
-line    :   '\n'
-        |   label INST params '\n'
+line    :   label '\n'                  { $$ = get_line($1, -1, NULL); }
+        |   label INST params '\n'      { $$ = get_line($1, $2, $3); }
         ;
 
-label   :   /* empty */
-        |   ID ':'
+label   :   /* empty */                 { $$ = NULL; }
+        |   LABEL ':'                   { $$ = get_label($1); }
         ;
 
-params  :   /* empty */
-        |   params1
+params  :   /* empty */                 { $$ = NULL; }
+        |   params1                     { $$ = $1; }
         ;
 
-params1 :   param
-        |   params1 ',' param
+params1 :   param                       { $$ = $1; }
+        |   params1 ',' param           { $$ = $1; $$->m_next = $3; }
         ;
 
-param   :   INTEGER
-        |   FLOAT
-        |   STRING
-        |   '&' ID
+param   :   INTEGER                     { $$ = calloc(1, sizeof(param_t)); $$->m_type = P_INTEGER; $$->m_value.as_integer = $1; }
+        |   FLOAT                       { $$ = calloc(1, sizeof(param_t)); $$->m_type = P_FLOAT; $$->m_value.as_float = $1; }
+        |   STRING                      { $$ = calloc(1, sizeof(param_t)); $$->m_type = P_STRING; $$->m_value.as_string = $1; }
+        |   '&' LABEL                   { $$ = calloc(1, sizeof(param_t)); $$->m_type = P_LABEL; $$->m_value.as_label = get_label($2); }
         ;
 
 %%
+
+line_t *get_line(label_t *label, intptr_t instruction, param_t *params) {
+    line_t *line = calloc(1, sizeof(*line));
+    
+    line->m_label = label;
+    line->m_instruction = instruction;
+    line->m_params = params;
+    return line;
+}
+
+label_t *get_label(const char *key) {
+    label_t *label = g_labels;
+    
+    while (label != NULL) {
+        if (0 == strcmp(label->m_label, key))  return label;
+        label = label->m_next;
+    }
+    
+    label = calloc(1, sizeof(*label));
+    label->m_label = strdup(key);
+
+    if (!g_labels)  g_labels = label;
+    if (g_last_label)  g_last_label->m_next = label;
+    g_last_label = label;
+    return label;
+}
+
+int assemble(uint8_t **bytecode, size_t *bytecode_len) {
+    
+    return 0;
+}
 
 int peekchar(void) {
     int c = getchar();
@@ -132,7 +216,7 @@ int yylex(void) {
         }
         
         yylval.sval = str;
-        return ID;
+        return LABEL;
     }
     
     if (c == '"') {
@@ -248,7 +332,7 @@ int read_hex_byte(void) {
     
     val = strtol(digits, &endptr, 16);
     if (endptr != NULL) {
-        fprintf(stderr, "warning: invalid characters in hex byte '%s'\n", digits);
+        fprintf(stderr, "warning: invalid characters in hex byte '\\x%s'\n", digits);
     }
     return (char) val;
 }
@@ -264,10 +348,10 @@ int read_octal_byte(void) {
     
     val = strtol(digits, &endptr, 8);
     if (endptr != NULL) {
-        fprintf(stderr, "warning: invalid characters in octal byte '%s'\n", digits);
+        fprintf(stderr, "warning: invalid characters in octal byte '\\%s'\n", digits);
     }
     if (val > 0xFF) {
-        fprintf(stderr, "warning: octal byte value out of range '%s'\n", digits);
+        fprintf(stderr, "warning: octal byte value out of range '\\%s'\n", digits);
     }
     return (char) val;
 }
