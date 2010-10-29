@@ -93,7 +93,7 @@ int yylex(void) {
     
     if (isdigit(c)) {
         // parse a literal number - either int or float
-        int i = digittoint(c);
+        intptr_t i = digittoint(c);
         
         while (isdigit(peekchar())) {
             c = getchar();
@@ -120,6 +120,7 @@ int yylex(void) {
     
     if (isalpha(c)) {
         // parse a string -- either an instruction or an identifier
+        ungetc(c, stdin);
         char *str = read_identifier();
 
         for (size_t i = 0; i < i__MAX; i++) {
@@ -159,7 +160,6 @@ char *read_identifier(void) {
     size_t i = 0, buflen = 64;
     char *buffer = calloc(1, buflen);
     
-    buffer[i++] = c;
     while ((c = peekchar()) && (c == '_' || isalnum(c))) {
         if (buflen - i < 2) {
             buflen *= 2;
