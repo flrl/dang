@@ -39,6 +39,7 @@ open my $header, '>', "$output.h" or die "$output.h: $!";
 struct vm_context_t;
 typedef int(*instruction_func)(struct vm_context_t *);
 extern const instruction_func instruction_table[];
+extern const char *instruction_names[];
 
 PREAMBLE
 
@@ -53,16 +54,15 @@ POSTAMBLE
 close $header;
 
 open my $source, '>', "$output.c" or die "$output.c: $!";
-    print $source <<'PREAMBLE';
-#include "instruction_table.h"
-
-const instruction_func instruction_table[] = {
-PREAMBLE
+    print $source "#include \"instruction_table.h\"\n";
+    print $source "const instruction_func instruction_table[] = {\n";
     for $instruction (@instructions) {
         print $source "\t&inst_$instruction,\n";
     }
-
-    print $source <<'POSTAMBLE';
-};
-POSTAMBLE
+    print $source "};\n";
+    print $source "const char *instruction_names[] = {\n";
+    for $instruction (@instructions) {
+        print $source "\t\"" . lc($instruction) . "\",\n";
+    }
+    print $source "};\n";
 close $source;
