@@ -88,13 +88,6 @@ int scalar_release(scalar_handle_t handle) {
 /*
 =back
 
-=cut
-*/
-
-
-/*
-=back
-
 =head2 Anonymous Scalar Functions
 
 With the exception of C<anon_scalar_init()>, these functions will all correctly clean up any previous value the object may
