@@ -31,7 +31,8 @@
     typedef struct label_ref_t label_ref_t;
     
     label_t *get_label(const char *);
-    line_t *get_line(label_t *, intptr_t, param_t *);
+    line_t *get_line(label_t *, uintptr_t, param_t *);
+    void append_param(param_t *, param_t *);
 
     static line_t *g_lines = NULL;
     static line_t *g_last_line = NULL;
@@ -52,7 +53,7 @@
     
     struct param_t {
         param_t *m_next;
-        enum param_type_t { P_INTEGER, P_FLOAT, P_STRING, P_LABEL, } m_type;
+        enum param_type_t { P_INTEGER, P_FLOAT, P_STRING, P_LABEL_LOC, P_LABEL_OFF, } m_type;
         union param_value_t {
             intptr_t as_integer;
             floatptr_t as_float;
@@ -67,7 +68,7 @@
         uintptr_t m_length;
         label_t *m_label;
         param_t *m_params;
-        intptr_t m_instruction;
+        uintptr_t m_instruction;
     };
     
     
@@ -77,7 +78,7 @@
     intptr_t ival;
     floatptr_t fval;
     char *sval;
-    intptr_t instruction;
+    uintptr_t instruction;
     label_t *label;
     line_t *line;
     param_t *param;
@@ -85,9 +86,8 @@
 
 %token <ival> INTEGER
 %token <fval> FLOAT
-%token <sval> STRING
+%token <sval> STRING LABEL
 %token <instruction> INST
-%token <sval> LABEL 
 
 %type <label> label
 %type <line> line
@@ -99,7 +99,7 @@ program :   /* empty */
         |   program line                { if (!g_lines) g_lines = $2; if (g_last_line) g_last_line->m_next = $2; g_last_line = $2; }
         ;
 
-line    :   label '\n'                  { $$ = get_line($1, -1, NULL); }
+line    :   label '\n'                  { $$ = get_line($1, UINTPTR_MAX, NULL); }
         |   label INST params '\n'      { $$ = get_line($1, $2, $3); }
         ;
 
@@ -112,23 +112,34 @@ params  :   /* empty */                 { $$ = NULL; }
         ;
 
 params1 :   param                       { $$ = $1; }
-        |   params1 ',' param           { $$ = $1; $$->m_next = $3; }
+        |   params1 ',' param           { $$ = $1; append_param($$, $3); }
         ;
 
-param   :   INTEGER                     { $$ = calloc(1, sizeof(param_t)); $$->m_type = P_INTEGER; $$->m_value.as_integer = $1; }
-        |   FLOAT                       { $$ = calloc(1, sizeof(param_t)); $$->m_type = P_FLOAT; $$->m_value.as_float = $1; }
-        |   STRING                      { $$ = calloc(1, sizeof(param_t)); $$->m_type = P_STRING; $$->m_value.as_string = $1; }
-        |   '&' LABEL                   { $$ = calloc(1, sizeof(param_t)); $$->m_type = P_LABEL; $$->m_value.as_label = get_label($2); }
+param   :   INTEGER                     { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_INTEGER; $$->m_value.as_integer = $1; }
+        |   FLOAT                       { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_FLOAT; $$->m_value.as_float = $1; }
+        |   STRING                      { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_STRING; $$->m_value.as_string = $1; }
+        |   '&' LABEL                   { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_LABEL_LOC; $$->m_value.as_label = get_label($2); }
+        |   '~' LABEL                   { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_LABEL_OFF; $$->m_value.as_label = get_label($2); }
         ;
 
 %%
 
-line_t *get_line(label_t *label, intptr_t instruction, param_t *params) {
+void append_param(param_t *list, param_t *param) {
+    param_t *p = list;
+    while (p && p->m_next != NULL) {
+        p = p->m_next;
+    }
+    p->m_next = param;
+}
+
+line_t *get_line(label_t *label, uintptr_t instruction, param_t *params) {
     line_t *line = calloc(1, sizeof(*line));
     
     line->m_label = label;
     line->m_instruction = instruction;
     line->m_params = params;
+    line->m_position = UINTPTR_MAX;
+    line->m_length = UINTPTR_MAX;
     return line;
 }
 
@@ -150,6 +161,16 @@ label_t *get_label(const char *key) {
 }
 
 int assemble(uint8_t **bytecode, size_t *bytecode_len) {
+    int status;
+    
+    status = yyparse();
+    if (status != 0)  return status;
+
+    // walk the parse tree (g_lines, g_labels) and resolve all the lengths and positions
+    
+    // allocate enough space for the bytecode and set length
+    
+    // reduce each line to bytecode and inject it at the right position
     
     return 0;
 }
