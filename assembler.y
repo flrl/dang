@@ -373,6 +373,10 @@ void yyerror(char const *s) {
     printf("%s\n", s);
 }
 
+#ifndef digittoint
+#define digittoint(c) ((c) - '0')
+#endif
+
 int yylex(void) {
     int c;
     
