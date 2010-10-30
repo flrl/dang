@@ -58,6 +58,8 @@ typedef enum instruction_t {
     i_FLTDIV,
     i_FLTMOD,
     i_FUNLIT,       /* function_handle_t */
+    i_OUT,
+    i_OUTL,
 /*-- INSTRUCTIONS END --*/
     
 //    iOVER,

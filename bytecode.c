@@ -870,6 +870,45 @@ int inst_FUNLIT(struct vm_context_t *context) {
     return 1 + sizeof(lit);
 }
 
+/*
+=item OUT ( a -- )
+
+Pops a scalar from the stack and prints out its value.
+
+=cut
+ */
+int inst_OUT(struct vm_context_t *context) {
+    scalar_t a = {0};
+    char *str;
+    
+    vm_ds_pop(context, &a);
+    anon_scalar_get_string_value(&a, &str);
+    printf("%s", str);
+
+    free(str);
+    anon_scalar_destroy(&a);
+    return 1;
+}
+
+/*
+=item OUTL ( a -- )
+
+Pops a scalar from the stack and prints out its value, followed by a newline.
+
+=cut
+ */
+int inst_OUTL(struct vm_context_t *context) {
+    scalar_t a = {0};
+    char *str;
+    
+    vm_ds_pop(context, &a);
+    anon_scalar_get_string_value(&a, &str);
+    printf("%s\n", str);
+
+    free(str);
+    anon_scalar_destroy(&a);
+    return 1;
+}
 
 
 /*
