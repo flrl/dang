@@ -24,7 +24,7 @@ typedef enum instruction_t {
     i_DUP,
     i_OVER,
     i_BRANCH,       /* intptr_t */
-    i_0BRANCH,      /* intptr_t */
+    i_BRANCH0,      /* intptr_t */
     i_SYMDEF,       /* uint32_t identifier_t */
     i_SYMFIND,      /* identifier_t */
     i_SYMUNDEF,     /* identifier_t */

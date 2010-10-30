@@ -171,14 +171,14 @@ int inst_BRANCH(vm_context_t *context) {
 }
 
 /*
-=item 0BRANCH ( a -- )
+=item BRANCH0 ( a -- )
 
 Reads a jump destination from the following bytecode.  Pops a value from the data stack.  If the value popped is false, transfers
 execution control to the jump destination.  Otherwise, transfers execution control to the next instruction.
  
 =cut
  */
-int inst_0BRANCH(vm_context_t *context) {
+int inst_BRANCH0(vm_context_t *context) {
     const intptr_t branch_offset = *(const intptr_t *) NEXT_BYTE(context);
     int incr = 0;
 
