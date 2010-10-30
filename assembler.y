@@ -262,7 +262,7 @@ assembler_output_t *assemble(void) {
     memset(output->m_bytecode, i_NOOP, len - 1);
     output->m_bytecode[len - 1] = i_END;
 
-    // reduce each line to output->m_bytecode and inject it at the right position
+    // reduce each line to bytecode and inject it at the right position
     line = g_lines;
     while (status == 0 && line != NULL) {
         if (line->m_length == 0) {
@@ -363,7 +363,7 @@ assembler_output_t *assemble(void) {
                     break;
 
                 default:
-                    debug("unhandled instruction: %s\n", instruction_names[line->m_instruction]);
+                    debug("unhandled multibyte instruction: %s\n", instruction_names[line->m_instruction]);
                     break;
             }
         }
@@ -371,7 +371,7 @@ assembler_output_t *assemble(void) {
     }    
     
     // if there was a main label defined, make it the start point
-    if ((label = get_label("main", NULL))) {
+    if (status == 0 && (label = get_label("main", NULL))) {
         output->m_bytecode_start = label->m_line->m_position;
     }
     
