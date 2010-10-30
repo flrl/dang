@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "bytecode.h"
+#include "debug.h"
 #include "floatptr_t.h"
 
     int yylex(void);
@@ -162,15 +163,62 @@ label_t *get_label(const char *key) {
 
 int assemble(uint8_t **bytecode, size_t *bytecode_len) {
     int status;
+    line_t *line;
     
     status = yyparse();
     if (status != 0)  return status;
 
     // walk the parse tree (g_lines, g_labels) and resolve all the lengths and positions
+    line = g_lines;
+    uintptr_t next_position = 0;
+    while (line != NULL) {
+        if (line->m_instruction == UINTPTR_MAX) {
+            // this line hasn't got an instruction (i.e. it's just a floating label)
+            line->m_length = 0;
+        }
+        else if (line->m_instruction == i_STRLIT) {
+            // special case length for string literals -- need to include the length of the string itself
+            line->m_length = instruction_sizes[i_STRLIT];
+            if (line->m_params != NULL && line->m_params->m_type == P_STRING) {
+                line->m_length += strlen(line->m_params->m_value.as_string);
+            }
+        }
+        else {
+            line->m_length = instruction_sizes[line->m_instruction];
+        }
+
+        line->m_position = next_position;
+        if (line->m_length > 1) {
+            // complex instructions should have their position aligned one byte before a four byte boundary
+            while (line->m_position % 4 < 3)  line->m_position++;
+        }
+    
+        next_position = line->m_position + line->m_length;
+        line = line->m_next;
+    }
     
     // allocate enough space for the bytecode and set length
+    *bytecode_len = g_last_line->m_position + g_last_line->m_length + 1;
+    *bytecode = calloc(*bytecode_len, sizeof(**bytecode));
+
+    // pre-fill bytecode with no-op instructions, except for the very last byte
+    memset(*bytecode, i_NOOP, *bytecode_len - 1);
     
     // reduce each line to bytecode and inject it at the right position
+    line = g_lines;
+    while (line != NULL) {
+        *bytecode[line->m_position] = (uint8_t) line->m_instruction;
+        if (line->m_length > 1) {
+            switch (line->m_instruction) {
+                // FIXME handle ops here
+                default:
+                    debug("unhandled instruction: %s\n", instruction_names[line->m_instruction]);
+                    break;
+            }
+        }
+    }
+    
+    // FIXME clean up the parse tree
     
     return 0;
 }
