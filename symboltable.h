@@ -10,12 +10,7 @@
 #ifndef SYMBOLTABLE_H
 #define SYMBOLTABLE_H
 
-#include <stdint.h>
-
-#include "array.h"
-#include "channel.h"
-#include "hash.h"
-#include "scalar.h"
+#include "vmtypes.h"
 
 #define SYMBOL_SCALAR       0x01u
 #define SYMBOL_ARRAY        0x02u
@@ -25,8 +20,6 @@
 #define SYMBOL_TYPE_MASK    0x0000000Fu
 
 #define SYMBOL_FLAG_SHARED  0x80000000u
-
-typedef uintptr_t identifier_t;
 
 typedef struct symbol_t {
     struct symbol_t *m_parent;

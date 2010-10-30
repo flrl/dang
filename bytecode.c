@@ -26,10 +26,14 @@ bytecode
 #include <stdlib.h>
 #include <string.h>
 
-#include "bytecode.h"
+#include "array.h"
+#include "channel.h"
 #include "debug.h"
+#include "hash.h"
 #include "scalar.h"
 #include "vm.h"
+
+#include "bytecode.h"
 
 #define NEXT_BYTE(x) (const uint8_t*)(&(x)->m_bytecode[(x)->m_counter + 1])
 

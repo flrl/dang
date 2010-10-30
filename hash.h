@@ -10,21 +10,13 @@
 #ifndef HASH_H
 #define HASH_H
 
+#include "vmtypes.h"
+
 #ifdef POOL_INITIAL_SIZE
 #undef POOL_INITIAL_SIZE
 #endif
 #define POOL_INITIAL_SIZE 64
 #include "pool.h"
-
-#ifndef HAVE_HASH_HANDLE_T
-#define HAVE_HASH_HANDLE_T
-typedef POOL_HANDLE(hash_t) hash_handle_t;
-#endif
-
-#ifndef HAVE_SCALAR_HANDLE_T
-#define HAVE_SCALAR_HANDLE_T
-typedef POOL_HANDLE(scalar_t) scalar_handle_t;
-#endif
 
 #define HASH_BUCKETS    (256)
 
@@ -46,7 +38,7 @@ typedef struct hash_t {
 int _hash_init(hash_t *);
 int _hash_destroy(hash_t *);
 
-POOL_HEADER_CONTENTS(hash_t, _hash_init, _hash_destroy);
+POOL_HEADER_CONTENTS(hash_t, hash_handle_t, _hash_init, _hash_destroy);
 
 struct scalar_t;
 

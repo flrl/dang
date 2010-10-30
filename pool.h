@@ -25,7 +25,7 @@ pool
 #define POOL_TYPE(type)                         struct type##_POOL
 #define POOL_WRAPPER_TYPE(type)                 struct POOLED_##type
 
-#define POOL_HANDLE(type)                       uintptr_t
+//#define handle_type                       uintptr_t
 
 #define POOL_OBJECT_FLAG_INUSE                  UINTPTR_MAX
 #define POOL_OBJECT_FLAG_SHARED                 0x80000000u
@@ -78,13 +78,13 @@ Call this from your header file
 
 =cut
  */
-#define POOL_HEADER_CONTENTS(type, init, destroy)                                               \
+#define POOL_HEADER_CONTENTS(type, handle_type, init, destroy)                                  \
 POOL_TYPE(type) {                                                                               \
     size_t                  m_allocated_count;                                                  \
     size_t                  m_count;                                                            \
     size_t                  m_free_count;                                                       \
     POOL_WRAPPER_TYPE(type) *m_items;                                                           \
-    POOL_HANDLE(type)       m_free_list_head;                                                   \
+    handle_type             m_free_list_head;                                                   \
     pthread_mutex_t         m_free_list_mutex;                                                  \
 };                                                                                              \
                                                                                                 \
@@ -92,15 +92,15 @@ POOL_WRAPPER_TYPE(type) {                                                       
     type    m_object;                                                                           \
     size_t  m_references;                                                                       \
     pthread_mutex_t *m_mutex;                                                                   \
-    POOL_HANDLE(type)   m_next_free;                                                            \
+    handle_type   m_next_free;                                                                  \
 };                                                                                              \
                                                                                                 \
 extern POOL_TYPE(type) POOL_SINGLETON(type);                                                    \
                                                                                                 \
-static inline void _##type##_POOL_ADD_TO_FREE_LIST(POOL_HANDLE(type));                          \
-static inline POOL_HANDLE(type) _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(size_t);             \
+static inline void _##type##_POOL_ADD_TO_FREE_LIST(handle_type);                                \
+static inline handle_type _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(size_t);                   \
                                                                                                 \
-static inline int type##_POOL_LOCK(POOL_HANDLE(type) handle) {                                  \
+static inline int type##_POOL_LOCK(handle_type handle) {                                        \
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
     assert(POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_FLAG_INUSE);                   \
                                                                                                 \
@@ -112,7 +112,7 @@ static inline int type##_POOL_LOCK(POOL_HANDLE(type) handle) {                  
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline int type##_POOL_UNLOCK(POOL_HANDLE(type) handle) {                                \
+static inline int type##_POOL_UNLOCK(handle_type handle) {                                      \
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
     assert(POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_FLAG_INUSE);                   \
                                                                                                 \
@@ -132,7 +132,7 @@ static inline int type##_POOL_INIT(void) {                                      
         POOL_SINGLETON(type).m_count = 0;                                                       \
         if (0 == pthread_mutex_init(&POOL_SINGLETON(type).m_free_list_mutex, NULL)) {           \
             POOL_SINGLETON(type).m_free_list_head = 1;                                          \
-            for (POOL_HANDLE(type) i = 2; i < POOL_SINGLETON(type).m_allocated_count - 1; i++) {\
+            for (handle_type i = 2; i < POOL_SINGLETON(type).m_allocated_count - 1; i++) {      \
                 POOL_WRAPPER(type, i).m_next_free = i;                                          \
             }                                                                                   \
             POOL_WRAPPER(type, POOL_SINGLETON(type).m_allocated_count).m_next_free = 0;         \
@@ -150,7 +150,7 @@ static inline int type##_POOL_INIT(void) {                                      
                                                                                                 \
 static inline int type##_POOL_DESTROY(void) {                                                   \
     if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {                     \
-        for (POOL_HANDLE(type) i = 1; i <= POOL_SINGLETON(type).m_allocated_count; i++) {       \
+        for (handle_type i = 1; i <= POOL_SINGLETON(type).m_allocated_count; i++) {             \
             if (0 == POOL_LOCK(type, i)) {     /* FIXME check if it's in use, too */            \
                 destroy(&POOL_OBJECT(type, i));                                                 \
                 if (POOL_WRAPPER(type, i).m_mutex != NULL) {                                    \
@@ -171,9 +171,9 @@ static inline int type##_POOL_DESTROY(void) {                                   
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(uint32_t flags) {                          \
+static inline handle_type type##_POOL_ALLOCATE(uint32_t flags) {                                \
     if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {                     \
-        POOL_HANDLE(type) handle;                                                               \
+        handle_type handle;                                                                     \
                                                                                                 \
         if (POOL_SINGLETON(type).m_free_count > 0) {                                            \
             assert(POOL_SINGLETON(type).m_free_list_head != 0);                                 \
@@ -203,7 +203,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(uint32_t flags) {          
             POOL_SINGLETON(type).m_allocated_count = new_size;                                  \
                                                                                                 \
             POOL_SINGLETON(type).m_free_list_head = handle + 1;                                 \
-            for (   POOL_HANDLE(type) i = POOL_SINGLETON(type).m_free_list_head;                \
+            for (   handle_type i = POOL_SINGLETON(type).m_free_list_head;                      \
                     i < new_size - 1;                                                           \
                     i++) {                                                                      \
                 POOL_WRAPPER(type, i).m_next_free = i;                                          \
@@ -232,14 +232,14 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE(uint32_t flags) {          
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline POOL_HANDLE(type) type##_POOL_ALLOCATE_MANY(size_t many, uint32_t flags) {        \
+static inline handle_type type##_POOL_ALLOCATE_MANY(size_t many, uint32_t flags) {              \
     assert(many > 0);                                                                           \
     if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {                     \
-        POOL_HANDLE(type) alloc_start = _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(many);       \
+        handle_type alloc_start = _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(many);             \
                                                                                                 \
         if (alloc_start != 0) {                                                                 \
             /* found a sufficiently long sequence of free items - remove them from free list */ \
-            POOL_HANDLE(type) prev = alloc_start - 1;                                           \
+            handle_type prev = alloc_start - 1;                                                 \
             while (prev > 0 && POOL_HANDLE_IN_USE(type, prev))  --prev;                         \
                                                                                                 \
             if (prev == 0) {                                                                    \
@@ -277,7 +277,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE_MANY(size_t many, uint32_t 
                 POOL_SINGLETON(type).m_free_list_head = alloc_start + many;                     \
             }                                                                                   \
             else {                                                                              \
-                POOL_HANDLE(type) i = POOL_SINGLETON(type).m_free_list_head;                    \
+                handle_type i = POOL_SINGLETON(type).m_free_list_head;                          \
                 while (POOL_WRAPPER(type, i).m_next_free != 0) {                                \
                     i = POOL_WRAPPER(type, i).m_next_free;                                      \
                 }                                                                               \
@@ -285,7 +285,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE_MANY(size_t many, uint32_t 
             }                                                                                   \
                                                                                                 \
             /* add the leftover new items to the end of the free list */                        \
-            for (POOL_HANDLE(type) i = alloc_start + many; i < new_size - 1; i++) {             \
+            for (handle_type i = alloc_start + many; i < new_size - 1; i++) {                   \
                 POOL_WRAPPER(type, i).m_next_free = i;                                          \
             }                                                                                   \
             POOL_WRAPPER(type, new_size).m_next_free = 0;                                       \
@@ -294,7 +294,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE_MANY(size_t many, uint32_t 
         pthread_mutex_unlock(&POOL_SINGLETON(type).m_free_list_mutex);                          \
                                                                                                 \
         /* initialise the new items */                                                          \
-        for (POOL_HANDLE(type) i = alloc_start; i < alloc_start + many; i++) {                  \
+        for (handle_type i = alloc_start; i < alloc_start + many; i++) {                        \
             POOL_WRAPPER(type, i).m_next_free = POOL_OBJECT_FLAG_INUSE;                         \
             init(&POOL_OBJECT(type, i));                                                        \
                                                                                                 \
@@ -314,7 +314,7 @@ static inline POOL_HANDLE(type) type##_POOL_ALLOCATE_MANY(size_t many, uint32_t 
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline POOL_HANDLE(type) type##_POOL_REFERENCE(POOL_HANDLE(type) handle) {               \
+static inline handle_type type##_POOL_REFERENCE(handle_type handle) {                           \
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
     assert(POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_FLAG_INUSE);                   \
     assert(POOL_WRAPPER(type, handle).m_references > 0);                                        \
@@ -323,7 +323,7 @@ static inline POOL_HANDLE(type) type##_POOL_REFERENCE(POOL_HANDLE(type) handle) 
     return handle;                                                                              \
 }                                                                                               \
                                                                                                 \
-static inline int type##_POOL_RELEASE(POOL_HANDLE(type) handle) {                               \
+static inline int type##_POOL_RELEASE(handle_type handle) {                                     \
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
     assert(POOL_HANDLE_IN_USE(type, handle));                                                   \
     assert(POOL_WRAPPER(type, handle).m_references > 0);                                        \
@@ -342,11 +342,11 @@ static inline int type##_POOL_RELEASE(POOL_HANDLE(type) handle) {               
     return 0;                                                                                   \
 }                                                                                               \
                                                                                                 \
-static inline POOL_HANDLE(type) _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(size_t len) {        \
+static inline handle_type _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(size_t len) {              \
     assert(len > 0);                                                                            \
                                                                                                 \
     if (POOL_SINGLETON(type).m_free_count > len) {                                              \
-        POOL_HANDLE(type) sequence = POOL_SINGLETON(type).m_free_list_head;                     \
+        handle_type sequence = POOL_SINGLETON(type).m_free_list_head;                           \
         size_t found = 0;                                                                       \
         while (sequence != 0) {                                                                 \
             if (POOL_HANDLE_IN_USE(type, sequence + 1)) {                                       \
@@ -367,10 +367,10 @@ static inline POOL_HANDLE(type) _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(size_
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline void _##type##_POOL_ADD_TO_FREE_LIST(POOL_HANDLE(type) handle) {                  \
+static inline void _##type##_POOL_ADD_TO_FREE_LIST(handle_type handle) {                        \
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
                                                                                                 \
-    POOL_HANDLE(type) prev = handle;                                                            \
+    handle_type prev = handle;                                                                  \
                                                                                                 \
     if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {                     \
         for ( ; prev > 0 && !POOL_HANDLE_IN_USE(type, prev); --prev) ;                          \

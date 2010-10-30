@@ -10,6 +10,8 @@
 #ifndef CHANNEL_H
 #define CHANNEL_H
 
+#include "vmtypes.h"
+
 #ifdef POOL_INITIAL_SIZE
 #undef POOL_INITIAL_SIZE
 #endif
@@ -30,12 +32,7 @@ typedef struct channel_t {
 int _channel_init(channel_t *);
 int _channel_destroy(channel_t *);
 
-POOL_HEADER_CONTENTS(channel_t, _channel_init, _channel_destroy);
-
-#ifndef HAVE_CHANNEL_HANDLE_T
-#define HAVE_CHANNEL_HANDLE_T
-typedef POOL_HANDLE(channel_t) channel_handle_t;
-#endif
+POOL_HEADER_CONTENTS(channel_t, channel_handle_t, _channel_init, _channel_destroy);
 
 int channel_pool_init(void);
 int channel_pool_destroy(void);

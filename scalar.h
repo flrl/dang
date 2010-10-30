@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 #include "floatptr_t.h"
+#include "vmtypes.h"
 
 #ifdef POOL_INITIAL_SIZE
 #undef POOL_INITIAL_SIZE
@@ -52,28 +53,6 @@
       '-------------------------------------- value is a malloc'd pointer, make sure to free it
  */
 
-#ifndef HAVE_SCALAR_HANDLE_T
-#define HAVE_SCALAR_HANDLE_T
-typedef POOL_HANDLE(scalar_t) scalar_handle_t;
-#endif
-
-#ifndef HAVE_ARRAY_HANDLE_T
-#define HAVE_ARRAY_HANDLE_T
-typedef POOL_HANDLE(array_t) array_handle_t;
-#endif
-
-#ifndef HAVE_HASH_HANDLE_T
-#define HAVE_HASH_HANDLE_T
-typedef POOL_HANDLE(hash_t) hash_handle_t;
-#endif
-
-#ifndef HAVE_CHANNEL_HANDLE_T
-#define HAVE_CHANNEL_HANDLE_T
-typedef POOL_HANDLE(channel_t) channel_handle_t;
-#endif
-
-typedef uintptr_t function_handle_t;
-
 typedef struct scalar_t {
     uint32_t m_flags;
     union {
@@ -91,7 +70,7 @@ typedef struct scalar_t {
 int anon_scalar_init(scalar_t *);
 int anon_scalar_destroy(scalar_t *);
 
-POOL_HEADER_CONTENTS(scalar_t, anon_scalar_init, anon_scalar_destroy);
+POOL_HEADER_CONTENTS(scalar_t, scalar_handle_t, anon_scalar_init, anon_scalar_destroy);
 
 int anon_scalar_clone(scalar_t * restrict, const scalar_t * restrict);
 int anon_scalar_assign(scalar_t * restrict, const scalar_t * restrict);

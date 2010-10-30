@@ -13,7 +13,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "array.h"
+#include "channel.h"
 #include "debug.h"
+#include "hash.h"
+#include "scalar.h"
 
 #include "symboltable.h"
 
