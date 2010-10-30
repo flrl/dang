@@ -40,16 +40,10 @@
     static label_t *g_labels = NULL;
     static label_t *g_last_label = NULL;
 
-    struct label_ref_t {
-        label_ref_t *m_next;
-        param_t *m_param;
-    };
-    
     struct label_t {
         label_t *m_next;
         char *m_label;
         line_t *m_line;
-        label_ref_t *m_refs;
     };
     
     struct param_t {
@@ -306,8 +300,32 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
         }
     }
     
-    // FIXME clean up the parse tree
+    // clean up the parse tree
+    line = g_lines;
+    while (line != NULL) {
+        param_t *param = line->m_params;
+        while (param != NULL) {
+            if (param->m_type == P_STRING)  free(param->m_value.as_string);
+            param_t *tmp = param;
+            param = param->m_next;
+            free(tmp);
+        }
+
+        line_t *tmp = line;
+        line = line->m_next;
+        free (tmp);
+    }
+    g_lines = g_last_line = NULL;
     
+    label_t *label = g_labels;
+    while (label != NULL) {
+        free(label->m_label);
+        label_t *tmp = label;
+        label = label->m_next;
+        free(tmp);
+    }
+    g_labels = g_last_label = NULL;
+            
     return status;
 }
 
