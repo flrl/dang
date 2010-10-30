@@ -205,7 +205,7 @@ assembler_output_t *assemble(void) {
 
     // walk the parse tree (g_lines, g_labels) and resolve all the lengths and positions
     line = g_lines;
-    uintptr_t next_position = 0;
+    uintptr_t next_position = 1;    // compile the first instruction to location 1
     while (line != NULL) {
         if (line->m_instruction == UINTPTR_MAX) {
             // this line hasn't got an instruction (i.e. it's just a floating label)
@@ -258,9 +258,10 @@ assembler_output_t *assemble(void) {
     size_t len = g_last_line->m_position + g_last_line->m_length + 1;
     assembler_output_t *output = malloc(sizeof(*output) + len);
     output->m_bytecode_length = len;
-    output->m_bytecode_start = 0;
+    output->m_bytecode_start = 1;   // first instruction is at location 1 by default
     memset(output->m_bytecode, i_NOOP, len - 1);
-    output->m_bytecode[len - 1] = i_END;
+    output->m_bytecode[0] = i_END;          // guard values
+    output->m_bytecode[len - 1] = i_END;    // guard values
 
     // reduce each line to bytecode and inject it at the right position
     line = g_lines;

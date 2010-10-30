@@ -52,6 +52,10 @@ void *vm_execute(void *ptr) {
     vm_context_t *context = ptr;
     assert(context != NULL);
     
+    // set the top of the return stack to point back to the zero'th instruction, which always contains END.
+    // this allows the vm entry point to be a normal function that expects to simply return when it's done.
+    vm_rs_push(context, 0);
+    
     int incr;
     while (context->m_counter < context->m_bytecode_length) {
         uint8_t instruction = context->m_bytecode[context->m_counter];
