@@ -32,7 +32,7 @@
     typedef struct label_t label_t;
     typedef struct label_ref_t label_ref_t;
     
-    label_t *get_label(const char *);
+    label_t *get_label(const char *, const char *);
     line_t *get_line(label_t *, uintptr_t, param_t *);
     void append_param(param_t *, param_t *);
 
@@ -40,6 +40,7 @@
     static line_t *g_last_line = NULL;
     static label_t *g_labels = NULL;
     static label_t *g_last_label = NULL;
+    static char *g_last_label_defined = NULL;
 
     struct label_t {
         label_t *m_next;
@@ -87,7 +88,7 @@
 %token <sval> STRING LABEL
 %token <instruction> INST
 
-%type <label> label
+%type <label> labeldef label
 %type <line> line
 %type <param> params params1 param
 
@@ -97,12 +98,13 @@ program :   /* empty */
         |   program line                { if (!g_lines) g_lines = $2; if (g_last_line) g_last_line->m_next = $2; g_last_line = $2; }
         ;
 
-line    :   label '\n'                  { $$ = get_line($1, UINTPTR_MAX, NULL); }
-        |   label INST params '\n'      { $$ = get_line($1, $2, $3); }
+line    :   labeldef '\n'                  { $$ = get_line($1, UINTPTR_MAX, NULL); }
+        |   labeldef INST params '\n'      { $$ = get_line($1, $2, $3); }
         ;
 
-label   :   /* empty */                 { $$ = NULL; }
-        |   LABEL ':'                   { $$ = get_label($1); }
+labeldef:   /* empty */                 { $$ = NULL; }
+        |   LABEL ':'                   { $$ = get_label($1, NULL); g_last_label_defined = $$->m_label; }
+        |   '.' LABEL ':'               { $$ = get_label(g_last_label_defined, $2); }
         ;
 
 params  :   /* empty */                 { $$ = NULL; }
@@ -116,8 +118,13 @@ params1 :   param                       { $$ = $1; }
 param   :   INTEGER                     { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_INTEGER; $$->m_value.as_integer = $1; }
         |   FLOAT                       { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_FLOAT; $$->m_value.as_float = $1; }
         |   STRING                      { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_STRING; $$->m_value.as_string = $1; }
-        |   '&' LABEL                   { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_LABEL_LOC; $$->m_value.as_label = get_label($2); }
-        |   '~' LABEL                   { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_LABEL_OFF; $$->m_value.as_label = get_label($2); }
+        |   '&' label                   { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_LABEL_LOC; $$->m_value.as_label = $2; }
+        |   '~' label                   { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_LABEL_OFF; $$->m_value.as_label = $2; }
+        ;
+
+label   :   LABEL '.' LABEL             { $$ = get_label($1, $3); }
+        |   '.' LABEL                   { $$ = get_label(g_last_label_defined, $2); }
+        |   LABEL                       { $$ = get_label($1, NULL); }
         ;
 
 %%
@@ -141,20 +148,43 @@ line_t *get_line(label_t *label, uintptr_t instruction, param_t *params) {
     return line;
 }
 
-label_t *get_label(const char *key) {
+label_t *get_label(const char *prim, const char *sub) {
     label_t *label = g_labels;
+    char *key;
+    size_t keylen = 0;
+
+    if (prim)   keylen += strlen(prim);
+    if (sub)    keylen += 1 + strlen(sub);
+
+    if (keylen == 0)  return NULL;
+
+    key = calloc(1, ++keylen);
+
+    if (prim) {
+        strcat(key, prim);
+    }
     
+    if (sub) {
+        strcat(key, ".");
+        strcat(key, sub);
+    }
+        
     while (label != NULL) {
-        if (0 == strcmp(label->m_label, key))  return label;
+        if (0 == strcmp(label->m_label, key)) {
+            free(key);
+            return label;
+        }
         label = label->m_next;
     }
     
     label = calloc(1, sizeof(*label));
-    label->m_label = strdup(key);
+    label->m_label = key;
 
     if (!g_labels)  g_labels = label;
     if (g_last_label)  g_last_label->m_next = label;
     g_last_label = label;
+
+    // n.b. don't free key, as the label now owns it
     return label;
 }
 
