@@ -16,6 +16,7 @@
 
 #include "bytecode.h"
 #include "debug.h"
+#include "floatptr_t.h"
 #include "vmtypes.h"
 
     int yylex(void);
@@ -155,7 +156,7 @@ label_t *get_label(const char *key) {
     return label;
 }
 
-int assemble(uint8_t **bytecode, size_t *bytecode_len) {
+int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
     int status;
     line_t *line;
     
@@ -186,29 +187,47 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
             // complex instructions should have their position aligned one byte before a four byte boundary
             while (line->m_position % 4 < 3)  line->m_position++;
         }
+        
+        if (line->m_label != NULL) {
+            if (line->m_label->m_line == NULL) {
+                line->m_label->m_line = line;
+            }
+            else if (line->m_label->m_line == line) {
+                ;
+            }
+            else {
+                debug("multiple definitions of label %s\n", line->m_label->m_label);
+                status = -1;
+            }
+        }
     
         next_position = line->m_position + line->m_length;
         line = line->m_next;
     }
     
     // allocate enough space for the bytecode and set length
-    *bytecode_len = g_last_line->m_position + g_last_line->m_length + 1;
-    *bytecode = calloc(*bytecode_len, sizeof(**bytecode));
+    size_t bytecode_len = g_last_line->m_position + g_last_line->m_length + 1;
+    uint8_t *bytecode = calloc(bytecode_len, sizeof(*bytecode));
 
     // pre-fill bytecode with no-op instructions, except for the very last byte
-    memset(*bytecode, i_NOOP, *bytecode_len - 1);
+    memset(bytecode, i_NOOP, bytecode_len - 1);
     
     // reduce each line to bytecode and inject it at the right position
     line = g_lines;
     while (status == 0 && line != NULL) {
-        *bytecode[line->m_position] = (uint8_t) line->m_instruction;
+        if (line->m_length == 0) {
+            line = line->m_next;
+            continue;   
+        }
+        
+        bytecode[line->m_position] = (uint8_t) line->m_instruction;
         if (line->m_length > 1) {
             switch (line->m_instruction) {
                 case i_CALL:
                 case i_FUNLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_LABEL_LOC) {
                         function_handle_t handle = line->m_params->m_value.as_label->m_line->m_position;
-                        * (function_handle_t *) &(*bytecode[line->m_position + 1]) = handle;
+                        * (function_handle_t *) &(bytecode[line->m_position + 1]) = handle;
                     }
                     else {
                         debug("instruction '%s' requires a label location parameter\n", instruction_names[line->m_instruction]);
@@ -219,7 +238,7 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
                 case i_INTLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
                         intptr_t i = line->m_params->m_value.as_integer;
-                        * (intptr_t *) &(*bytecode[line->m_position + 1]) = i;
+                        * (intptr_t *) &(bytecode[line->m_position + 1]) = i;
                     }
                     else {
                         debug("instruction '%s' requires an integer parameter\n", instruction_names[line->m_instruction]);
@@ -230,7 +249,7 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
                 case i_FLTLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_FLOAT) {
                         floatptr_t f = line->m_params->m_value.as_integer;
-                        * (floatptr_t *) &(*bytecode[line->m_position + 1]) = f;
+                        * (floatptr_t *) &(bytecode[line->m_position + 1]) = f;
                     }
                     else {
                         debug("instruction '%s' requires a float parameter\n", instruction_names[line->m_instruction]);
@@ -241,8 +260,8 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
                 case i_STRLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_STRING) {
                         uint16_t length = line->m_length - instruction_sizes[i_STRLIT];
-                        * (uint16_t *) &(*bytecode[line->m_position + 1]) = length;
-                        memcpy(&(*bytecode[line->m_position + instruction_sizes[i_STRLIT]]), line->m_params->m_value.as_string, length);
+                        * (uint16_t *) &(bytecode[line->m_position + 1]) = length;
+                        memcpy(&(bytecode[line->m_position + instruction_sizes[i_STRLIT]]), line->m_params->m_value.as_string, length);
                     }
                     else {
                         debug("instruction '%s' requires a string parameter\n", instruction_names[line->m_instruction]);
@@ -251,10 +270,10 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
                     break;
 
                 case i_BRANCH:
-                case i_0BRANCH:
+                case i_BRANCH0:
                     if (line->m_params != NULL && line->m_params->m_type == P_LABEL_OFF) {
                         intptr_t offset = line->m_params->m_value.as_label->m_line->m_position - line->m_position;
-                        * (intptr_t *) &(*bytecode[line->m_position + 1]) = offset;
+                        * (intptr_t *) &(bytecode[line->m_position + 1]) = offset;
                     }
                     else {
                         debug("instruction '%s' requires a label offset parameter\n", instruction_names[line->m_instruction]);
@@ -267,8 +286,8 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
                         uint32_t flags = (uint32_t) line->m_params->m_value.as_integer;
                         if (line->m_params->m_next != NULL && line->m_params->m_next->m_type == P_INTEGER) {
                             identifier_t identifier = (identifier_t) line->m_params->m_next->m_value.as_integer;
-                            * (uint32_t *) &(*bytecode[line->m_position + 1]) = flags;
-                            * (identifier_t *) &(*bytecode[line->m_position + 1 + sizeof(flags)]) = identifier;
+                            * (uint32_t *) &(bytecode[line->m_position + 1]) = flags;
+                            * (identifier_t *) &(bytecode[line->m_position + 1 + sizeof(flags)]) = identifier;
                         }
                         else {
                             debug("instruction '%s' requires integer flags and integer identifier parameters\n", instruction_names[i_SYMDEF]);
@@ -285,7 +304,7 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
                 case i_SYMUNDEF:
                     if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
                         identifier_t identifier = (identifier_t) line->m_params->m_value.as_integer;
-                        * (identifier_t *) &(*bytecode[line->m_position + 1]) = identifier;
+                        * (identifier_t *) &(bytecode[line->m_position + 1]) = identifier;
                     }
                     else {
                         debug("instruction '%s' requires an integer identifier parameter\n", instruction_names[line->m_instruction]);
@@ -298,7 +317,8 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
                     break;
             }
         }
-    }
+        line = line->m_next;
+    }    
     
     // clean up the parse tree
     line = g_lines;
@@ -326,6 +346,8 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
     }
     g_labels = g_last_label = NULL;
             
+    *ret_bytecode = bytecode;
+    *ret_bytecode_len = bytecode_len;
     return status;
 }
 
