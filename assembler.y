@@ -80,6 +80,8 @@
     param_t *param;
 }
 
+%error-verbose
+
 %token <ival> INTEGER
 %token <fval> FLOAT
 %token <sval> STRING LABEL
@@ -159,6 +161,7 @@ label_t *get_label(const char *key) {
 int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
     int status;
     line_t *line;
+    label_t *label;
     
     status = yyparse();
     if (status != 0)  return status;
@@ -203,6 +206,15 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
     
         next_position = line->m_position + line->m_length;
         line = line->m_next;
+    }
+    
+    label = g_labels;
+    while (label != NULL) {
+        if (label->m_line == NULL) {
+            debug("label '%s' is used but never defined\n", label->m_label);
+            status = -1;
+        }
+        label = label->m_next;
     }
     
     // allocate enough space for the bytecode and set length
@@ -337,7 +349,7 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
     }
     g_lines = g_last_line = NULL;
     
-    label_t *label = g_labels;
+    label = g_labels;
     while (label != NULL) {
         free(label->m_label);
         label_t *tmp = label;
@@ -384,6 +396,7 @@ int yylex(void) {
         if (peekchar() == '.') {
             floatptr_t f = i, div = 10.0;
             
+            getchar();  // consume the '.'
             while (isdigit(peekchar())) {
                 c = getchar();
                 f += digittoint(c) / div;
@@ -424,7 +437,7 @@ int yylex(void) {
         return STRING;
     }
     
-    if (c == ';') {
+    if (c == ';' || c == '#') {
         // comment - discard until eol
         do {
             c = getchar();
