@@ -23,11 +23,11 @@ while (<>) {
 
     chomp;
 
-    my ($instruction, $value) = m/^\s*i_(\w+)(?:\s*=\s*(\w+))?,/;
+    my ($instruction, $extras) = m/^\s*i_(\w+)(?:\s*=\s*\w+)?,(?:\s*\/\*\s([\w\s]+)\s\*\/)?/;
     next if not $instruction;
+    $extras = '' if not $extras;
 
-    # FIXME handle values
-    push @instructions, $instruction;
+    push @instructions, { instruction => $instruction, extras => [ split /\s+/, $extras ] };
 }
 
 my $instruction;
@@ -40,11 +40,12 @@ struct vm_context_t;
 typedef int(*instruction_func)(struct vm_context_t *);
 extern const instruction_func instruction_table[];
 extern const char *instruction_names[];
+extern const unsigned instruction_sizes[];
 
 PREAMBLE
 
     for $instruction (@instructions) {
-        print $header "int inst_$instruction(struct vm_context_t *);\n"
+        print $header "int inst_$instruction->{instruction}(struct vm_context_t *);\n"
     }
 
     print $header <<'POSTAMBLE';
@@ -55,14 +56,25 @@ close $header;
 
 open my $source, '>', "$output.c" or die "$output.c: $!";
     print $source "#include \"instruction_table.h\"\n";
+    print $source "#include \"vmtypes.h\"\n";
+
     print $source "const instruction_func instruction_table[] = {\n";
     for $instruction (@instructions) {
-        print $source "\t&inst_$instruction,\n";
+        print $source "\t&inst_$instruction->{instruction},\n";
     }
     print $source "};\n";
+
     print $source "const char *instruction_names[] = {\n";
     for $instruction (@instructions) {
-        print $source "\t\"" . lc($instruction) . "\",\n";
+        print $source "\t\"" . lc($instruction->{instruction}) . "\",\n";
+    }
+    print $source "};\n";
+
+    print $source "const unsigned instruction_sizes[] = {\n";
+    for $instruction(@instructions) {
+        my $extras = join ' + ', map { "sizeof($_)" } @{$instruction->{extras}};
+        $extras = '0' if not $extras;
+        print $source "\tsizeof(uint8_t) + $extras,\n";
     }
     print $source "};\n";
 close $source;

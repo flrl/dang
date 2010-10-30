@@ -17,17 +17,17 @@ typedef enum instruction_t {
 /*-- INSTRUCTIONS START --*/
     i_END = 0,
     i_NOOP = 1,
-    i_CALL,
+    i_CALL,         /* function_handle_t */
     i_RETURN,
     i_DROP,
     i_SWAP,
     i_DUP,
     i_OVER,
-    i_BRANCH,
-    i_0BRANCH,
-    i_SYMDEF,
-    i_SYMFIND,
-    i_SYMUNDEF,
+    i_BRANCH,       /* intptr_t */
+    i_0BRANCH,      /* intptr_t */
+    i_SYMDEF,       /* uint32_t identifier_t */
+    i_SYMFIND,      /* identifier_t */
+    i_SYMUNDEF,     /* identifier_t */
     i_SRLOCK,
     i_SRUNLOCK,
     i_SRREAD,
@@ -43,21 +43,21 @@ typedef enum instruction_t {
     i_CRREAD,
     i_CRWRITE,
     i_FRCALL,
-    i_INTLIT,
+    i_INTLIT,       /* intptr_t */
     i_INTADD,
     i_INTSUBT,
     i_INTMULT,
     i_INTDIV,
     i_INTMOD,
-    i_STRLIT,
+    i_STRLIT,       /* uint16_t */
     i_STRCAT,
-    i_FLTLIT,
+    i_FLTLIT,       /* floatptr_t */
     i_FLTADD,
     i_FLTSUBT,
     i_FLTMULT,
     i_FLTDIV,
     i_FLTMOD,
-    i_FUNLIT,
+    i_FUNLIT,       /* function_handle_t */
 /*-- INSTRUCTIONS END --*/
     
 //    iOVER,

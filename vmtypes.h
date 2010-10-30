@@ -12,6 +12,8 @@
 
 #include <stdint.h>
 
+#include "floatptr_t.h"
+
 typedef uintptr_t scalar_handle_t;
 typedef uintptr_t array_handle_t;
 typedef uintptr_t hash_handle_t;
