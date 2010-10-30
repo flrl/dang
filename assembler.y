@@ -16,7 +16,7 @@
 
 #include "bytecode.h"
 #include "debug.h"
-#include "floatptr_t.h"
+#include "vmtypes.h"
 
     int yylex(void);
     void yyerror(const char *);
@@ -206,11 +206,99 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
     
     // reduce each line to bytecode and inject it at the right position
     line = g_lines;
-    while (line != NULL) {
+    while (status == 0 && line != NULL) {
         *bytecode[line->m_position] = (uint8_t) line->m_instruction;
         if (line->m_length > 1) {
             switch (line->m_instruction) {
-                // FIXME handle ops here
+                case i_CALL:
+                case i_FUNLIT:
+                    if (line->m_params != NULL && line->m_params->m_type == P_LABEL_LOC) {
+                        function_handle_t handle = line->m_params->m_value.as_label->m_line->m_position;
+                        * (function_handle_t *) &(*bytecode[line->m_position + 1]) = handle;
+                    }
+                    else {
+                        debug("instruction '%s' requires a label location parameter\n", instruction_names[line->m_instruction]);
+                        status = -1;
+                    }
+                    break;
+                
+                case i_INTLIT:
+                    if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
+                        intptr_t i = line->m_params->m_value.as_integer;
+                        * (intptr_t *) &(*bytecode[line->m_position + 1]) = i;
+                    }
+                    else {
+                        debug("instruction '%s' requires an integer parameter\n", instruction_names[line->m_instruction]);
+                        status = -1;
+                    }
+                    break;
+
+                case i_FLTLIT:
+                    if (line->m_params != NULL && line->m_params->m_type == P_FLOAT) {
+                        floatptr_t f = line->m_params->m_value.as_integer;
+                        * (floatptr_t *) &(*bytecode[line->m_position + 1]) = f;
+                    }
+                    else {
+                        debug("instruction '%s' requires a float parameter\n", instruction_names[line->m_instruction]);
+                        status = -1;
+                    }
+                    break;
+
+                case i_STRLIT:
+                    if (line->m_params != NULL && line->m_params->m_type == P_STRING) {
+                        uint16_t length = line->m_length - instruction_sizes[i_STRLIT];
+                        * (uint16_t *) &(*bytecode[line->m_position + 1]) = length;
+                        memcpy(&(*bytecode[line->m_position + instruction_sizes[i_STRLIT]]), line->m_params->m_value.as_string, length);
+                    }
+                    else {
+                        debug("instruction '%s' requires a string parameter\n", instruction_names[line->m_instruction]);
+                        status = -1;
+                    }
+                    break;
+
+                case i_BRANCH:
+                case i_0BRANCH:
+                    if (line->m_params != NULL && line->m_params->m_type == P_LABEL_OFF) {
+                        intptr_t offset = line->m_params->m_value.as_label->m_line->m_position - line->m_position;
+                        * (intptr_t *) &(*bytecode[line->m_position + 1]) = offset;
+                    }
+                    else {
+                        debug("instruction '%s' requires a label offset parameter\n", instruction_names[line->m_instruction]);
+                        status = -1;
+                    }
+                    break;
+
+                case i_SYMDEF:
+                    if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
+                        uint32_t flags = (uint32_t) line->m_params->m_value.as_integer;
+                        if (line->m_params->m_next != NULL && line->m_params->m_next->m_type == P_INTEGER) {
+                            identifier_t identifier = (identifier_t) line->m_params->m_next->m_value.as_integer;
+                            * (uint32_t *) &(*bytecode[line->m_position + 1]) = flags;
+                            * (identifier_t *) &(*bytecode[line->m_position + 1 + sizeof(flags)]) = identifier;
+                        }
+                        else {
+                            debug("instruction '%s' requires integer flags and integer identifier parameters\n", instruction_names[i_SYMDEF]);
+                            status = -1;
+                        }                        
+                    }
+                    else {
+                        debug("instruction '%s' requires integer flags and integer identifier parameters\n", instruction_names[i_SYMDEF]);
+                        status = -1;
+                    }
+                    break;
+                    
+                case i_SYMFIND:
+                case i_SYMUNDEF:
+                    if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
+                        identifier_t identifier = (identifier_t) line->m_params->m_value.as_integer;
+                        * (identifier_t *) &(*bytecode[line->m_position + 1]) = identifier;
+                    }
+                    else {
+                        debug("instruction '%s' requires an integer identifier parameter\n", instruction_names[line->m_instruction]);
+                        status = -1;
+                    }
+                    break;
+
                 default:
                     debug("unhandled instruction: %s\n", instruction_names[line->m_instruction]);
                     break;
@@ -220,7 +308,7 @@ int assemble(uint8_t **bytecode, size_t *bytecode_len) {
     
     // FIXME clean up the parse tree
     
-    return 0;
+    return status;
 }
 
 int peekchar(void) {
