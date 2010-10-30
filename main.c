@@ -14,8 +14,7 @@
 #include <string.h>
 #include <unistd.h>
 
-int assemble(uint8_t **bytecode, size_t *bytecode_len);
-
+#include "assembler.h"
 
 const char *options = "a:o:";
 
@@ -49,12 +48,12 @@ int main(int argc, char *const argv[]) {
     if (opt_asm_flag && opt_asm_file != NULL) {
         if (strcmp(opt_asm_file, "-") != 0)  freopen(opt_asm_file, "r", stdin);
 
-        uint8_t *bytecode;
-        size_t bytecode_len;
-        if (0 == assemble(&bytecode, &bytecode_len)) {
+        assembler_output_t *assembly;
+        if ((assembly = assemble()) != NULL) {
             if (opt_out_file == NULL)  opt_out_file = make_filename(opt_asm_file, ".dang", ".dong");
             FILE *output = fopen(opt_out_file, "wb");
-            write(fileno(output), bytecode, bytecode_len);
+            write(fileno(output), "dong", 4);
+            write(fileno(output), assembly, sizeof(*assembly) + assembly->m_bytecode_length);
             fclose(output);
         }
         else {

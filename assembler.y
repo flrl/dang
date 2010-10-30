@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "assembler.h"
 #include "bytecode.h"
 #include "debug.h"
 #include "floatptr_t.h"
@@ -98,8 +99,8 @@ program :   /* empty */
         |   program line                { if (!g_lines) g_lines = $2; if (g_last_line) g_last_line->m_next = $2; g_last_line = $2; }
         ;
 
-line    :   labeldef '\n'                  { $$ = get_line($1, UINTPTR_MAX, NULL); }
-        |   labeldef INST params '\n'      { $$ = get_line($1, $2, $3); }
+line    :   labeldef '\n'               { $$ = get_line($1, UINTPTR_MAX, NULL); }
+        |   labeldef INST params '\n'   { $$ = get_line($1, $2, $3); }
         ;
 
 labeldef:   /* empty */                 { $$ = NULL; }
@@ -188,13 +189,19 @@ label_t *get_label(const char *prim, const char *sub) {
     return label;
 }
 
-int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
+//typedef struct assembler_output_t {
+//    uintptr_t m_bytecode_length;
+//    uintptr_t m_bytecode_start;
+//    uint8_t   m_bytecode[];
+//} assembler_output_t;
+
+assembler_output_t *assemble(void) {
     int status;
     line_t *line;
     label_t *label;
     
     status = yyparse();
-    if (status != 0)  return status;
+    if (status != 0)  return NULL;
 
     // walk the parse tree (g_lines, g_labels) and resolve all the lengths and positions
     line = g_lines;
@@ -247,14 +254,15 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
         label = label->m_next;
     }
     
-    // allocate enough space for the bytecode and set length
-    size_t bytecode_len = g_last_line->m_position + g_last_line->m_length + 1;
-    uint8_t *bytecode = calloc(bytecode_len, sizeof(*bytecode));
+    // allocate space for the output and initialise values
+    size_t len = g_last_line->m_position + g_last_line->m_length + 1;
+    assembler_output_t *output = malloc(sizeof(*output) + len);
+    output->m_bytecode_length = len;
+    output->m_bytecode_start = 0;
+    memset(output->m_bytecode, i_NOOP, len - 1);
+    output->m_bytecode[len - 1] = i_END;
 
-    // pre-fill bytecode with no-op instructions, except for the very last byte
-    memset(bytecode, i_NOOP, bytecode_len - 1);
-    
-    // reduce each line to bytecode and inject it at the right position
+    // reduce each line to output->m_bytecode and inject it at the right position
     line = g_lines;
     while (status == 0 && line != NULL) {
         if (line->m_length == 0) {
@@ -262,14 +270,14 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
             continue;   
         }
         
-        bytecode[line->m_position] = (uint8_t) line->m_instruction;
+        output->m_bytecode[line->m_position] = (uint8_t) line->m_instruction;
         if (line->m_length > 1) {
             switch (line->m_instruction) {
                 case i_CALL:
                 case i_FUNLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_LABEL_LOC) {
                         function_handle_t handle = line->m_params->m_value.as_label->m_line->m_position;
-                        * (function_handle_t *) &(bytecode[line->m_position + 1]) = handle;
+                        * (function_handle_t *) &(output->m_bytecode[line->m_position + 1]) = handle;
                     }
                     else {
                         debug("instruction '%s' requires a label location parameter\n", instruction_names[line->m_instruction]);
@@ -280,7 +288,7 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
                 case i_INTLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
                         intptr_t i = line->m_params->m_value.as_integer;
-                        * (intptr_t *) &(bytecode[line->m_position + 1]) = i;
+                        * (intptr_t *) &(output->m_bytecode[line->m_position + 1]) = i;
                     }
                     else {
                         debug("instruction '%s' requires an integer parameter\n", instruction_names[line->m_instruction]);
@@ -291,7 +299,7 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
                 case i_FLTLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_FLOAT) {
                         floatptr_t f = line->m_params->m_value.as_integer;
-                        * (floatptr_t *) &(bytecode[line->m_position + 1]) = f;
+                        * (floatptr_t *) &(output->m_bytecode[line->m_position + 1]) = f;
                     }
                     else {
                         debug("instruction '%s' requires a float parameter\n", instruction_names[line->m_instruction]);
@@ -302,8 +310,8 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
                 case i_STRLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_STRING) {
                         uint16_t length = line->m_length - instruction_sizes[i_STRLIT];
-                        * (uint16_t *) &(bytecode[line->m_position + 1]) = length;
-                        memcpy(&(bytecode[line->m_position + instruction_sizes[i_STRLIT]]), line->m_params->m_value.as_string, length);
+                        * (uint16_t *) &(output->m_bytecode[line->m_position + 1]) = length;
+                        memcpy(&(output->m_bytecode[line->m_position + instruction_sizes[i_STRLIT]]), line->m_params->m_value.as_string, length);
                     }
                     else {
                         debug("instruction '%s' requires a string parameter\n", instruction_names[line->m_instruction]);
@@ -315,7 +323,7 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
                 case i_BRANCH0:
                     if (line->m_params != NULL && line->m_params->m_type == P_LABEL_OFF) {
                         intptr_t offset = line->m_params->m_value.as_label->m_line->m_position - line->m_position;
-                        * (intptr_t *) &(bytecode[line->m_position + 1]) = offset;
+                        * (intptr_t *) &(output->m_bytecode[line->m_position + 1]) = offset;
                     }
                     else {
                         debug("instruction '%s' requires a label offset parameter\n", instruction_names[line->m_instruction]);
@@ -328,8 +336,8 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
                         uint32_t flags = (uint32_t) line->m_params->m_value.as_integer;
                         if (line->m_params->m_next != NULL && line->m_params->m_next->m_type == P_INTEGER) {
                             identifier_t identifier = (identifier_t) line->m_params->m_next->m_value.as_integer;
-                            * (uint32_t *) &(bytecode[line->m_position + 1]) = flags;
-                            * (identifier_t *) &(bytecode[line->m_position + 1 + sizeof(flags)]) = identifier;
+                            * (uint32_t *) &(output->m_bytecode[line->m_position + 1]) = flags;
+                            * (identifier_t *) &(output->m_bytecode[line->m_position + 1 + sizeof(flags)]) = identifier;
                         }
                         else {
                             debug("instruction '%s' requires integer flags and integer identifier parameters\n", instruction_names[i_SYMDEF]);
@@ -346,7 +354,7 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
                 case i_SYMUNDEF:
                     if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
                         identifier_t identifier = (identifier_t) line->m_params->m_value.as_integer;
-                        * (identifier_t *) &(bytecode[line->m_position + 1]) = identifier;
+                        * (identifier_t *) &(output->m_bytecode[line->m_position + 1]) = identifier;
                     }
                     else {
                         debug("instruction '%s' requires an integer identifier parameter\n", instruction_names[line->m_instruction]);
@@ -361,6 +369,11 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
         }
         line = line->m_next;
     }    
+    
+    // if there was a main label defined, make it the start point
+    if ((label = get_label("main", NULL))) {
+        output->m_bytecode_start = label->m_line->m_position;
+    }
     
     // clean up the parse tree
     line = g_lines;
@@ -388,9 +401,12 @@ int assemble(uint8_t **ret_bytecode, size_t *ret_bytecode_len) {
     }
     g_labels = g_last_label = NULL;
             
-    *ret_bytecode = bytecode;
-    *ret_bytecode_len = bytecode_len;
-    return status;
+    if (status != 0) {
+        free(output);
+        return NULL;
+    }
+    
+    return output;
 }
 
 int peekchar(void) {
