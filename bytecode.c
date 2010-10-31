@@ -199,10 +199,10 @@ int inst_BRANCH0(vm_context_t *context) {
 }
 
 /*
-=item SYMDEF ( -- )
+=item SYMDEF ( -- ref )
 
 Reads flags and an identifier from the following bytecode.  Defines a new symbol in the current scope with the requested 
-identifier.
+identifier.  Pushes a reference to the symbol to the data stack.
  
 =cut
  */
@@ -210,7 +210,13 @@ int inst_SYMDEF(struct vm_context_t *context) {
     const uint32_t flags = *(const uint32_t *) (&context->m_bytecode[context->m_counter + 1]);
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1 + sizeof(flags)]);
     
-    symbol_define(context->m_symboltable, identifier, flags);
+//    scalar_t ref = {0};
+    if (0 == symbol_define(context->m_symboltable, identifier, flags)) {
+            // FIXME make this log work... needs symbol define to return the symbol object
+    
+    }
+//    vm_ds_push(context, &ref);
+//    anon_scalar_destroy(&ref);
     
     return 1 + sizeof(flags) + sizeof(identifier);
 }
