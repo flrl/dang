@@ -374,6 +374,11 @@ assembler_output_t *assemble(const char *filename) {
                     break;
             }
         }
+        else {
+            if (line->m_params != NULL) {
+                debug("unused parameters being ignored by instruction %s\n", instruction_names[line->m_instruction]);
+            }
+        }
         line = line->m_next;
     }    
     
