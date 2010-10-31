@@ -118,4 +118,13 @@ bytecode operations
                   the actual module responsible for the singleton can use to define the actual object in its translation unit.
         - what's the use case in terms of ( -- ) for these ops, and how would someone use them to perform an actual task (e.g.
           lock the referenced object, read its current value, do some work, set a new value, unlock)
-
+    - SYMDEF should return the reference created (or undef on failure)
+        - needs symbol_define to return the symbol object so it can interrogate its properties
+    - INTGT0, INTLT0, INTEQ0 - and similar for floats
+    - AND OR XOR NOT - boolean, not bitwise.  NOT is effectively just an alias for NE0
+    - INTINCR, INTDECR
+    - IN (like OUT)
+        - should it try and do clever conversion to int/float at input time, or just leave it as a string till you try to use
+          it as something else?
+            - i guess, putting it that way, leave it as a string, and convert on demand
+    
