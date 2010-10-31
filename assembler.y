@@ -9,6 +9,7 @@
 
 %{
 #include <ctype.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,11 +38,12 @@
     line_t *get_line(label_t *, uintptr_t, param_t *);
     void append_param(param_t *, param_t *);
 
-    static line_t *g_lines = NULL;
-    static line_t *g_last_line = NULL;
-    static label_t *g_labels = NULL;
-    static label_t *g_last_label = NULL;
-    static char *g_last_label_defined = NULL;
+    static FILE     *g_input = NULL;
+    static line_t   *g_lines = NULL;
+    static line_t   *g_last_line = NULL;
+    static label_t  *g_labels = NULL;
+    static label_t  *g_last_label = NULL;
+    static char     *g_last_label_defined = NULL;
 
     struct label_t {
         label_t *m_next;
@@ -189,18 +191,22 @@ label_t *get_label(const char *prim, const char *sub) {
     return label;
 }
 
-//typedef struct assembler_output_t {
-//    uintptr_t m_bytecode_length;
-//    uintptr_t m_bytecode_start;
-//    uint8_t   m_bytecode[];
-//} assembler_output_t;
-
-assembler_output_t *assemble(void) {
+assembler_output_t *assemble(const char *filename) {
     int status;
     line_t *line;
     label_t *label;
+
+    g_input = fopen(filename, "r");
+    if (g_input != NULL) {
+        status = yyparse();
+        fclose(g_input);
+        g_input = NULL;
+    }
+    else {
+        status = errno;
+        perror(filename);
+    }
     
-    status = yyparse();
     if (status != 0)  return NULL;
 
     // walk the parse tree (g_lines, g_labels) and resolve all the lengths and positions
@@ -410,12 +416,6 @@ assembler_output_t *assemble(void) {
     return output;
 }
 
-int peekchar(void) {
-    int c = getchar();
-    ungetc(c, stdin);
-    return c;
-}
-
 void yyerror(char const *s) {
     printf("%s\n", s);
 }
@@ -424,12 +424,22 @@ void yyerror(char const *s) {
 #define digittoint(c) ((c) - '0')
 #endif
 
+static inline int peek(void) {
+    int c = fgetc(g_input);
+    ungetc(c, g_input);
+    return c;
+}
+
+static inline int next(void) {
+    return fgetc(g_input);
+}
+
 int yylex(void) {
     int c;
     
     // skip over whitespace
     do {
-        c = getchar();
+        c = next();
     } while (c == ' ' || c == '\t');
     
     // bail out at end of file
@@ -439,17 +449,17 @@ int yylex(void) {
         // parse a literal number - either int or float
         intptr_t i = digittoint(c);
         
-        while (isdigit(peekchar())) {
-            c = getchar();
+        while (isdigit(peek())) {
+            c = next();
             i = 10 * i + digittoint(c);
         }
         
-        if (peekchar() == '.') {
+        if (peek() == '.') {
             floatptr_t f = i, div = 10.0;
             
-            getchar();  // consume the '.'
-            while (isdigit(peekchar())) {
-                c = getchar();
+            next();  // consume the '.'
+            while (isdigit(peek())) {
+                c = next();
                 f += digittoint(c) / div;
                 div *= 10.0;
             }
@@ -465,7 +475,7 @@ int yylex(void) {
     
     if (isalpha(c)) {
         // parse a string -- either an instruction or an identifier
-        ungetc(c, stdin);
+        ungetc(c, g_input);
         char *str = read_identifier();
 
         for (size_t i = 0; i < i__MAX; i++) {
@@ -491,7 +501,7 @@ int yylex(void) {
     if (c == ';' || c == '#') {
         // comment - discard until eol
         do {
-            c = getchar();
+            c = next();
         } while (c != EOF && c != '\n');
         return c;
     }
@@ -505,7 +515,7 @@ char *read_identifier(void) {
     size_t i = 0, buflen = 64;
     char *buffer = calloc(1, buflen);
     
-    while ((c = peekchar()) && (c == '_' || isalnum(c))) {
+    while ((c = peek()) && (c == '_' || isalnum(c))) {
         if (buflen - i < 2) {
             buflen *= 2;
             char *tmp = calloc(1, buflen);
@@ -513,7 +523,7 @@ char *read_identifier(void) {
             free(buffer);
             buffer = tmp;
         }
-        c = getchar();
+        c = next();
         buffer[i++] = c;
     }
     
@@ -533,25 +543,25 @@ char *read_quoted(void) {
             free(buffer);
             buffer = tmp;
         }
-        switch ((c = getchar())) {
+        switch ((c = next())) {
             case '"':
                 found_closing_double_quote = 1;
                 break;
             case '\\':
-                switch (peekchar()) {
-                    case '\\':  getchar(); buffer[i++] = '\\'; break;
-                    case '\'':  getchar(); buffer[i++] = '\''; break;
-                    case '"':   getchar(); buffer[i++] = '"';  break;
-                    case 'a':   getchar(); buffer[i++] = '\a'; break;
-                    case 'b':   getchar(); buffer[i++] = '\b'; break;
-                    case 'f':   getchar(); buffer[i++] = '\f'; break;
-                    case 'n':   getchar(); buffer[i++] = '\n'; break;
-                    case 'r':   getchar(); buffer[i++] = '\r'; break;
-                    case 't':   getchar(); buffer[i++] = '\t'; break;
-                    case 'v':   getchar(); buffer[i++] = '\v'; break;
+                switch (peek()) {
+                    case '\\':  next(); buffer[i++] = '\\'; break;
+                    case '\'':  next(); buffer[i++] = '\''; break;
+                    case '"':   next(); buffer[i++] = '"';  break;
+                    case 'a':   next(); buffer[i++] = '\a'; break;
+                    case 'b':   next(); buffer[i++] = '\b'; break;
+                    case 'f':   next(); buffer[i++] = '\f'; break;
+                    case 'n':   next(); buffer[i++] = '\n'; break;
+                    case 'r':   next(); buffer[i++] = '\r'; break;
+                    case 't':   next(); buffer[i++] = '\t'; break;
+                    case 'v':   next(); buffer[i++] = '\v'; break;
                         
                     case 'x':
-                        getchar();
+                        next();
                         buffer[i++] = read_hex_byte();
                         break;
                         
@@ -587,8 +597,8 @@ int read_hex_byte(void) {
     char digits[3], *endptr;
     
     memset(digits, 0, sizeof(digits));
-    while (i < 2 && isxdigit(peekchar())) {
-        digits[i] = (char) getchar();
+    while (i < 2 && isxdigit(peek())) {
+        digits[i] = (char) next();
     }
     
     val = strtol(digits, &endptr, 16);
@@ -603,8 +613,8 @@ int read_octal_byte(void) {
     char digits[4], *endptr;
     
     memset(digits, 0, sizeof(digits));
-    while (i < 3 && isdigit(peekchar())) {
-        digits[i] = (char) getchar();
+    while (i < 3 && isdigit(peek())) {
+        digits[i] = (char) next();
     }
     
     val = strtol(digits, &endptr, 8);
