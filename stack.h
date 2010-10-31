@@ -46,30 +46,28 @@
 #define STACK_OVER(type, stack)                 type##_STACK_OVER(stack)
 
 /*
- These macros provide basic implementations of the init, destroy, clone and assign
- functions required by the inline stack functions, suitable for use with primitive
+ These macros provide basic implementations of the init, destroy, and copy functions 
+ required by the inline stack functions, suitable for use with primitive
  types.
  */
 #define STACK_basic_init(x)         (0)
 #define STACK_basic_destroy(x)      (0)
-#define STACK_basic_clone(x, y)     ((*(x) = *(y)), 0)
-#define STACK_basic_assign(x, y)    ((*(x) = *(y)), 0)
+#define STACK_basic_copy(x, y)      ((*(x) = *(y)), 0)
 
 /* 
  This macro defines static inline functions for working with stack structures.  
- The init_func, dest_func, clone_func and ass_func parameters specify functions for 
- initialising, destroying, clonining, and assigning objects of type "type".  They 
- expect to be macros or functions of the basic form thus:
+ The init_func, dest_func and copy_func parameters specify functions for  initialising, 
+ destroying, and copying objects of type "type".  They expect to be macros or functions
+ of the basic form thus:
 
  int init_func(type *)
  int dest_func(type *)
- int clone_func(type *, const type *)
- int ass_func(type *, const type *)
+ int copy_func(type *, const type *)
  
  You must call this macro exactly once in a source file for each type of stack required, 
  in order to then be able to use these stack functions.
  */
-#define STACK_DEFINITIONS(type, init_func, dest_func, clone_func, ass_func)             \
+#define STACK_DEFINITIONS(type, init_func, dest_func, copy_func)                        \
 static inline int type##_STACK_INIT(struct type##_STACK *stack) {                       \
     assert(stack != NULL);                                                              \
                                                                                         \
@@ -118,7 +116,7 @@ static inline int type##_STACK_PUSH(    struct type##_STACK *stack, size_t count
                                                                                         \
     if (status == 0) {                                                                  \
         for (size_t i = 0; i < count; i++) {                                            \
-            clone_func(&stack->m_items[stack->m_count++], &values[i]);                  \
+            copy_func(&stack->m_items[stack->m_count++], &values[i]);                   \
         }                                                                               \
     }                                                                                   \
                                                                                         \
@@ -132,7 +130,8 @@ static inline int type##_STACK_POP( struct type##_STACK *stack, size_t count,   
     int status = 0;                                                                     \
     if (results != NULL) {                                                              \
         for (size_t i = 0; i < count; i++) {                                            \
-            status = ass_func(&results[i], &stack->m_items[--stack->m_count]);          \
+            status = copy_func(&results[i], &stack->m_items[--stack->m_count]);         \
+            status = dest_func(&stack->m_items[stack->m_count]);                        \
         }                                                                               \
     }                                                                                   \
     else {                                                                              \
@@ -148,7 +147,7 @@ static inline int type##_STACK_TOP(struct type##_STACK *stack, type *result) {  
     assert(stack != NULL);                                                              \
     assert(result != NULL);                                                             \
                                                                                         \
-    return clone_func(result, &stack->m_items[stack->m_count - 1]);                     \
+    return copy_func(result, &stack->m_items[stack->m_count - 1]);                      \
 }                                                                                       \
                                                                                         \
 static inline int type##_STACK_SWAP(struct type##_STACK *stack) {                       \

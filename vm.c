@@ -32,8 +32,8 @@ vm
 =cut
 */
 
-STACK_DEFINITIONS(scalar_t, anon_scalar_init, anon_scalar_destroy, anon_scalar_clone, anon_scalar_assign);
-STACK_DEFINITIONS(function_handle_t, STACK_basic_init, STACK_basic_destroy, STACK_basic_clone, STACK_basic_assign);
+STACK_DEFINITIONS(scalar_t, anon_scalar_init, anon_scalar_destroy, anon_scalar_clone);
+STACK_DEFINITIONS(function_handle_t, STACK_basic_init, STACK_basic_destroy, STACK_basic_copy);
 
 /*
 =head2 The Virtual Machine
