@@ -305,7 +305,7 @@ assembler_output_t *assemble(const char *filename) {
 
                 case i_FLTLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_FLOAT) {
-                        floatptr_t f = line->m_params->m_value.as_integer;
+                        floatptr_t f = line->m_params->m_value.as_float;
                         * (floatptr_t *) &(output->m_bytecode[line->m_position + 1]) = f;
                     }
                     else {
