@@ -18,6 +18,6 @@ typedef struct assembler_output_t {
     uint8_t   m_bytecode[];
 } assembler_output_t;
 
-assembler_output_t *assemble(void);
+assembler_output_t *assemble(const char *);
 
 #endif
