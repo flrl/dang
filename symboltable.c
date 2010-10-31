@@ -408,7 +408,11 @@ int symbol_undefine(symboltable_t *table, identifier_t identifier) {
             return 0;                
         }
         else {
-            if (symbol->m_parent->m_left_child == symbol) {
+            if (symbol->m_parent == NULL) {
+                table->m_symbols = symbol->m_left_child;
+                if (symbol->m_left_child)  symbol->m_left_child->m_parent = NULL;
+            }
+            else if (symbol->m_parent->m_left_child == symbol) {
                 symbol->m_parent->m_left_child = symbol->m_left_child;
             }
             else if (symbol->m_parent->m_right_child == symbol) {
@@ -423,7 +427,11 @@ int symbol_undefine(symboltable_t *table, identifier_t identifier) {
         }
     }
     else if (symbol->m_right_child != NULL) {
-        if (symbol->m_parent->m_left_child == symbol) {
+        if (symbol->m_parent == NULL) {
+            table->m_symbols = symbol->m_right_child;
+            if (symbol->m_right_child)  symbol->m_right_child->m_parent = NULL;
+        }
+        else if (symbol->m_parent->m_left_child == symbol) {
             symbol->m_parent->m_left_child = symbol->m_right_child;
         }
         else if (symbol->m_parent->m_right_child == symbol) {
@@ -437,7 +445,10 @@ int symbol_undefine(symboltable_t *table, identifier_t identifier) {
         return 0;
     }
     else {
-        if (symbol->m_parent->m_left_child == symbol) {
+        if (symbol->m_parent == NULL) {
+            table->m_symbols = NULL;
+        }
+        else if (symbol->m_parent->m_left_child == symbol) {
             symbol->m_parent->m_left_child = NULL;
         }
         else if (symbol->m_parent->m_right_child == symbol) {
