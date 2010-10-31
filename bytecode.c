@@ -40,7 +40,7 @@ bytecode
 #define BYTECODE_NUMERIC_OP(type, op) do {                                          \
     scalar_t a = {0}, b = {0}, c = {0};                                             \
     vm_ds_pop(context, &b);                                                         \
-    vm_ds_pop(context, &b);                                                         \
+    vm_ds_pop(context, &a);                                                         \
     anon_scalar_set_##type##_value(&c,                                              \
         anon_scalar_get_##type##_value(&a) op anon_scalar_get_##type##_value(&b));  \
     vm_ds_push(context, &c);                                                        \
