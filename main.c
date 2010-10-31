@@ -107,7 +107,8 @@ int main(int argc, char *const argv[]) {
                 vm_context_init(&context, bytecode, header.m_bytecode_length, header.m_bytecode_start);
                 vm_execute(&context);
                 vm_context_destroy(&context);
-                
+
+                symboltable_garbage_collect();
                 free(bytecode);
             }
             else {
