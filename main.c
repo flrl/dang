@@ -15,7 +15,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "array.h"
 #include "assembler.h"
+#include "channel.h"
+#include "hash.h"
+#include "scalar.h"
 #include "vm.h"
 
 const char *options = "aho:x";
@@ -103,12 +107,23 @@ int main(int argc, char *const argv[]) {
 
                 fclose(in);
                 
+                scalar_pool_init();
+                array_pool_init();
+                hash_pool_init();
+                channel_pool_init();
+                
                 vm_context_t context;
                 vm_context_init(&context, bytecode, header.m_bytecode_length, header.m_bytecode_start);
                 vm_execute(&context);
                 vm_context_destroy(&context);
 
                 symboltable_garbage_collect();
+                
+                channel_pool_destroy();
+                hash_pool_destroy();
+                array_pool_destroy();
+                scalar_pool_destroy();
+                
                 free(bytecode);
             }
             else {
