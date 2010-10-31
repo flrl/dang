@@ -55,7 +55,6 @@ void *vm_execute(void *ptr) {
     // set the top of the return stack to point back to the zero'th instruction, which always contains END.
     // this allows the vm entry point to be a normal function that expects to simply return when it's done.
     vm_rs_push(context, 0);
-    
     vm_start_scope(context);
     
     int incr;
@@ -64,7 +63,7 @@ void *vm_execute(void *ptr) {
         assert(instruction < i__MAX);
         switch (instruction) {
             case i_END:
-                return NULL;
+                goto end;
             case i_NOOP:
                 context->m_counter++;
                 break;
@@ -76,6 +75,8 @@ void *vm_execute(void *ptr) {
         }
     }
     
+end:
+    if (context->m_symboltable)  vm_end_scope(context);
     return NULL;
 }
 
@@ -270,8 +271,9 @@ int vm_context_destroy(vm_context_t *self) {
     STACK_DESTROY(scalar_t, &self->m_data_stack);
     STACK_DESTROY(function_handle_t, &self->m_return_stack);
     
-    if (0 == symboltable_destroy(self->m_symboltable)) {
+    if (self->m_symboltable != NULL && 0 == symboltable_destroy(self->m_symboltable)) {
         free(self->m_symboltable);
+        self->m_symboltable = NULL;
     }
     
     return 0;
