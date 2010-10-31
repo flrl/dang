@@ -56,6 +56,8 @@ void *vm_execute(void *ptr) {
     // this allows the vm entry point to be a normal function that expects to simply return when it's done.
     vm_rs_push(context, 0);
     
+    vm_start_scope(context);
+    
     int incr;
     while (context->m_counter < context->m_bytecode_length) {
         uint8_t instruction = context->m_bytecode[context->m_counter];
@@ -240,13 +242,16 @@ int vm_end_scope(vm_context_t *context) {
 Setup and teardown functions for vm_context_t objects
 
 =cut
- */
-int vm_context_init(vm_context_t *self) {
+ */ 
+int vm_context_init(vm_context_t *self, uint8_t *bytecode, size_t bytecode_len, size_t start) {
     assert(self != NULL);
     memset(self, 0, sizeof(*self));
     
     if (0 == STACK_INIT(scalar_t, &self->m_data_stack)) {
         if (0 == STACK_INIT(function_handle_t, &self->m_return_stack)) {
+            self->m_bytecode = bytecode;
+            self->m_bytecode_length = bytecode_len;
+            self->m_counter = start;
             return 0;
         }
         else {

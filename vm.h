@@ -44,7 +44,7 @@ int vm_rs_top(vm_context_t *, size_t *);
 int vm_start_scope(vm_context_t *);
 int vm_end_scope(vm_context_t *);
 
-int vm_context_init(vm_context_t *);
+int vm_context_init(vm_context_t *, uint8_t *, size_t, size_t);
 int vm_context_destroy(vm_context_t *);
 
 #endif
