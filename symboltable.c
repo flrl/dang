@@ -101,11 +101,22 @@ int symboltable_destroy(symboltable_t *self) {
         } 
         
         if (0 == pthread_mutex_lock(&_symboltable_registry_mutex)) {
-            for (symboltable_registry_node_t *i = _symboltable_registry; i != NULL && i->m_next != NULL; i = i->m_next) {
-                if (i->m_next->m_table == self) {
-                    symboltable_registry_node_t *reg = i->m_next;
-                    i->m_next = i->m_next->m_next;
+            if (_symboltable_registry != NULL) {
+                if (_symboltable_registry->m_table == self) {
+                    symboltable_registry_node_t *reg = _symboltable_registry;
+                    _symboltable_registry = _symboltable_registry->m_next;
+                    memset(reg, 0, sizeof(*reg));
                     free(reg);
+                }
+                else {
+                    for (symboltable_registry_node_t *i = _symboltable_registry; i != NULL && i->m_next != NULL; i = i->m_next) {
+                        if (i->m_next->m_table == self) {
+                            symboltable_registry_node_t *reg = i->m_next;
+                            i->m_next = i->m_next->m_next;
+                            memset(reg, 0, sizeof(*reg));
+                            free(reg);
+                        }
+                    }
                 }
             }
             
