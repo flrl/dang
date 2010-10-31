@@ -8,6 +8,7 @@
  */
  
 #include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -15,10 +16,12 @@
 #include <unistd.h>
 
 #include "assembler.h"
+#include "vm.h"
 
-const char *options = "aho:";
+const char *options = "aho:x";
 
 int  opt_asm_flag = 0;
+int  opt_exe_flag = 0;
 char *opt_out_file = NULL;
 char *opt_in_file = NULL;
 
@@ -26,18 +29,23 @@ void usage(void);
 char *make_filename(const char *, const char *, const char *);
 
 int main(int argc, char *const argv[]) {
-    int c;
+    int c, status=0;
 
     while ((c = getopt(argc, argv, options)) != -1) {
         switch (c) {
             case 'a':
                 opt_asm_flag = 1;
+                opt_exe_flag = 0;
                 break;
             case 'h':
                 usage();
                 return 0;
             case 'o':
                 opt_out_file = strdup(optarg);
+                break;
+            case 'x':
+                opt_exe_flag = 1;
+                opt_asm_flag = 0;
                 break;
             default:
                 usage();
@@ -50,31 +58,73 @@ int main(int argc, char *const argv[]) {
     if (argc) {
         opt_in_file = strdup(argv[0]);
     }
-    else {
-        opt_in_file = strdup("-");
-    }
 
-    if (opt_asm_flag && opt_in_file != NULL) {
-        if (strcmp(opt_in_file, "-") != 0)  freopen(opt_in_file, "r", stdin);
-
-        assembler_output_t *assembly;
-        if ((assembly = assemble()) != NULL) {
-            if (opt_out_file == NULL)  opt_out_file = make_filename(opt_in_file, ".dang", ".dong");
-            FILE *output = fopen(opt_out_file, "wb");
-            write(fileno(output), "dong", 4);
-            write(fileno(output), assembly, sizeof(*assembly) + assembly->m_bytecode_length);
-            fclose(output);
+    if (opt_asm_flag) {
+        if (opt_in_file != NULL) {
+            assembler_output_t *data;
+            if ((data = assemble(opt_in_file)) != NULL) {
+                if (opt_out_file == NULL)  opt_out_file = make_filename(opt_in_file, ".dang", ".dong");
+                FILE *out = fopen(opt_out_file, "wb");
+                if (out != NULL) {
+                    fwrite("dong", 4, 1, out);
+                    fwrite(data, sizeof(*data) + data->m_bytecode_length, 1, out);
+                    fclose(out);
+                }
+                else {
+                    status = errno;
+                    perror(opt_out_file);
+                }
+                free(data);
+            }
+            else {
+                fprintf(stderr, "error assembling file `%s'\n", opt_in_file);
+                status = 1;
+            }
         }
         else {
-            fprintf(stderr, "error assembling file %s\n", opt_in_file);
-            return 2;
+            fprintf(stderr, "no input file specified\n");
+            status = 1;
+        }
+    }
+
+    if (opt_exe_flag) {
+        if (opt_in_file != NULL) {
+            FILE *in = fopen(opt_in_file, "rb");
+            if (in != NULL) {
+                char check[5] = {0};
+                fread(&check, 4, 1, in);
+                assert(strcmp(check, "dong") == 0);
+
+                assembler_output_t header;
+                fread(&header, sizeof(header), 1, in);
+
+                uint8_t *bytecode = malloc(sizeof(*bytecode) * header.m_bytecode_length);            
+                fread(bytecode, header.m_bytecode_length, 1, in);
+
+                fclose(in);
+                
+                vm_context_t context;
+                vm_context_init(&context, bytecode, header.m_bytecode_length, header.m_bytecode_start);
+                vm_execute(&context);
+                vm_context_destroy(&context);
+                
+                free(bytecode);
+            }
+            else {
+                status = errno;
+                perror(opt_in_file);
+            }
+        }
+        else {
+            fprintf(stderr, "no input file specified\n");
+            status = 1;
         }
     }
     
     if (opt_in_file)    free(opt_in_file);
     if (opt_out_file)   free(opt_out_file);
     
-    return 0;
+    return status;
 }
 
 void usage(void) {
@@ -95,6 +145,8 @@ void usage(void) {
 "\n"
 "    -o outfile\n"
 "            Specifies the output filename to be used by the -a, ... options.\n"
+"\n"
+"    -x      Treat infile as compiled bytecode as produced by -a, and execute it\n"
 "\n"
     ;
     fputs(usage, stderr);
