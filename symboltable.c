@@ -200,13 +200,16 @@ int symboltable_garbage_collect(void) {
 /*
 =item symbol_define()
 
-Define a symbol within the current scope.
+Define a symbol within the current scope.  Returns the new symbol, or NULL on failure.
 
 =cut
  */
-int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags) {
+const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags) {
     assert(table != NULL);
+
     symbol_t *symbol = calloc(1, sizeof(*symbol));
+    if (symbol == NULL)  return NULL;
+
     _symbol_init(symbol);
     symbol->m_identifier = identifier;
     switch (flags & SYMBOL_TYPE_MASK) {
@@ -233,12 +236,12 @@ int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags)
     }
     
     if (0 == _symboltable_insert(table, symbol)) {
-        return 0;
+        return symbol;
     }
     else {
         _symbol_destroy(symbol);
         free(symbol);
-        return 0;
+        return NULL;
     }
 }
 
@@ -248,11 +251,11 @@ int symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags)
 Clones the specified symbol from an ancestor scope into the current scope.  If the symbol already exists in the
 current scope, it considers this to be a success, and does nothing.
 
-Returns 0 on success, non-zero on failure.
+Returns the symbol on success, or NULL on failure.
 
 =cut
 */
-int symbol_clone(symboltable_t *table, identifier_t identifier) {
+const symbol_t *symbol_clone(symboltable_t *table, identifier_t identifier) {
     assert(table != NULL);
     assert(table->m_parent != NULL);
     
@@ -263,7 +266,7 @@ int symbol_clone(symboltable_t *table, identifier_t identifier) {
     table->m_parent = tmp;
     
     // if a symbol was found locally, there's nothing to do here
-    if (local_symbol != NULL)  return 0;
+    if (local_symbol != NULL)  return local_symbol;
     
     // find the symbol in an ancestor scope
     const symbol_t *remote_symbol = symbol_lookup(table->m_parent, identifier);
@@ -271,6 +274,7 @@ int symbol_clone(symboltable_t *table, identifier_t identifier) {
     // clone it into the current scope
     if (remote_symbol != NULL) {
         symbol_t *symbol = calloc(1, sizeof(*symbol));
+        if (symbol == NULL)  return NULL;
         _symbol_init(symbol);
         
         switch (remote_symbol->m_flags & SYMBOL_TYPE_MASK) {
@@ -297,16 +301,16 @@ int symbol_clone(symboltable_t *table, identifier_t identifier) {
         }
 
         if (0 == _symboltable_insert(table, symbol)) {
-            return 0;
+            return symbol;
         }
         else {
             _symbol_destroy(symbol);
             free(symbol);
-            return -1;
+            return NULL;
         }
     }
     else {
-        return -1;
+        return NULL;
     }
 }
 

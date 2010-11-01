@@ -46,8 +46,8 @@ int symboltable_destroy(symboltable_t *);
 int symboltable_isolate(symboltable_t *);
 int symboltable_garbage_collect(void);
 
-int symbol_define(symboltable_t *, identifier_t, uint32_t);
-int symbol_clone(symboltable_t *, identifier_t);
+const symbol_t *symbol_define(symboltable_t *, identifier_t, uint32_t);
+const symbol_t *symbol_clone(symboltable_t *, identifier_t);
 const symbol_t *symbol_lookup(symboltable_t *, identifier_t);
 int symbol_undefine(symboltable_t *, identifier_t);
 
