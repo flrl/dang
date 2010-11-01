@@ -121,9 +121,11 @@ bytecode operations
     - SYMDEF should return the reference created (or undef on failure)
         - needs symbol_define to return the symbol object so it can interrogate its properties
     - INTGT0, INTLT0, INTEQ0 - and similar for floats
-    - AND OR XOR NOT - boolean, not bitwise.  NOT is effectively just an alias for NE0
+        - maybe don't do INTEQ0 - it's just an int-specific version of NOT, so it's kind of a waste of an instruction
+    - AND OR XOR NOT - boolean, not bitwise
     - INTINCR, INTDECR
     - IN (like OUT)
+        - what about INL (like OUTL)?
         - should it try and do clever conversion to int/float at input time, or just leave it as a string till you try to use
           it as something else?
             - i guess, putting it that way, leave it as a string, and convert on demand
