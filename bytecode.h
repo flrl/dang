@@ -27,6 +27,7 @@ typedef enum instruction_t {
     i_BRANCH0,      /* intptr_t */
     i_SYMDEF,       /* uint32_t identifier_t */
     i_SYMFIND,      /* identifier_t */
+    i_SYMCLONE,     /* identifier_t */
     i_SYMUNDEF,     /* identifier_t */
     i_SRLOCK,
     i_SRUNLOCK,

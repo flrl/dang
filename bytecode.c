@@ -282,6 +282,49 @@ int inst_SYMFIND(struct vm_context_t *context) {
 }
 
 /*
+=item SYMCLONE ( -- ref )
+
+Reads an identifier from the following bytecode.  Makes the identifier available directly within the current scope.  Pushes
+a reference to the symbol to the data stack.
+
+=cut
+ */
+int inst_SYMCLONE(struct vm_context_t *context) {
+    const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1]);
+    
+    const symbol_t *symbol = symbol_clone(context->m_symboltable, identifier);
+
+    scalar_t ref = {0};
+    
+    if (symbol != NULL) {
+        switch(symbol->m_flags & SYMBOL_TYPE_MASK) {
+            case SYMBOL_SCALAR:
+                anon_scalar_set_scalar_reference(&ref, symbol->m_referent.as_scalar);
+                break;
+            case SYMBOL_ARRAY:
+                anon_scalar_set_array_reference(&ref, symbol->m_referent.as_array);
+                break;
+            case SYMBOL_HASH:
+                anon_scalar_set_hash_reference(&ref, symbol->m_referent.as_hash);
+                break;
+            //...
+            case SYMBOL_CHANNEL:
+                anon_scalar_set_channel_reference(&ref, symbol->m_referent.as_channel);
+                break;
+            default:
+                debug("unhandled symbol type: %"PRIu32"\n", symbol->m_flags);
+                break;
+        }
+    }
+    
+    vm_ds_push(context, &ref);
+    anon_scalar_destroy(&ref);
+    
+    return 1 + sizeof(identifier);
+}
+
+
+/*
 =item SYMUNDEF ( -- )
  
 Reads an identifier from the following bytecode.  Removes the identifier from the symbol table in the current scope.
