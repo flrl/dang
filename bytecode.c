@@ -210,13 +210,30 @@ int inst_SYMDEF(struct vm_context_t *context) {
     const uint32_t flags = *(const uint32_t *) (&context->m_bytecode[context->m_counter + 1]);
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1 + sizeof(flags)]);
     
-//    scalar_t ref = {0};
-    if (0 == symbol_define(context->m_symboltable, identifier, flags)) {
-            // FIXME make this log work... needs symbol define to return the symbol object
-    
+    scalar_t ref = {0};
+    const symbol_t *symbol = symbol_define(context->m_symboltable, identifier, flags);
+    if (symbol) {
+        switch (symbol->m_flags & SYMBOL_TYPE_MASK) {
+            case SYMBOL_SCALAR:
+                anon_scalar_set_scalar_reference(&ref, symbol->m_referent.as_scalar);
+                break;
+            case SYMBOL_ARRAY:
+                anon_scalar_set_array_reference(&ref, symbol->m_referent.as_array);
+                break;
+            case SYMBOL_HASH:
+                anon_scalar_set_hash_reference(&ref, symbol->m_referent.as_hash);
+                break;
+            //...
+            case SYMBOL_CHANNEL:
+                anon_scalar_set_channel_reference(&ref, symbol->m_referent.as_channel);
+                break;
+            default:
+                debug("unhandled symbol type: %"PRIu32"\n", symbol->m_flags);
+                break;
+        }
     }
-//    vm_ds_push(context, &ref);
-//    anon_scalar_destroy(&ref);
+    vm_ds_push(context, &ref);
+    anon_scalar_destroy(&ref);
     
     return 1 + sizeof(flags) + sizeof(identifier);
 }
