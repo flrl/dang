@@ -61,6 +61,7 @@ typedef enum instruction_t {
     i_FUNLIT,       /* function_handle_t */
     i_OUT,
     i_OUTL,
+    i_IN,
 /*-- INSTRUCTIONS END --*/
     
 //    iOVER,

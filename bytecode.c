@@ -976,6 +976,48 @@ int inst_OUTL(struct vm_context_t *context) {
     return 1;
 }
 
+/*
+=item IN ( -- a )
+
+Reads a scalar from the standard input channel, up until the next newline character, and pushes it to the stack.
+
+=cut
+ */
+int inst_IN(struct vm_context_t *context) {
+    scalar_t a = {0};
+    size_t bufsize, strsize;
+    char buffer[1024];
+    char *str, *tmp;
+    
+    bufsize = strsize = 1024;
+    str = calloc(1, strsize);
+
+    while (fgets(buffer, bufsize, stdin) != NULL) {
+        if (buffer[strlen(buffer) - 1] == '\n') {
+            strcat(str, buffer);
+            break;
+        }
+        else {
+            if (NULL != (tmp = calloc(1, strsize + bufsize))) {
+                memcpy(tmp, str, strsize);
+                strcat(tmp, buffer);
+                free(str);
+                str = tmp;
+                strsize += bufsize;
+            }
+        }
+    }
+    
+    if (str[strlen(str) - 1] == '\n')  str[strlen(str) - 1] = '\0';
+
+    anon_scalar_set_string_value(&a, str);
+    free(str);
+    
+    vm_ds_push(context, &a);
+    anon_scalar_destroy(&a);
+    return 1;
+}
+
 
 /*
 =back
