@@ -435,24 +435,24 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
             break;
 
         case SCALAR_SCAREF:
-            snprintf(buffer, sizeof(buffer), "SCALAR(%"PRIuPTR"", self->m_value.as_scalar_handle);
+            snprintf(buffer, sizeof(buffer), "SCALAR(%"PRIuPTR")", self->m_value.as_scalar_handle);
             *result = strdup(buffer);
             break;
         case SCALAR_ARRREF:
-            snprintf(buffer, sizeof(buffer), "ARRAY(%"PRIuPTR"", self->m_value.as_array_handle);
+            snprintf(buffer, sizeof(buffer), "ARRAY(%"PRIuPTR")", self->m_value.as_array_handle);
             *result = strdup(buffer);
             break;
         case SCALAR_HASHREF:
-            snprintf(buffer, sizeof(buffer), "HASH(%"PRIuPTR"", self->m_value.as_hash_handle);
+            snprintf(buffer, sizeof(buffer), "HASH(%"PRIuPTR")", self->m_value.as_hash_handle);
             *result = strdup(buffer);
             break;
         //...
         case SCALAR_CHANREF:
-            snprintf(buffer, sizeof(buffer), "CHANNEL(%"PRIuPTR"", self->m_value.as_channel_handle);
+            snprintf(buffer, sizeof(buffer), "CHANNEL(%"PRIuPTR")", self->m_value.as_channel_handle);
             *result = strdup(buffer);
             break;
         case SCALAR_FUNCREF:
-            snprintf(buffer, sizeof(buffer), "FUNCTION(%"PRIuPTR"", self->m_value.as_function_handle);
+            snprintf(buffer, sizeof(buffer), "FUNCTION(%"PRIuPTR")", self->m_value.as_function_handle);
             *result = strdup(buffer);
             break;
         
