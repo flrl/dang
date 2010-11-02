@@ -50,6 +50,18 @@ bytecode
 } while (0)
 
 
+#define BYTECODE_LOGICAL_OP(op) do {                                                \
+    scalar_t a = {0}, b = {0}, c = {0};                                             \
+    vm_ds_pop(context, &b);                                                         \
+    vm_ds_pop(context, &a);                                                         \
+    anon_scalar_set_int_value(&c,                                                   \
+        (anon_scalar_get_bool_value(&a) op anon_scalar_get_bool_value(&b)));        \
+    vm_ds_push(context, &c);                                                        \
+    anon_scalar_destroy(&c);                                                        \
+    anon_scalar_destroy(&b);                                                        \
+    anon_scalar_destroy(&a);                                                        \
+} while (0)
+
 /*
 =item END ( -- )
  
@@ -157,6 +169,67 @@ int inst_OVER(vm_context_t *context) {
     return 1;
 }
 
+/*
+=item AND ( a b -- c )
+
+Pops two values from the stack, and pushes back the result of a logical and of the two values.
+
+=cut
+ */
+int inst_AND(struct vm_context_t *context) {
+    BYTECODE_LOGICAL_OP(&&);
+    return 1;
+}
+
+/*
+=item OR ( a b -- c )
+
+Pops two values from the stack, and pushes back the result of a logical or of the two values.
+
+=cut
+ */
+int inst_OR(struct vm_context_t *context) {
+    BYTECODE_LOGICAL_OP(||);
+    return 1;
+}
+
+/*
+=item XOR ( a b -- c )
+
+Pops two values from the stack, and pushes back the result of a logical xor of the two values.
+
+=cut
+ */
+int inst_XOR(struct vm_context_t *context) {
+    scalar_t a = {0}, b = {0}, c = {0};
+    vm_ds_pop(context, &b);
+    vm_ds_pop(context, &a);
+    int a_val = anon_scalar_get_bool_value(&a);
+    int b_val = anon_scalar_get_bool_value(&b);
+    anon_scalar_set_int_value(&c, ((a_val || b_val) && (!(a_val && b_val))));
+    vm_ds_push(context, &c);
+    anon_scalar_destroy(&c);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    return 1;
+}
+
+/*
+=item NOT ( a -- b )
+
+Pops a value from the stack, and pushes back the result of a boolean not of the value.
+
+=cut
+ */
+int inst_NOT(struct vm_context_t *context) {
+    scalar_t a = {0}, b = {0};
+    vm_ds_pop(context, &a);
+    anon_scalar_set_int_value(&b, !anon_scalar_get_bool_value(&a));
+    vm_ds_push(context, &b);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    return 1;
+}
 
 /*
 =item BRANCH ( -- )
@@ -759,6 +832,74 @@ int inst_INTMOD(vm_context_t *context) {
 }
 
 /*
+=item INTLT0 ( a -- b )
+
+Pops a value, and pushes back 1 if the value is less than zero, or 0 otherwise.
+
+=cut
+ */
+int inst_INTLT0(struct vm_context_t *context) {
+    scalar_t a = {0}, b = {0};
+    vm_ds_pop(context, &a);
+    anon_scalar_set_int_value(&b, (anon_scalar_get_int_value(&a) < 0));
+    vm_ds_push(context, &b);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    return 1;
+}
+
+/*
+=item INTGT0 ( a -- b )
+
+Pops a value, and pushes back 1 if the value is greater than zero, or 0 otherwise.
+
+=cut
+ */
+int inst_INTGT0(struct vm_context_t *context) {
+    scalar_t a = {0}, b = {0};
+    vm_ds_pop(context, &a);
+    anon_scalar_set_int_value(&b, (anon_scalar_get_int_value(&a) > 0));
+    vm_ds_push(context, &b);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    return 1;
+}
+
+/*
+=item INTINCR ( a -- b )
+
+Pops a value, and pushes back the same value incremented by 1.
+
+=cut
+ */
+int inst_INTINCR(struct vm_context_t *context) {
+    scalar_t a = {0}, b = {0};
+    vm_ds_pop(context, &a);
+    anon_scalar_set_int_value(&b, anon_scalar_get_int_value(&a) + 1);
+    vm_ds_push(context, &b);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    return 1;
+}
+
+/*
+=item INTDECR ( a -- b )
+
+Pops a value, and pushes back the same value decremented by 1.
+
+=cut
+ */
+int inst_INTDECR(struct vm_context_t *context) {
+    scalar_t a = {0}, b = {0};
+    vm_ds_pop(context, &a);
+    anon_scalar_set_int_value(&b, anon_scalar_get_int_value(&a) - 1);
+    vm_ds_push(context, &b);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    return 1;
+}
+
+/*
 =item STRLIT ( -- s )
 
 Reads a length followed by a string of length bytes from the following bytecode, and pushes the string value to the data stack.
@@ -916,6 +1057,40 @@ int inst_FLTMOD(struct vm_context_t *context) {
     anon_scalar_destroy(&a);
     
     return 1;    
+}
+
+/*
+=item FLTLT0 ( a -- b )
+
+Pops a floating point value and pushes back 1 if it is less than zero, or 0 otherwise.
+
+=cut
+ */
+int inst_FLTLT0(struct vm_context_t *context) {
+    scalar_t a = {0}, b = {0};
+    vm_ds_pop(context, &a);
+    anon_scalar_set_int_value(&b, (anon_scalar_get_float_value(&a) < 0));
+    vm_ds_push(context, &b);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    return 1;
+}
+
+/*
+=item FLTGT0 ( a -- b )
+
+Pops a floating point value and pushes back 1 if it is greater than zero, or 0 otherwise.
+
+=cut
+ */
+int inst_FLTGT0(struct vm_context_t *context) {
+    scalar_t a = {0}, b = {0};
+    vm_ds_pop(context, &a);
+    anon_scalar_set_int_value(&b, (anon_scalar_get_float_value(&a) > 0));
+    vm_ds_push(context, &b);
+    anon_scalar_destroy(&b);
+    anon_scalar_destroy(&a);
+    return 1;
 }
 
 /*

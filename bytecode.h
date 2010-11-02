@@ -23,6 +23,10 @@ typedef enum instruction_t {
     i_SWAP,
     i_DUP,
     i_OVER,
+    i_AND,
+    i_OR,
+    i_XOR,
+    i_NOT,
     i_BRANCH,       /* intptr_t */
     i_BRANCH0,      /* intptr_t */
     i_SYMDEF,       /* uint32_t identifier_t */
@@ -50,6 +54,10 @@ typedef enum instruction_t {
     i_INTMULT,
     i_INTDIV,
     i_INTMOD,
+    i_INTLT0,
+    i_INTGT0,
+    i_INTINCR,
+    i_INTDECR,
     i_STRLIT,       /* uint16_t */
     i_STRCAT,
     i_FLTLIT,       /* floatptr_t */
@@ -58,6 +66,8 @@ typedef enum instruction_t {
     i_FLTMULT,
     i_FLTDIV,
     i_FLTMOD,
+    i_FLTLT0,
+    i_FLTGT0,
     i_FUNLIT,       /* function_handle_t */
     i_OUT,
     i_OUTL,
