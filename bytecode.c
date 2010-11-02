@@ -1193,6 +1193,19 @@ int inst_IN(struct vm_context_t *context) {
     return 1;
 }
 
+/*
+=item UNDEF ( -- a )
+
+Pushes an undefined value to the data stack
+
+=cut
+ */
+int inst_UNDEF(struct vm_context_t *context) {
+    scalar_t a = {0};
+    vm_ds_push(context, &a);
+    return 1;
+}
+
 
 /*
 =back

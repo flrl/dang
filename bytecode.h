@@ -72,6 +72,7 @@ typedef enum instruction_t {
     i_OUT,
     i_OUTL,
     i_IN,
+    i_UNDEF,
 /*-- INSTRUCTIONS END --*/
     
 //    iOVER,
