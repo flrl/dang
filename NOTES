@@ -164,6 +164,9 @@ threading
             - the foo_pool_t struct would need a pthread_mutex_attr_t that it uses for allocating mutexes for shared objects
                 - this would need to be initialised by the foo_pool_INIT function and cleaned up by foo_pool_DESTROY
                 - you'd need to pass the desired mutex type as an argument to POOL_HEADER_CONTENTS
+        - CAN NOT be used with condition variables, so channel_t must use an ordinary mutex due to its use of condition
+          variables.  but pooled scalars can safely use a recursive mutex, because they do not make any use of condition
+          variables.
 
 
 
