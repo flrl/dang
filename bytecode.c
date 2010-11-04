@@ -684,6 +684,33 @@ int inst_HRKEYDEL(struct vm_context_t *context) {
     return 1;
 }
 
+/*
+=item CRTRYRD ( ref -- a )
+
+Pops a channel reference from the data stack, and tries to read a value from it without blocking.  If there
+is a value available to read, pushes back the value read, or pushes back undef if the read operation would
+block.
+
+Note that it is not possible to distinguish between successfully reading an undefined value and failing to
+read anything.
+
+=cut
+ */
+int inst_CRTRYRD(struct vm_context_t *context) {
+    scalar_t cr = {0}, a = {0};
+    
+    vm_ds_pop(context, &cr);
+    
+    assert((cr.m_flags & SCALAR_TYPE_MASK) == SCALAR_CHANREF);
+    channel_tryread(anon_scalar_deref_channel_reference(&cr), &a);
+    
+    vm_ds_push(context, &a);
+    
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&cr);
+    
+    return 1;
+}
 
 /*
 =item CRREAD ( ref -- a )
