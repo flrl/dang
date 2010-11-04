@@ -123,7 +123,7 @@ void *vm_execute(void *ptr) {
     
 end:
     if (context->m_symboltable)  vm_end_scope(context);
-    _vm_context_destroy(context);
+    vm_context_destroy(context);
     free(context);
     return NULL;
 }
@@ -312,24 +312,14 @@ int vm_context_init(vm_context_t *self, const uint8_t *bytecode, size_t bytecode
 }
 
 /*
-=back
-
-=head1 PRIVATE INTERFACE
-
-=over
-
-=cut
-*/
-
-/*
-=item _vm_context_destroy()
+=item vm_context_destroy()
 
 Destroys a vm_context_t object.  This should B<not> be called on objects that have been passed to
 C<vm_execute()>, except by C<vm_execute()> itself.
 
 =cut
  */ 
-int _vm_context_destroy(vm_context_t *self) {
+int vm_context_destroy(vm_context_t *self) {
     assert(self != NULL);
     
     STACK_DESTROY(scalar_t, &self->m_data_stack);

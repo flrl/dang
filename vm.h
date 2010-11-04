@@ -32,8 +32,7 @@ int vm_main(const uint8_t *, size_t, size_t);
 void *vm_execute(void *);  // n.b. actually takes and returns a vm_context_t*
 
 int vm_context_init(vm_context_t *, const uint8_t *, size_t, size_t);
-/* n.b. _vm_context_destroy() is private */
-
+int vm_context_destroy(vm_context_t *);
 
 int vm_ds_push(vm_context_t *, const scalar_t *);
 int vm_ds_pop(vm_context_t *, scalar_t *);
