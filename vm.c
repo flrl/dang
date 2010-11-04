@@ -13,10 +13,18 @@
 #include <string.h>
 #include <pthread.h>
 
+#include "array.h"
 #include "bytecode.h"
+#include "channel.h"
 #include "debug.h"
+#include "hash.h"
+#include "scalar.h"
 #include "stack.h"
 #include "vm.h"
+
+pthread_attr_t vm_thread_attributes;
+
+int _vm_context_destroy(vm_context_t *);
 
 /*
 =head1 NAME
@@ -40,9 +48,52 @@ STACK_DEFINITIONS(function_handle_t, STACK_basic_init, STACK_basic_destroy, STAC
 
 =over 
 
+=item vm_main()
+
+Runs the virtual machine.
+
+=cut
+*/
+int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
+    vm_context_t *context;
+
+    pthread_attr_init(&vm_thread_attributes);
+    pthread_attr_setdetachstate(&vm_thread_attributes, PTHREAD_CREATE_DETACHED);
+    
+    scalar_pool_init();
+    array_pool_init();
+    hash_pool_init();
+    channel_pool_init();
+    
+    if (NULL != (context = calloc(1, sizeof(*context)))) {
+        vm_context_init(context, bytecode, length, start);
+        vm_execute(context);
+    }
+    
+    symboltable_garbage_collect();
+
+    channel_pool_destroy();
+    hash_pool_destroy();
+    array_pool_destroy();
+    scalar_pool_destroy();
+
+    return 0;
+}
+
+
+/*
 =item vm_execute()
 
-This function is the core of the virtual machine.
+Runs a single execution context (thread) within the virtual machine. 
+
+Its sole argument must be a pointer to a heap-allocated vm_context_t object that has been initialised with
+C<vm_context_init()>, which it takes ownership of, and cleans up upon completion.  
+
+The caller should B<not> call C<vm_context_destroy()> or otherwise clean up a context_t that has been passed
+to C<vm_execute()>.
+
+This function is designed to be callable via C<pthread_create()> with C<vm_thread_attributes> provided to the 
+attr argument.
 
 =back
 
@@ -77,6 +128,8 @@ void *vm_execute(void *ptr) {
     
 end:
     if (context->m_symboltable)  vm_end_scope(context);
+    _vm_context_destroy(context);
+    free(context);
     return NULL;
 }
 
@@ -238,13 +291,11 @@ int vm_end_scope(vm_context_t *context) {
 
 =item vm_context_init()
 
-=item vm_context_destroy()
-
-Setup and teardown functions for vm_context_t objects
+Initialise a vm_context_t object.
 
 =cut
- */ 
-int vm_context_init(vm_context_t *self, uint8_t *bytecode, size_t bytecode_len, size_t start) {
+*/
+int vm_context_init(vm_context_t *self, const uint8_t *bytecode, size_t bytecode_len, size_t start) {
     assert(self != NULL);
     memset(self, 0, sizeof(*self));
     
@@ -265,7 +316,25 @@ int vm_context_init(vm_context_t *self, uint8_t *bytecode, size_t bytecode_len, 
     }
 }
 
-int vm_context_destroy(vm_context_t *self) {
+/*
+=back
+
+=head1 PRIVATE INTERFACE
+
+=over
+
+=cut
+*/
+
+/*
+=item _vm_context_destroy()
+
+Destroys a vm_context_t object.  This should B<not> be called on objects that have been passed to
+C<vm_execute()>, except by C<vm_execute()> itself.
+
+=cut
+ */ 
+int _vm_context_destroy(vm_context_t *self) {
     assert(self != NULL);
     
     STACK_DESTROY(scalar_t, &self->m_data_stack);
