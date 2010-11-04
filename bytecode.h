@@ -18,6 +18,7 @@ typedef enum instruction_t {
     i_END = 0,
     i_NOOP = 1,
     i_CALL,         /* function_handle_t */
+    i_CORO,         /* function_handle_t */
     i_RETURN,
     i_DROP,
     i_SWAP,
@@ -49,6 +50,7 @@ typedef enum instruction_t {
     i_CRREAD,
     i_CRWRITE,
     i_FRCALL,
+    i_FRCORO,
     i_INTLIT,       /* intptr_t */
     i_INTADD,
     i_INTSUBT,

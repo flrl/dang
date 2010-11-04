@@ -106,6 +106,44 @@ int inst_CALL(vm_context_t *context) {
 }
 
 /*
+=item CORO ( [params] -- ) ( -- addr )
+
+Reads a jump destination from the following bytecode.  Spawns a new parallel execution context and starts executing from
+the jump destination in the new execution context, meanwhile returning immediately in the calling thread.
+
+Where do params come from? FIXME
+
+=cut
+ */
+int inst_CORO(struct vm_context_t *context) {
+    const function_handle_t jump_dest = *(const function_handle_t *) NEXT_BYTE(context);
+
+    vm_context_t *child_context;
+    
+    FIXME("can you pass parameters to a coroutine? how to get them into its context?\n");
+
+    if (NULL != (child_context = calloc(1, sizeof(*child_context)))) {
+        vm_context_init(child_context, context->m_bytecode, context->m_bytecode_length, jump_dest);
+        pthread_t thread;
+        int status;
+        if (0 == (status = pthread_create(&thread, NULL, vm_execute, child_context))) {
+            pthread_detach(thread);
+        }
+        else {
+            debug("pthread_create failed with status %i\n", status);
+            FIXME("what to do here?\n");
+            vm_context_destroy(child_context);
+            free(child_context);
+        }
+    }
+    else {
+        FIXME("what to do here?\n");
+    }
+    
+    return 1 + sizeof(jump_dest);
+}
+
+/*
 =item RETURN ( -- [results] ) ( addr -- )
 
 Ends the current symbol table scope.  Pops a return destination from the return stack, and transfers execution control to it.
@@ -779,6 +817,51 @@ int inst_FRCALL(struct vm_context_t *context) {
     return jump_dest - context->m_counter;
 }
 
+/*
+=item FRCORO ( [params] fr -- ) ( -- [results] )
+
+Pops a function reference from the data stack.  Spawns a new parallel execution context and starts executing from
+the function reference in the new execution context, meanwhile returning immediately in the calling thread.
+
+Where do params/results come from? FIXME
+
+=cut
+ */
+int inst_FRCORO(struct vm_context_t *context) {
+    scalar_t fr = {0};
+    
+    vm_ds_pop(context, &fr);
+    assert((fr.m_flags & SCALAR_TYPE_MASK) == SCALAR_FUNCREF);
+    function_handle_t jump_dest = anon_scalar_deref_function_reference(&fr);
+    anon_scalar_destroy(&fr);
+
+    vm_context_t *child_context;
+    
+    FIXME("can you pass parameters to a coroutine? how to get them into its context?\n");
+
+    if (NULL != (child_context = calloc(1, sizeof(*child_context)))) {
+        vm_context_init(child_context, context->m_bytecode, context->m_bytecode_length, jump_dest);
+        pthread_t thread;
+        int status;
+        if (0 == (status = pthread_create(&thread, NULL, vm_execute, child_context))) {
+            pthread_detach(thread);
+        }
+        else {
+            debug("pthread_create failed with status %i\n", status);
+            FIXME("what to do here?\n");
+            vm_context_destroy(child_context);
+            free(child_context);
+        }
+    }
+    else {
+        FIXME("what to do here?\n");
+    }
+    
+    return 1;
+}
+
+
+int inst_FRCORO(struct vm_context_t *);
 
 /*
  =item INTLIT ( -- a ) 
