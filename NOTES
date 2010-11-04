@@ -161,6 +161,9 @@ threading
     - should my mutexes be recursive?
         - it would allow individual accesses to shared objects to be locked atomically, while also allowing operations
           like SRLOCK/SRUNLOCK to exist for larger user-defined atomic operations -- seems like a good idea.
+            - the foo_pool_t struct would need a pthread_mutex_attr_t that it uses for allocating mutexes for shared objects
+                - this would need to be initialised by the foo_pool_INIT function and cleaned up by foo_pool_DESTROY
+                - you'd need to pass the desired mutex type as an argument to POOL_HEADER_CONTENTS
 
 
 
