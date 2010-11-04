@@ -134,6 +134,7 @@ bytecode operations
         - should vm_execute free the context and exit the thread before it returns?
             - it can't free the thread because it is the thread
         - should the context_t object store the thread id?
+    - compare two scalars for equality -- numeric and stringwise, like == and eq
 
 
 
@@ -142,6 +143,7 @@ threading
     - vm_execute takes a context_t* as an argument with the context to execute
         - if it returns its own context_t*, then whoever instantiated it doesn't need to worry about cleaning it up, it
           can be cleaned up when the thread is joined
+            - useless if it's detached
     - threads need to be joined to reclaim their resources, or they need to be detached so they self-clean upon exit
         - make main (or equivalent) join all threads before it exits?
             - resources don't get released until exit - not great for long-running programs
