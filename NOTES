@@ -129,4 +129,12 @@ bytecode operations
         - should it try and do clever conversion to int/float at input time, or just leave it as a string till you try to use
           it as something else?
             - i guess, putting it that way, leave it as a string, and convert on demand
-    
+    - CORO, FRCORO for spawning new threads
+        - need to track threads and contexts for garbage collection?
+        - should vm_execute free the context and exit the thread before it returns?
+            - it can't free the thread because it is the thread
+        - should the context_t object store the thread id?
+
+
+
+
