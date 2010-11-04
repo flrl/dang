@@ -22,8 +22,6 @@
 #include "stack.h"
 #include "vm.h"
 
-pthread_attr_t vm_thread_attributes;
-
 int _vm_context_destroy(vm_context_t *);
 
 /*
@@ -57,9 +55,6 @@ Runs the virtual machine.
 int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
     vm_context_t *context;
 
-    pthread_attr_init(&vm_thread_attributes);
-    pthread_attr_setdetachstate(&vm_thread_attributes, PTHREAD_CREATE_DETACHED);
-    
     scalar_pool_init();
     array_pool_init();
     hash_pool_init();
@@ -77,8 +72,6 @@ int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
     array_pool_destroy();
     scalar_pool_destroy();
     
-    pthread_attr_destroy(&vm_thread_attributes);
-
     return 0;
 }
 
@@ -94,8 +87,8 @@ C<vm_context_init()>, which it takes ownership of, and cleans up upon completion
 The caller should B<not> call C<vm_context_destroy()> or otherwise clean up a context_t that has been passed
 to C<vm_execute()>.
 
-This function is designed to be callable via C<pthread_create()> with C<vm_thread_attributes> provided to the 
-attr argument.
+This function is designed to be callable via C<pthread_create()>.  When doing so, the caller must call
+either C<pthread_join()> or C<pthread_detach()> to ensure the thread resources are released upon completion.
 
 =back
 

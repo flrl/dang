@@ -28,8 +28,6 @@ typedef struct vm_context_t {
     symboltable_t *m_symboltable;
 } vm_context_t;
 
-extern pthread_attr_t vm_thread_attributes;
-
 int vm_main(const uint8_t *, size_t, size_t);
 void *vm_execute(void *);  // n.b. actually takes and returns a vm_context_t*
 
