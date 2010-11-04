@@ -126,7 +126,7 @@ int channel_read(channel_handle_t handle, scalar_t *result) {
     if (0 == _channel_lock(handle)) {
         while (CHANNEL(handle).m_count == 0) {
             pthread_cond_wait(&CHANNEL(handle).m_has_items, CHANNEL_MUTEX(handle));
-            // FIXME what if the condition object is destroyed while we're waiting?
+            FIXME("what if the condition object is destroyed while we're waiting?\n");
         }
         anon_scalar_assign(result, &CHANNEL(handle).m_items[CHANNEL(handle).m_start]);
         CHANNEL(handle).m_start = (CHANNEL(handle).m_start + 1) % CHANNEL(handle).m_allocated_count;
@@ -249,7 +249,7 @@ int _channel_init(channel_t *self) {
     return -1;
 }
 
-int _channel_destroy(channel_t *self) { // FIXME implement this
+int _channel_destroy(channel_t *self) {  FIXME("implement this\n");
     assert(self != NULL);
     
     return 0;

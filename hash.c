@@ -254,7 +254,7 @@ static int _hash_item_init(hash_item_t *self, const char *key) {
     assert(key != NULL);
     
     self->m_key = strdup(key);
-    self->m_value = scalar_allocate(0); // FIXME flags
+    self->m_value = scalar_allocate(0); FIXME("handle flags\n");
     self->m_next_item = NULL;
     return 0;
 }

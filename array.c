@@ -104,7 +104,7 @@ scalar_handle_t array_item_at(array_handle_t handle, size_t index) {
         if (0 != _array_reserve(&ARRAY(handle), index + 1))  return 0;
         
         size_t need = index - (ARRAY(handle).m_first + ARRAY(handle).m_count - 1);
-        scalar_handle_t handle = scalar_allocate_many(need, 0);  // FIXME flags
+        scalar_handle_t handle = scalar_allocate_many(need, 0);  FIXME("handle flags\n");
         
         while (ARRAY(handle).m_count <= index - ARRAY(handle).m_first) {
             ARRAY(handle).m_items[ARRAY(handle).m_first + ARRAY(handle).m_count++] = handle + 1;
@@ -129,7 +129,7 @@ int array_push(array_handle_t handle, const scalar_t *value) {
         if (0 != _array_grow_back(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
     }
 
-    scalar_handle_t s = scalar_allocate(0); // FIXME flags
+    scalar_handle_t s = scalar_allocate(0); FIXME("handle flags\n");
     scalar_set_value(s, value);
     ARRAY(handle).m_items[ARRAY(handle).m_count++] = s;
     return 0;
@@ -149,7 +149,7 @@ int array_unshift(array_handle_t handle, const scalar_t *value) {
         if (0 != _array_grow_front(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
     }
     
-    scalar_handle_t s = scalar_allocate(0); // FIXME flags
+    scalar_handle_t s = scalar_allocate(0);  FIXME("handle flags\n");
     scalar_set_value(s, value);
     ARRAY(handle).m_items[--ARRAY(handle).m_first] = s;
     return 0;

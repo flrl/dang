@@ -582,7 +582,7 @@ char *read_quoted(void) {
                 }
                 break;
                 
-            case EOF:  // FIXME handle this differently from \n?
+            case EOF:
             case '\n':
                 buffer[i] = '\0';
                 fprintf(stderr, "Unterminated string literal\n");
