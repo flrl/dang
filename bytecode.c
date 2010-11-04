@@ -430,7 +430,7 @@ int inst_SRLOCK(struct vm_context_t *context) {
 }
 
 /*
-item SRUNLOCK ( sr -- )
+=item SRUNLOCK ( sr -- )
 
 Pops a scalar reference from the data stack and arranges for the referenced scalar to be unlocked if it is shared.
 
@@ -716,6 +716,7 @@ int inst_CRTRYRD(struct vm_context_t *context) {
 =item CRREAD ( ref -- a )
 
 Pops a channel reference from the data stack, reads a value from it, and pushes back the value read.
+If there is no value ready to be read, blocks the calling thread until one becomes available.
 
 =cut
  */
