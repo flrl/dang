@@ -138,3 +138,26 @@ bytecode operations
 
 
 
+threading
+    - vm_execute takes a context_t* as an argument with the context to execute
+        - if it returns its own context_t*, then whoever instantiated it doesn't need to worry about cleaning it up, it
+          can be cleaned up when the thread is joined
+    - threads need to be joined to reclaim their resources, or they need to be detached so they self-clean upon exit
+        - make main (or equivalent) join all threads before it exits?
+            - resources don't get released until exit - not great for long-running programs
+            - need somewhere to track all the pthread_t's so that main can find and join them all
+        - detatch all threads?
+            - then each thread's resources will be released as soon as it finishes
+            - who releases the context_t?
+                - the thread itself before it exits?
+                    - looks like!
+            - if the threads are detached, their pthread_t's can't be referrred to by any other thread afaict
+                - does this mean they don't need to be tracked anywhere?
+                - how to manage storage for them?  
+                    - if it's heap allocated, the thread can't release it before it finishes
+                    - but if it's automatic/stack allocated, what happens when it goes out of the caller's scope?
+                        - pthreads don't use the pthread_t themselves, it's just a handle for me to use.  so it can safely
+                          live in automatic storage and go out of scope with the caller.
+
+
+
