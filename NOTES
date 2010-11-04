@@ -158,6 +158,9 @@ threading
                     - but if it's automatic/stack allocated, what happens when it goes out of the caller's scope?
                         - pthreads don't use the pthread_t themselves, it's just a handle for me to use.  so it can safely
                           live in automatic storage and go out of scope with the caller.
+    - should my mutexes be recursive?
+        - it would allow individual accesses to shared objects to be locked atomically, while also allowing operations
+          like SRLOCK/SRUNLOCK to exist for larger user-defined atomic operations -- seems like a good idea.
 
 
 
