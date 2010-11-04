@@ -76,6 +76,8 @@ int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
     hash_pool_destroy();
     array_pool_destroy();
     scalar_pool_destroy();
+    
+    pthread_attr_destroy(&vm_thread_attributes);
 
     return 0;
 }
