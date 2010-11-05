@@ -340,12 +340,15 @@ int inst_BRANCH0(vm_context_t *context) {
 
 Reads flags and an identifier from the following bytecode.  Defines a new symbol in the current scope with the requested 
 identifier.  Pushes a reference to the symbol to the data stack.
- 
+
 =cut
  */
 int inst_SYMDEF(struct vm_context_t *context) {
     const flags_t flags = *(const flags_t *) (&context->m_bytecode[context->m_counter + 1]);
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1 + sizeof(flags)]);
+    
+    FIXME("make this grab a reference from the stack -- if undef, make a new symbol of the requested type, "
+        "otherwise install an identifier for the one referenced\n");
     
     scalar_t ref = {0};
     const symbol_t *symbol = symbol_define(context->m_symboltable, identifier, flags, 0);
