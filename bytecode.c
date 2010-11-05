@@ -844,29 +844,55 @@ int inst_FRCALL(struct vm_context_t *context) {
 }
 
 /*
-=item FRCORO ( [params] fr -- ) ( -- [results] )
+=item FRCORO ( [n params] n fr -- ) ( -- )
 
 Pops a function reference from the data stack.  Spawns a new parallel execution context and starts executing from
 the function reference in the new execution context, meanwhile returning immediately in the calling thread.
+
+Pops n and n parameters from the caller's stack and pushes them in the same order to the new context's stack.
 
 Where do params/results come from? FIXME
 
 =cut
  */
 int inst_FRCORO(struct vm_context_t *context) {
-    scalar_t fr = {0};
+    function_handle_t jump_dest;
+    scalar_t *params = NULL;
+    uintptr_t num_params = 0;
     
+    scalar_t fr = {0};
     vm_ds_pop(context, &fr);
     assert((fr.m_flags & SCALAR_TYPE_MASK) == SCALAR_FUNCREF);
-    function_handle_t jump_dest = anon_scalar_deref_function_reference(&fr);
+    jump_dest = anon_scalar_deref_function_reference(&fr);
     anon_scalar_destroy(&fr);
-
-    vm_context_t *child_context;
     
-    FIXME("can you pass parameters to a coroutine? how to get them into its context?\n");
-
+    scalar_t n = {0};
+    vm_ds_pop(context, &n);    
+    if (anon_scalar_get_int_value(&n) > 0) {
+        num_params = anon_scalar_get_int_value(&n);
+        if (NULL != (params = calloc(num_params, sizeof(*params)))) {
+            vm_ds_npop(context, num_params, params);
+        }
+        else {
+            debug("couldn't allocate space for %"PRIuPTR" parameters to coro\n", num_params);
+            FIXME("what do do here?\n");
+        }
+    }
+    anon_scalar_destroy(&n);
+    
+    vm_context_t *child_context;
     if (NULL != (child_context = calloc(1, sizeof(*child_context)))) {
         vm_context_init(child_context, context->m_bytecode, context->m_bytecode_length, jump_dest);
+
+        if (params != NULL) {
+            vm_ds_npush(child_context, num_params, params);
+            for (uintptr_t i = 0; i < num_params; i++) {
+                anon_scalar_destroy(&params[i]);
+            }
+            free(params);
+            params = NULL;
+        }
+        
         pthread_t thread;
         int status;
         if (0 == (status = pthread_create(&thread, NULL, vm_execute, child_context))) {
@@ -885,9 +911,6 @@ int inst_FRCORO(struct vm_context_t *context) {
     
     return 1;
 }
-
-
-int inst_FRCORO(struct vm_context_t *);
 
 /*
  =item INTLIT ( -- a ) 
