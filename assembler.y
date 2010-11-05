@@ -340,10 +340,10 @@ assembler_output_t *assemble(const char *filename) {
 
                 case i_SYMDEF:
                     if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
-                        uint32_t flags = (uint32_t) line->m_params->m_value.as_integer;
+                        flags_t flags = (flags_t) line->m_params->m_value.as_integer;
                         if (line->m_params->m_next != NULL && line->m_params->m_next->m_type == P_INTEGER) {
                             identifier_t identifier = (identifier_t) line->m_params->m_next->m_value.as_integer;
-                            * (uint32_t *) &(output->m_bytecode[line->m_position + 1]) = flags;
+                            * (flags_t *) &(output->m_bytecode[line->m_position + 1]) = flags;
                             * (identifier_t *) &(output->m_bytecode[line->m_position + 1 + sizeof(flags)]) = identifier;
                         }
                         else {

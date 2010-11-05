@@ -204,7 +204,7 @@ Define a symbol within the current scope.  Returns the new symbol, or NULL on fa
 
 =cut
  */
-const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, uint32_t flags) {
+const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, flags_t flags) {
     assert(table != NULL);
 
     symbol_t *symbol = calloc(1, sizeof(*symbol));

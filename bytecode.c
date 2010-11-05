@@ -344,7 +344,7 @@ identifier.  Pushes a reference to the symbol to the data stack.
 =cut
  */
 int inst_SYMDEF(struct vm_context_t *context) {
-    const uint32_t flags = *(const uint32_t *) (&context->m_bytecode[context->m_counter + 1]);
+    const flags_t flags = *(const flags_t *) (&context->m_bytecode[context->m_counter + 1]);
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1 + sizeof(flags)]);
     
     scalar_t ref = {0};

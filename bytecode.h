@@ -30,7 +30,7 @@ typedef enum instruction_t {
     i_NOT,
     i_BRANCH,       /* intptr_t */
     i_BRANCH0,      /* intptr_t */
-    i_SYMDEF,       /* uint32_t identifier_t */
+    i_SYMDEF,       /* flags_t identifier_t */
     i_SYMFIND,      /* identifier_t */
     i_SYMCLONE,     /* identifier_t */
     i_SYMUNDEF,     /* identifier_t */
