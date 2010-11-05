@@ -14,11 +14,14 @@
 
 #include "floatptr_t.h"
 
-typedef uintptr_t scalar_handle_t;
-typedef uintptr_t array_handle_t;
-typedef uintptr_t hash_handle_t;
-typedef uintptr_t channel_handle_t;
-typedef uintptr_t function_handle_t;
+typedef uintptr_t handle_t;
+typedef handle_t scalar_handle_t;
+typedef handle_t array_handle_t;
+typedef handle_t hash_handle_t;
+typedef handle_t channel_handle_t;
+typedef handle_t function_handle_t;
+
+typedef uint32_t flags_t;
 typedef uintptr_t identifier_t;
 
 #endif
