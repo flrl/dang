@@ -104,6 +104,10 @@ symbol table
         - i think so, at table level.  writes only happen at the "current" scope, but if a child is running in a separate
           context, its parent might be messing around with its own scope at the same time as the child wants to search upwards
           through it.
+    - need a way to way to say "here, i have this object, associate an identifier with it". neither symbol_define nor 
+      symbol_clone does quite what i want.  for use when a function wants to grab its parameters from the stack and squirrel
+      them away such that it can refer to them later by identifier without a lot of stack gymnastics to keep track of where they
+      are.
             
         
 
