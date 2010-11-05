@@ -27,7 +27,7 @@ typedef struct array_t {
 
 int _array_init(array_t *);
 int _array_destroy(array_t *);
-POOL_HEADER_CONTENTS(array_t, array_handle_t, _array_init, _array_destroy);
+POOL_HEADER_CONTENTS(array_t, array_handle_t, PTHREAD_MUTEX_ERRORCHECK, _array_init, _array_destroy);
 
 struct scalar_t;
 

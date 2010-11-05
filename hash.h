@@ -38,7 +38,7 @@ typedef struct hash_t {
 int _hash_init(hash_t *);
 int _hash_destroy(hash_t *);
 
-POOL_HEADER_CONTENTS(hash_t, hash_handle_t, _hash_init, _hash_destroy);
+POOL_HEADER_CONTENTS(hash_t, hash_handle_t, PTHREAD_MUTEX_ERRORCHECK, _hash_init, _hash_destroy);
 
 struct scalar_t;
 

@@ -80,7 +80,7 @@ Call this from your header file
 
 =cut
  */
-#define POOL_HEADER_CONTENTS(type, handle_type, init, destroy)                                  \
+#define POOL_HEADER_CONTENTS(type, handle_type, mutex_type, init, destroy)                      \
 POOL_TYPE(type) {                                                                               \
     size_t                  m_allocated_count;                                                  \
     size_t                  m_count;                                                            \
@@ -88,6 +88,7 @@ POOL_TYPE(type) {                                                               
     POOL_WRAPPER_TYPE(type) *m_items;                                                           \
     handle_type             m_free_list_head;                                                   \
     pthread_mutex_t         m_free_list_mutex;                                                  \
+    pthread_mutexattr_t     m_shared_mutex_attr;                                                \
 };                                                                                              \
                                                                                                 \
 POOL_WRAPPER_TYPE(type) {                                                                       \
@@ -144,6 +145,8 @@ static inline int type##_POOL_INIT(void) {                                      
             free(POOL_SINGLETON(type).m_items);                                                 \
             return -1;                                                                          \
         }                                                                                       \
+        pthread_mutexattr_init(&POOL_SINGLETON(type).m_shared_mutex_attr);                      \
+        pthread_mutexattr_settype(&POOL_SINGLETON(type).m_shared_mutex_attr, mutex_type);       \
     }                                                                                           \
     else {                                                                                      \
         return -1;                                                                              \
@@ -166,6 +169,7 @@ static inline int type##_POOL_DESTROY(void) {                                   
         free(POOL_SINGLETON(type).m_items);                                                     \
         POOL_SINGLETON(type).m_allocated_count = POOL_SINGLETON(type).m_count = 0;              \
         pthread_mutex_destroy(&POOL_SINGLETON(type).m_free_list_mutex);                         \
+        pthread_mutexattr_destroy(&POOL_SINGLETON(type).m_shared_mutex_attr);                   \
         return 0;                                                                               \
     }                                                                                           \
     else {                                                                                      \
@@ -224,7 +228,8 @@ static inline handle_type type##_POOL_ALLOCATE(uint32_t flags) {                
         if (flags & POOL_OBJECT_FLAG_SHARED) {                                                  \
             POOL_WRAPPER(type, handle).m_mutex = calloc(1, sizeof(pthread_mutex_t));            \
             assert(POOL_WRAPPER(type, handle).m_mutex != NULL);                                 \
-            pthread_mutex_init(POOL_WRAPPER(type, handle).m_mutex, NULL);                       \
+            pthread_mutex_init(POOL_WRAPPER(type, handle).m_mutex,                              \
+                &POOL_SINGLETON(type).m_shared_mutex_attr);                                     \
         }                                                                                       \
                                                                                                 \
         POOL_SINGLETON(type).m_count++;                                                         \
@@ -308,7 +313,8 @@ static inline handle_type type##_POOL_ALLOCATE_MANY(size_t many, uint32_t flags)
             if (flags & POOL_OBJECT_FLAG_SHARED) {                                              \
                 POOL_WRAPPER(type, i).m_mutex = calloc(1, sizeof(pthread_mutex_t));             \
                 assert(POOL_WRAPPER(type, i).m_mutex != NULL);                                  \
-                pthread_mutex_init(POOL_WRAPPER(type, i).m_mutex, NULL);                        \
+                pthread_mutex_init(POOL_WRAPPER(type, i).m_mutex,                               \
+                    &POOL_SINGLETON(type).m_shared_mutex_attr);                                 \
             }                                                                                   \
         }                                                                                       \
                                                                                                 \

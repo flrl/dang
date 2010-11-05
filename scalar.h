@@ -70,7 +70,7 @@ typedef struct scalar_t {
 int anon_scalar_init(scalar_t *);
 int anon_scalar_destroy(scalar_t *);
 
-POOL_HEADER_CONTENTS(scalar_t, scalar_handle_t, anon_scalar_init, anon_scalar_destroy);
+POOL_HEADER_CONTENTS(scalar_t, scalar_handle_t, PTHREAD_MUTEX_RECURSIVE, anon_scalar_init, anon_scalar_destroy);
 
 int anon_scalar_clone(scalar_t * restrict, const scalar_t * restrict);
 int anon_scalar_assign(scalar_t * restrict, const scalar_t * restrict);

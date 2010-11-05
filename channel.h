@@ -32,7 +32,7 @@ typedef struct channel_t {
 int _channel_init(channel_t *);
 int _channel_destroy(channel_t *);
 
-POOL_HEADER_CONTENTS(channel_t, channel_handle_t, _channel_init, _channel_destroy);
+POOL_HEADER_CONTENTS(channel_t, channel_handle_t, PTHREAD_MUTEX_ERRORCHECK, _channel_init, _channel_destroy);
 
 int channel_pool_init(void);
 int channel_pool_destroy(void);
