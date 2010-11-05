@@ -149,21 +149,30 @@ static inline void scalar_set_undef(scalar_handle_t handle) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    anon_scalar_destroy(&SCALAR(handle));
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_destroy(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
 }
 
 static inline void scalar_set_int_value(scalar_handle_t handle, intptr_t ival) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    anon_scalar_set_int_value(&SCALAR(handle), ival);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_set_int_value(&SCALAR(handle), ival);
+        scalar_unlock(handle);
+    }
 }
 
 static inline void scalar_set_float_value(scalar_handle_t handle, floatptr_t fval) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    anon_scalar_set_float_value(&SCALAR(handle), fval);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_set_float_value(&SCALAR(handle), fval);
+        scalar_unlock(handle);
+    }
 }
 
 static inline void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
@@ -171,7 +180,10 @@ static inline void scalar_set_string_value(scalar_handle_t handle, const char *s
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     assert(sval != NULL);
     
-    anon_scalar_set_string_value(&SCALAR(handle), sval);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_set_string_value(&SCALAR(handle), sval);
+        scalar_unlock(handle);
+    }
 }
 
 static inline void scalar_set_value(scalar_handle_t handle, const scalar_t *val) {
@@ -179,7 +191,10 @@ static inline void scalar_set_value(scalar_handle_t handle, const scalar_t *val)
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     assert(val != NULL);
     
-    anon_scalar_clone(&SCALAR(handle), val);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_clone(&SCALAR(handle), val);
+        scalar_unlock(handle);
+    }
 }
 
 /*
@@ -201,35 +216,50 @@ static inline void scalar_set_scalar_reference(scalar_handle_t handle, scalar_ha
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    anon_scalar_set_scalar_reference(&SCALAR(handle), s);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_set_scalar_reference(&SCALAR(handle), s);
+        scalar_unlock(handle);
+    }
 }
 
 static inline void scalar_set_array_reference(scalar_handle_t handle, array_handle_t a) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    anon_scalar_set_array_reference(&SCALAR(handle), a);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_set_array_reference(&SCALAR(handle), a);
+        scalar_unlock(handle);
+    }
 }
 
 static inline void scalar_set_hash_reference(scalar_handle_t handle, hash_handle_t h) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    anon_scalar_set_hash_reference(&SCALAR(handle), h);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_set_hash_reference(&SCALAR(handle), h);
+        scalar_unlock(handle);
+    }
 }
 
 static inline void scalar_set_channel_reference(scalar_handle_t handle, channel_handle_t c) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    anon_scalar_set_channel_reference(&SCALAR(handle), c);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_set_channel_reference(&SCALAR(handle), c);
+        scalar_unlock(handle);
+    }
 }
 
 static inline void scalar_set_function_reference(scalar_handle_t handle, function_handle_t f) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    anon_scalar_set_function_reference(&SCALAR(handle), f);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_set_function_reference(&SCALAR(handle), f);
+        scalar_unlock(handle);
+    }
 }
 
 
@@ -252,28 +282,46 @@ static inline intptr_t scalar_get_bool_value(scalar_handle_t handle) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    return anon_scalar_get_bool_value(&SCALAR(handle));
+    intptr_t value = 0;
+    if (0 == scalar_lock(handle)) {
+        value = anon_scalar_get_bool_value(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return value;
 }
 
 static inline intptr_t scalar_get_int_value(scalar_handle_t handle) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    return anon_scalar_get_int_value(&SCALAR(handle));
+    intptr_t value = 0;
+    if (0 == scalar_lock(handle)) {
+        value = anon_scalar_get_int_value(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return value;
 }
 
 static inline floatptr_t scalar_get_float_value(scalar_handle_t handle) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    return anon_scalar_get_float_value(&SCALAR(handle));
+    floatptr_t value = 0;
+    if (0 == scalar_lock(handle)) {
+        value = anon_scalar_get_float_value(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return value;
 }
 
 static inline void scalar_get_string_value(scalar_handle_t handle, char **result) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    anon_scalar_get_string_value(&SCALAR(handle), result);
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_get_string_value(&SCALAR(handle), result);
+        scalar_unlock(handle);
+    }
 }
 
 static inline void scalar_get_value(scalar_handle_t handle, scalar_t *result) {
@@ -283,7 +331,10 @@ static inline void scalar_get_value(scalar_handle_t handle, scalar_t *result) {
     
     if ((result->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(result);
     
-    anon_scalar_clone(result, &SCALAR(handle));
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_clone(result, &SCALAR(handle));
+        scalar_unlock(handle);
+    }
 }
 
 /*
@@ -305,35 +356,60 @@ static inline scalar_handle_t scalar_deref_scalar_reference(scalar_handle_t hand
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    return anon_scalar_deref_scalar_reference(&SCALAR(handle));
+    scalar_handle_t ref = 0;
+    if (0 == scalar_lock(handle)) {
+        ref = anon_scalar_deref_scalar_reference(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return ref;
 }
 
 static inline array_handle_t scalar_deref_array_reference(scalar_handle_t handle) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
-    
-    return anon_scalar_deref_array_reference(&SCALAR(handle));
+
+    array_handle_t ref = 0;
+    if (0 == scalar_lock(handle)) {
+        ref = anon_scalar_deref_array_reference(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return ref;
 }
 
 static inline hash_handle_t scalar_deref_hash_reference(scalar_handle_t handle) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    return anon_scalar_deref_hash_reference(&SCALAR(handle));
+    hash_handle_t ref = 0;
+    if (0 == scalar_lock(handle)) {
+        ref = anon_scalar_deref_hash_reference(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return ref;
 }
 
 static inline channel_handle_t scalar_deref_channel_reference(scalar_handle_t handle) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    return anon_scalar_deref_channel_reference(&SCALAR(handle));
+    channel_handle_t ref = 0;
+    if (0 == scalar_lock(handle)) {
+        ref = anon_scalar_deref_channel_reference(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return ref;
 }
 
 static inline function_handle_t scalar_deref_function_reference(scalar_handle_t handle) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
-    return anon_scalar_deref_function_reference(&SCALAR(handle));
+    function_handle_t ref = 0;
+    if (0 == scalar_lock(handle)) {
+        ref = anon_scalar_deref_function_reference(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return ref;
 }
 
 #endif
