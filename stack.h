@@ -126,6 +126,7 @@ static inline int type##_STACK_PUSH(    struct type##_STACK *stack, size_t count
 static inline int type##_STACK_POP( struct type##_STACK *stack, size_t count,           \
                                     type *results) {                                    \
     assert(stack != NULL);                                                              \
+    assert(stack->m_count >= count);                                                    \
                                                                                         \
     int status = 0;                                                                     \
     if (results != NULL) {                                                              \
@@ -145,6 +146,7 @@ static inline int type##_STACK_POP( struct type##_STACK *stack, size_t count,   
                                                                                         \
 static inline int type##_STACK_TOP(struct type##_STACK *stack, type *result) {          \
     assert(stack != NULL);                                                              \
+    assert(stack->m_count > 0);                                                         \
     assert(result != NULL);                                                             \
                                                                                         \
     return copy_func(result, &stack->m_items[stack->m_count - 1]);                      \
@@ -152,6 +154,7 @@ static inline int type##_STACK_TOP(struct type##_STACK *stack, type *result) {  
                                                                                         \
 static inline int type##_STACK_SWAP(struct type##_STACK *stack) {                       \
     assert(stack != NULL);                                                              \
+    assert(stack->m_count > 1);                                                         \
                                                                                         \
     type tmp;                                                                           \
     memcpy(&tmp, &stack->m_items[stack->m_count - 2], sizeof(type));                    \
