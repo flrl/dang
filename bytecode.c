@@ -348,7 +348,7 @@ int inst_SYMDEF(struct vm_context_t *context) {
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1 + sizeof(flags)]);
     
     scalar_t ref = {0};
-    const symbol_t *symbol = symbol_define(context->m_symboltable, identifier, flags);
+    const symbol_t *symbol = symbol_define(context->m_symboltable, identifier, flags, 0);
     if (symbol) {
         switch (symbol->m_flags & SYMBOL_TYPE_MASK) {
             case SYMBOL_SCALAR:

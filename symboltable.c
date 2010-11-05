@@ -200,11 +200,14 @@ int symboltable_garbage_collect(void) {
 /*
 =item symbol_define()
 
-Define a symbol within the current scope.  Returns the new symbol, or NULL on failure.
+Define a symbol within the current scope.  If handle is 0, allocates a new handle of the type indicated by flags.
+Otherwise, associates the symbol with the specified handle.
+
+Returns the new symbol, or NULL on failure.
 
 =cut
  */
-const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, flags_t flags) {
+const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, flags_t flags, handle_t handle) {
     assert(table != NULL);
 
     symbol_t *symbol = calloc(1, sizeof(*symbol));
@@ -215,20 +218,20 @@ const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, fla
     switch (flags & SYMBOL_TYPE_MASK) {
         case SYMBOL_SCALAR:
             symbol->m_flags = SYMBOL_SCALAR;
-            symbol->m_referent.as_scalar = scalar_allocate(flags & ~SYMBOL_TYPE_MASK);
+            symbol->m_referent.as_scalar = (handle ? scalar_reference(handle) : scalar_allocate(flags & ~SYMBOL_TYPE_MASK));
             break;
         case SYMBOL_ARRAY:
             symbol->m_flags = SYMBOL_ARRAY;
-            symbol->m_referent.as_array = array_allocate();
+            symbol->m_referent.as_array = (handle ? array_reference(handle) : array_allocate());
             break;
         case SYMBOL_HASH:
             symbol->m_flags = SYMBOL_HASH;
-            symbol->m_referent.as_hash = hash_allocate();
+            symbol->m_referent.as_hash = (handle ? hash_reference(handle) : hash_allocate());
             break;
         //...
         case SYMBOL_CHANNEL:
             symbol->m_flags = SYMBOL_SCALAR;
-            symbol->m_referent.as_channel = channel_allocate();
+            symbol->m_referent.as_channel = (handle ? channel_reference(handle) : channel_allocate());
             break;
         default:
             debug("unhandled symbol type: %"PRIu32"\n", flags);
