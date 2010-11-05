@@ -336,10 +336,19 @@ int inst_BRANCH0(vm_context_t *context) {
 }
 
 /*
-=item SYMDEF ( -- ref )
+=item SYMDEF ( a -- ref )
 
-Reads flags and an identifier from the following bytecode.  Defines a new symbol in the current scope with the requested 
-identifier.  Pushes a reference to the symbol to the data stack.
+Reads flags and an identifier from the following bytecode.  Pops a scalar from the stack.  Defines a new symbol in the
+current scope with the requested identifier as follows:
+
+If the scalar is undefined, the symbol will point to a new object, which is allocated based on the flags provided.
+
+If the scalar is a reference type, the symbol will point to the referenced object.
+
+Otherwise, the symbol will point to a new scalar, whose value will be set to the value of the popped scalar.
+
+
+Pushes back a reference to the new symbol on success, or undef on failure.
 
 =cut
  */
@@ -347,11 +356,44 @@ int inst_SYMDEF(struct vm_context_t *context) {
     const flags_t flags = *(const flags_t *) (&context->m_bytecode[context->m_counter + 1]);
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1 + sizeof(flags)]);
     
-    FIXME("make this grab a reference from the stack -- if undef, make a new symbol of the requested type, "
-        "otherwise install an identifier for the one referenced\n");
+    scalar_t a = {0}, ref = {0};
+    vm_ds_pop(context, &a);
+
+    const symbol_t *symbol = NULL;
     
-    scalar_t ref = {0};
-    const symbol_t *symbol = symbol_define(context->m_symboltable, identifier, flags, 0);
+    if ((a.m_flags & SCALAR_TYPE_MASK) == SCALAR_UNDEF) {
+        symbol = symbol_define(context->m_symboltable, identifier, flags, 0);
+    }
+    else if ((a.m_flags & SCALAR_FLAG_REF)) {
+        // handle types are interchangeable when context isn't important
+        // getting the handle directly rather than requesting a reference to it is safe, because
+        // a itself will continue to hold onto the reference and ensure it isn't deallocated
+        // before we finish
+        handle_t handle = a.m_value.as_scalar_handle;
+        flags_t flags = 0;
+        switch (a.m_flags & SCALAR_TYPE_MASK) {
+            case SCALAR_SCAREF:     flags = SYMBOL_SCALAR;      break;
+            case SCALAR_ARRREF:     flags = SYMBOL_ARRAY;       break;
+            case SCALAR_HASHREF:    flags = SYMBOL_HASH;        break;
+            case SCALAR_CHANREF:    flags = SYMBOL_CHANNEL;     break;
+//            case SCALAR_FUNCREF:    flags = SYMBOL_FUNCTION;    break;
+            default:
+                debug("unhandled scalar reference type: %"PRIu32"\n", a.m_flags);
+                handle = 0;
+                break;
+        }
+        if (handle) {
+            symbol = symbol_define(context->m_symboltable, identifier, flags, handle);
+        }
+        else {
+            debug("failed to get a handle from a reference type\n");
+        }
+    }
+    else {
+        symbol = symbol_define(context->m_symboltable, identifier, (flags & ~ SYMBOL_TYPE_MASK) | SYMBOL_SCALAR, 0);
+        if (symbol)  scalar_set_value(symbol->m_referent, &a);
+    }
+    
     if (symbol) {
         switch (symbol->m_flags & SYMBOL_TYPE_MASK) {
             case SYMBOL_SCALAR:
@@ -372,8 +414,14 @@ int inst_SYMDEF(struct vm_context_t *context) {
                 break;
         }
     }
+    else {
+        debug("failed to define symbol\n");
+    }
+    
     vm_ds_push(context, &ref);
+    
     anon_scalar_destroy(&ref);
+    anon_scalar_destroy(&a);
     
     return 1 + sizeof(flags) + sizeof(identifier);
 }
