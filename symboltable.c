@@ -218,20 +218,20 @@ const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, fla
     switch (flags & SYMBOL_TYPE_MASK) {
         case SYMBOL_SCALAR:
             symbol->m_flags = SYMBOL_SCALAR;
-            symbol->m_referent.as_scalar = (handle ? scalar_reference(handle) : scalar_allocate(flags & ~SYMBOL_TYPE_MASK));
+            symbol->m_referent = (handle ? scalar_reference(handle) : scalar_allocate(flags & ~SYMBOL_TYPE_MASK));
             break;
         case SYMBOL_ARRAY:
             symbol->m_flags = SYMBOL_ARRAY;
-            symbol->m_referent.as_array = (handle ? array_reference(handle) : array_allocate());
+            symbol->m_referent = (handle ? array_reference(handle) : array_allocate());
             break;
         case SYMBOL_HASH:
             symbol->m_flags = SYMBOL_HASH;
-            symbol->m_referent.as_hash = (handle ? hash_reference(handle) : hash_allocate());
+            symbol->m_referent = (handle ? hash_reference(handle) : hash_allocate());
             break;
         //...
         case SYMBOL_CHANNEL:
             symbol->m_flags = SYMBOL_SCALAR;
-            symbol->m_referent.as_channel = (handle ? channel_reference(handle) : channel_allocate());
+            symbol->m_referent = (handle ? channel_reference(handle) : channel_allocate());
             break;
         default:
             debug("unhandled symbol type: %"PRIu32"\n", flags);
@@ -283,20 +283,20 @@ const symbol_t *symbol_clone(symboltable_t *table, identifier_t identifier) {
         switch (remote_symbol->m_flags & SYMBOL_TYPE_MASK) {
             case SYMBOL_SCALAR:
                 symbol->m_flags = SYMBOL_SCALAR;
-                symbol->m_referent.as_scalar = scalar_reference(remote_symbol->m_referent.as_scalar);
+                symbol->m_referent = scalar_reference(remote_symbol->m_referent);
                 break;
             case SYMBOL_ARRAY:
                 symbol->m_flags = SYMBOL_ARRAY;
-                symbol->m_referent.as_array = array_reference(remote_symbol->m_referent.as_array);
+                symbol->m_referent = array_reference(remote_symbol->m_referent);
                 break;
             case SYMBOL_HASH:
                 symbol->m_flags = SYMBOL_HASH;
-                symbol->m_referent.as_hash = hash_reference(remote_symbol->m_referent.as_hash);
+                symbol->m_referent = hash_reference(remote_symbol->m_referent);
                 break;
             //...
             case SYMBOL_CHANNEL:
                 symbol->m_flags = SYMBOL_CHANNEL;
-                symbol->m_referent.as_channel = channel_reference(remote_symbol->m_referent.as_channel);
+                symbol->m_referent = channel_reference(remote_symbol->m_referent);
                 break;
             default:
                 debug("unhandled symbol type: %"PRIu32"\n", remote_symbol->m_flags);
@@ -552,17 +552,17 @@ int _symbol_destroy(symbol_t *self) {
     assert(self != NULL);
     switch (self->m_flags & SYMBOL_TYPE_MASK) {
         case SYMBOL_SCALAR:
-            scalar_release(self->m_referent.as_scalar);
+            scalar_release(self->m_referent);
             break;
         case SYMBOL_ARRAY:
-            array_release(self->m_referent.as_array);
+            array_release(self->m_referent);
             break;
         case SYMBOL_HASH:
-            hash_release(self->m_referent.as_hash);
+            hash_release(self->m_referent);
             break;
         //...
         case SYMBOL_CHANNEL:
-            channel_release(self->m_referent.as_channel);
+            channel_release(self->m_referent);
             break;
         default:
             debug("unhandled symbol type: %"PRIu32"\n", self->m_flags);

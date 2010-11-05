@@ -352,17 +352,17 @@ int inst_SYMDEF(struct vm_context_t *context) {
     if (symbol) {
         switch (symbol->m_flags & SYMBOL_TYPE_MASK) {
             case SYMBOL_SCALAR:
-                anon_scalar_set_scalar_reference(&ref, symbol->m_referent.as_scalar);
+                anon_scalar_set_scalar_reference(&ref, symbol->m_referent);
                 break;
             case SYMBOL_ARRAY:
-                anon_scalar_set_array_reference(&ref, symbol->m_referent.as_array);
+                anon_scalar_set_array_reference(&ref, symbol->m_referent);
                 break;
             case SYMBOL_HASH:
-                anon_scalar_set_hash_reference(&ref, symbol->m_referent.as_hash);
+                anon_scalar_set_hash_reference(&ref, symbol->m_referent);
                 break;
             //...
             case SYMBOL_CHANNEL:
-                anon_scalar_set_channel_reference(&ref, symbol->m_referent.as_channel);
+                anon_scalar_set_channel_reference(&ref, symbol->m_referent);
                 break;
             default:
                 debug("unhandled symbol type: %"PRIu32"\n", symbol->m_flags);
@@ -394,17 +394,17 @@ int inst_SYMFIND(struct vm_context_t *context) {
     if (symbol != NULL) {
         switch(symbol->m_flags & SYMBOL_TYPE_MASK) {
             case SYMBOL_SCALAR:
-                anon_scalar_set_scalar_reference(&ref, symbol->m_referent.as_scalar);
+                anon_scalar_set_scalar_reference(&ref, symbol->m_referent);
                 break;
             case SYMBOL_ARRAY:
-                anon_scalar_set_array_reference(&ref, symbol->m_referent.as_array);
+                anon_scalar_set_array_reference(&ref, symbol->m_referent);
                 break;
             case SYMBOL_HASH:
-                anon_scalar_set_hash_reference(&ref, symbol->m_referent.as_hash);
+                anon_scalar_set_hash_reference(&ref, symbol->m_referent);
                 break;
             //...
             case SYMBOL_CHANNEL:
-                anon_scalar_set_channel_reference(&ref, symbol->m_referent.as_channel);
+                anon_scalar_set_channel_reference(&ref, symbol->m_referent);
                 break;
             default:
                 debug("unhandled symbol type: %"PRIu32"\n", symbol->m_flags);
@@ -436,17 +436,17 @@ int inst_SYMCLONE(struct vm_context_t *context) {
     if (symbol != NULL) {
         switch(symbol->m_flags & SYMBOL_TYPE_MASK) {
             case SYMBOL_SCALAR:
-                anon_scalar_set_scalar_reference(&ref, symbol->m_referent.as_scalar);
+                anon_scalar_set_scalar_reference(&ref, symbol->m_referent);
                 break;
             case SYMBOL_ARRAY:
-                anon_scalar_set_array_reference(&ref, symbol->m_referent.as_array);
+                anon_scalar_set_array_reference(&ref, symbol->m_referent);
                 break;
             case SYMBOL_HASH:
-                anon_scalar_set_hash_reference(&ref, symbol->m_referent.as_hash);
+                anon_scalar_set_hash_reference(&ref, symbol->m_referent);
                 break;
             //...
             case SYMBOL_CHANNEL:
-                anon_scalar_set_channel_reference(&ref, symbol->m_referent.as_channel);
+                anon_scalar_set_channel_reference(&ref, symbol->m_referent);
                 break;
             default:
                 debug("unhandled symbol type: %"PRIu32"\n", symbol->m_flags);

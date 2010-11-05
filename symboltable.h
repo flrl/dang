@@ -27,12 +27,7 @@ typedef struct symbol_t {
     struct symbol_t *m_right_child;
     identifier_t m_identifier;
     flags_t m_flags;
-    union {
-        scalar_handle_t as_scalar;
-        array_handle_t as_array;
-        hash_handle_t as_hash;
-        channel_handle_t as_channel;
-    } m_referent;
+    handle_t m_referent;
 } symbol_t;
 
 typedef struct symboltable_t {
