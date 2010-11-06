@@ -107,6 +107,7 @@ static inline int type##_STACK_RESERVE(struct type##_STACK *stack, size_t new_si
 static inline int type##_STACK_PUSH(    struct type##_STACK *stack, size_t count,       \
                                         const type *values) {                           \
     assert(stack != NULL);                                                              \
+    assert(count > 0);                                                                  \
     assert(values != NULL);                                                             \
                                                                                         \
     int status = 0;                                                                     \
@@ -115,8 +116,8 @@ static inline int type##_STACK_PUSH(    struct type##_STACK *stack, size_t count
     }                                                                                   \
                                                                                         \
     if (status == 0) {                                                                  \
-        for (size_t i = 0; i < count; i++) {                                            \
-            copy_func(&stack->m_items[stack->m_count++], &values[i]);                   \
+        for (size_t i = count; i > 0; i--) {                                            \
+            copy_func(&stack->m_items[stack->m_count++], &values[i-1]);                 \
         }                                                                               \
     }                                                                                   \
                                                                                         \
@@ -126,6 +127,7 @@ static inline int type##_STACK_PUSH(    struct type##_STACK *stack, size_t count
 static inline int type##_STACK_POP( struct type##_STACK *stack, size_t count,           \
                                     type *results) {                                    \
     assert(stack != NULL);                                                              \
+    assert(count > 0);                                                                  \
     assert(stack->m_count >= count);                                                    \
                                                                                         \
     int status = 0;                                                                     \
