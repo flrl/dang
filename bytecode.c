@@ -106,7 +106,7 @@ int inst_CALL(vm_context_t *context) {
 }
 
 /*
-=item CORO ( [n params] n -- ) ( -- addr )
+=item CORO ( [n params] n -- ) ( -- )
 
 Reads a jump destination from the following bytecode.  Spawns a new parallel execution context and starts executing from
 the jump destination in the new execution context, meanwhile returning immediately in the calling thread.
