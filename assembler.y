@@ -281,6 +281,7 @@ assembler_output_t *assemble(const char *filename) {
         if (line->m_length > 1) {
             switch (line->m_instruction) {
                 case i_CALL:
+                case i_CORO:
                 case i_FUNLIT:
                     if (line->m_params != NULL && line->m_params->m_type == P_LABEL_LOC) {
                         function_handle_t handle = line->m_params->m_value.as_label->m_line->m_position;
