@@ -164,6 +164,24 @@ threading
                     - but if it's automatic/stack allocated, what happens when it goes out of the caller's scope?
                         - pthreads don't use the pthread_t themselves, it's just a handle for me to use.  so it can safely
                           live in automatic storage and go out of scope with the caller.
+        - vm_main tries to clean up after itself when the main execution context ends, but this causes problems for any
+          other threads that still exist and are probably trying to access data.
+            - make vm_main wait for the other threads to finish?  
+                - vm.c would need a registry of contexts, and context_destroy would remove it from the registry and possibly
+                  signal a condition variable
+                    - vm_main would then be able to spin on the registry or wait on the condition, and only do final cleanup
+                      once all the other contexts are finished
+                - or it could have a registry of pthread_t's, and any that are still around at the end of vm_main get joined
+                    - vm_execute would call pthread_detach(pthread_self()) right before finishing, so that threads that end
+                      politely on their own don't consume resources.  would still need to get rid of the pthread_t from the
+                      registry though
+                - if a thread is in an infinite loop, vm_main will never end.  caller needs to make sure their threads have
+                  a finish (e.g. by tryreading on a control channel)
+            - make vm_main kill all the other threads
+                - would need to know pthread_t's of the threads that are currently active -- could store them in a registry
+                    - vm_execute could call pthread_detach(pthread_self()) right before it finishes, so that any threads that
+                      do manage to finish own their own disappear quietly, and any that remain when vm_main finishes can be
+                      cancelled
     - should my mutexes be recursive?
         - it would allow individual accesses to shared objects to be locked atomically, while also allowing operations
           like SRLOCK/SRUNLOCK to exist for larger user-defined atomic operations -- seems like a good idea.
