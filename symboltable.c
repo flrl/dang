@@ -230,7 +230,7 @@ const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, fla
             break;
         //...
         case SYMBOL_CHANNEL:
-            symbol->m_flags = SYMBOL_SCALAR;
+            symbol->m_flags = SYMBOL_CHANNEL;
             symbol->m_referent = (handle ? channel_reference(handle) : channel_allocate());
             break;
         default:
