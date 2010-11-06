@@ -273,7 +273,7 @@ static inline int _channel_lock(channel_handle_t handle) {
 static inline int _channel_unlock(channel_handle_t handle) {
     assert(POOL_HANDLE_VALID(channel_t, handle));
     
-    return POOL_LOCK(channel_t, handle);
+    return POOL_UNLOCK(channel_t, handle);
 }
 
 /*
