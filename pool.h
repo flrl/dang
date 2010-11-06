@@ -346,8 +346,8 @@ static inline int type##_POOL_RELEASE(handle_type handle) {                     
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
     assert(POOL_HANDLE_IN_USE(type, handle));                                                   \
     assert(POOL_WRAPPER(type, handle).m_references > 0);                                        \
-                                                                                                \
-    if (--POOL_WRAPPER(type, handle).m_references == 0) {                                       \
+    /* FIXME does this need to lock the mutex? */                                               \
+    if (POOL_WRAPPER(type, handle).m_references == 1) {                                         \
         destroy(&POOL_OBJECT(type, handle));                                                    \
         if (POOL_WRAPPER(type, handle).m_mutex != NULL) {                                       \
             pthread_mutex_t *tmp = POOL_WRAPPER(type, handle).m_mutex;                          \
@@ -355,6 +355,7 @@ static inline int type##_POOL_RELEASE(handle_type handle) {                     
             pthread_mutex_destroy(tmp);                                                         \
             free(tmp);                                                                          \
         }                                                                                       \
+        POOL_WRAPPER(type, handle).m_references = 0;                                            \
         _##type##_POOL_ADD_TO_FREE_LIST(handle);                                                \
         POOL_SINGLETON(type).m_count--;                                                         \
     }                                                                                           \
