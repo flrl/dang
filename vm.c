@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pthread.h>
+#include <unistd.h>
 
 #include "array.h"
 #include "bytecode.h"
@@ -65,7 +66,11 @@ int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
         vm_execute(context);
     }
     
-    symboltable_garbage_collect();
+    debug("about to start cleaning up\n");
+    while (symboltable_garbage_collect() > 0) {
+        debug("symbol tables still remaining...\n");
+        sleep(1);
+    }
 
     channel_pool_destroy();
     hash_pool_destroy();
@@ -97,6 +102,7 @@ either C<pthread_join()> or C<pthread_detach()> to ensure the thread resources a
 void *vm_execute(void *ptr) {
     vm_context_t *context = ptr;
     assert(context != NULL);
+    debug("vm_execute of context %p starting up\n", context);
     
     // set the top of the return stack to point back to the zero'th instruction, which always contains END.
     // this allows the vm entry point to be a normal function that expects to simply return when it's done.
@@ -122,9 +128,11 @@ void *vm_execute(void *ptr) {
     }
     
 end:
+    debug("vm_execute of context %p about to finish\n", context);
     if (context->m_symboltable)  vm_end_scope(context);
     vm_context_destroy(context);
     free(context);
+    debug("vm_execute of context %p finished\n", context);
     return NULL;
 }
 
