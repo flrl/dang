@@ -180,8 +180,10 @@ threading
             - make vm_main kill all the other threads
                 - would need to know pthread_t's of the threads that are currently active -- could store them in a registry
                     - vm_execute could call pthread_detach(pthread_self()) right before it finishes, so that any threads that
-                      do manage to finish own their own disappear quietly, and any that remain when vm_main finishes can be
+                      do manage to finish on their own disappear quietly, and any that remain when vm_main finishes can be
                       cancelled
+                - but vm_main doesn't know whether it's safe to just terminate the threads - what if they're holding some
+                  resource that needs to be properly released (e.g. db handle)?
     - should my mutexes be recursive?
         - it would allow individual accesses to shared objects to be locked atomically, while also allowing operations
           like SRLOCK/SRUNLOCK to exist for larger user-defined atomic operations -- seems like a good idea.
