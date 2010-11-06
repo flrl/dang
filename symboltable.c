@@ -61,6 +61,7 @@ garbage collection.
 int symboltable_init(symboltable_t *restrict self, symboltable_t *restrict parent) {
     assert(self != NULL);
     assert(self != parent);
+    debug("initialising symboltable %p with parent %p\n", self, parent);
     
     self->m_references = 1;
     self->m_symbols = NULL;
@@ -92,8 +93,10 @@ is left in the global registry for later garbage collection.
 int symboltable_destroy(symboltable_t *self) {
     assert(self != NULL);
     assert(self->m_references > 0);
-    
-    if (--self->m_references == 0) {
+    debug("destroying symboltable %p\n", self);
+
+    if (self->m_references == 1) {
+        debug("this is the last reference, cleaning up\n");
         if (self->m_parent != NULL)  --self->m_parent->m_references;
         if (self->m_symbols != NULL) {
             _symbol_reap(self->m_symbols);
@@ -101,17 +104,21 @@ int symboltable_destroy(symboltable_t *self) {
         } 
         
         if (0 == pthread_mutex_lock(&_symboltable_registry_mutex)) {
+            debug("removing my registry entry\n");
             if (_symboltable_registry != NULL) {
                 if (_symboltable_registry->m_table == self) {
                     symboltable_registry_node_t *reg = _symboltable_registry;
+                    debug("i'm the first symboltable in the registry: %p\n", reg);
                     _symboltable_registry = _symboltable_registry->m_next;
                     memset(reg, 0, sizeof(*reg));
                     free(reg);
                 }
                 else {
                     for (symboltable_registry_node_t *i = _symboltable_registry; i != NULL && i->m_next != NULL; i = i->m_next) {
+                        debug("looking for my registry entry...\n");
                         if (i->m_next->m_table == self) {
                             symboltable_registry_node_t *reg = i->m_next;
+                            debug("found it: %p\n", reg);
                             i->m_next = i->m_next->m_next;
                             memset(reg, 0, sizeof(*reg));
                             free(reg);
@@ -119,14 +126,22 @@ int symboltable_destroy(symboltable_t *self) {
                     }
                 }
             }
+            else {
+                debug("_symboltable_registry is NULL, nothing to remove\n");
+            }
             
             pthread_mutex_unlock(&_symboltable_registry_mutex);
+        }
+        else {
+            debug("error locking _symboltable_registry_mutex\n");
         }
         
         memset(self, 0, sizeof(*self));
         return 0;
     }
     else {
+        --self->m_references;
+        debug("others still hold references (%zd), not cleaning up\n", self->m_references);
         return -1;
     }
 }
@@ -142,6 +157,7 @@ To make copies of any needed ancestor symbols prior to isolating a symbol table,
  */
 int symboltable_isolate(symboltable_t *table) {
     assert(table != NULL);
+    debug("isolating symboltable %p\n", table);
     
     if (table->m_parent != NULL) {
         assert(table->m_parent->m_references > 0);
@@ -162,6 +178,8 @@ thread of execution).  When the child scope ends it decrements the parent's refe
 has already ended.  Periodically calling symboltable_garbage_collect allows the resources held by these scopes to be reclaimed
 by the system.
 
+Returns 0 if all symbol tables have been released, 1 if any remain, or -1 if an error occurs.
+
 =cut
  */
 int symboltable_garbage_collect(void) {
@@ -169,9 +187,11 @@ int symboltable_garbage_collect(void) {
         while (_symboltable_registry != NULL) {
             assert(_symboltable_registry->m_table != NULL);
             if (_symboltable_registry->m_table->m_references > 0) {
+                debug("symboltable %p reference count is greater than zero, not collecting\n", _symboltable_registry->m_table);
                 break;  
             } 
             else {
+                debug("symboltable %p reference count is zero, collecting it\n", _symboltable_registry->m_table);
                 symboltable_registry_node_t *old_reg = _symboltable_registry;
                 _symboltable_registry = _symboltable_registry->m_next;
                 
@@ -190,9 +210,10 @@ int symboltable_garbage_collect(void) {
             }
         }
         pthread_mutex_unlock(&_symboltable_registry_mutex);
-        return 0;
+        return _symboltable_registry ? 1 : 0;
     }
     else {
+        debug("failed to lock _symboltable_registry_mutex\n");
         return -1;
     }
 }
@@ -360,6 +381,7 @@ Returns 0 on success, or non-zero on failure - in which case the symbol may stil
  */
 int symbol_undefine(symboltable_t *table, identifier_t identifier) {
     assert(table != NULL);
+    debug("undefining identifier %"PRIuPTR" from table %p\n", identifier, table);
         
     // temporarily detach the table's parent to do a local-only lookup
     symboltable_t *tmp = table->m_parent;
@@ -544,12 +566,15 @@ Setup and teardown functions for individual symbol_t objects
  */
 int _symbol_init(symbol_t *self) {
     assert(self != NULL);
+    debug("initialising symbol %p\n", self);
     memset(self, 0, sizeof(*self));
     return 0;
 }
 
 int _symbol_destroy(symbol_t *self) {
     assert(self != NULL);
+    debug("destroying symbol %p\n", self);
+
     switch (self->m_flags & SYMBOL_TYPE_MASK) {
         case SYMBOL_SCALAR:
             scalar_release(self->m_referent);
@@ -581,6 +606,7 @@ Recursively destroys a symbol_t object and all of its children
  */
 int _symbol_reap(symbol_t *self) {
     assert(self != NULL);
+    debug("reaping symbol %p\n", self);
     if (self->m_left_child != NULL) {
         _symbol_reap(self->m_left_child);
         free(self->m_left_child);
