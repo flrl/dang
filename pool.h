@@ -21,6 +21,7 @@ pool
 
 #include <pthread.h>
 #include <stdint.h>
+#include <inttypes.h>
 
 #include "debug.h"
 
@@ -139,14 +140,14 @@ static inline int type##_POOL_INIT(void) {                                      
                 POOL_WRAPPER(type, i).m_next_free = i + 1;                                      \
             }                                                                                   \
             POOL_WRAPPER(type, POOL_SINGLETON(type).m_allocated_count).m_next_free = 0;         \
+            pthread_mutexattr_init(&POOL_SINGLETON(type).m_shared_mutex_attr);                  \
+            pthread_mutexattr_settype(&POOL_SINGLETON(type).m_shared_mutex_attr, mutex_type);   \
             return 0;                                                                           \
         }                                                                                       \
         else {                                                                                  \
             free(POOL_SINGLETON(type).m_items);                                                 \
             return -1;                                                                          \
         }                                                                                       \
-        pthread_mutexattr_init(&POOL_SINGLETON(type).m_shared_mutex_attr);                      \
-        pthread_mutexattr_settype(&POOL_SINGLETON(type).m_shared_mutex_attr, mutex_type);       \
     }                                                                                           \
     else {                                                                                      \
         return -1;                                                                              \
@@ -228,8 +229,13 @@ static inline handle_type type##_POOL_ALLOCATE(uint32_t flags) {                
         if (flags & POOL_OBJECT_FLAG_SHARED) {                                                  \
             POOL_WRAPPER(type, handle).m_mutex = calloc(1, sizeof(pthread_mutex_t));            \
             assert(POOL_WRAPPER(type, handle).m_mutex != NULL);                                 \
-            pthread_mutex_init(POOL_WRAPPER(type, handle).m_mutex,                              \
-                &POOL_SINGLETON(type).m_shared_mutex_attr);                                     \
+            if (0 != pthread_mutex_init(POOL_WRAPPER(type, handle).m_mutex,                     \
+                                        &POOL_SINGLETON(type).m_shared_mutex_attr)) {           \
+                debug("pthread_mutex_init failed. "                                             \
+                      "Converting %s handle %"PRIuPTR" to unshared\n", #type, handle);          \
+                free(POOL_WRAPPER(type, handle).m_mutex);                                       \
+                POOL_WRAPPER(type, handle).m_mutex = NULL;                                      \
+            }                                                                                   \
         }                                                                                       \
                                                                                                 \
         POOL_SINGLETON(type).m_count++;                                                         \
