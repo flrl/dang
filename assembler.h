@@ -18,6 +18,7 @@ typedef struct assembler_output_t {
     uint8_t   m_bytecode[];
 } assembler_output_t;
 
+// pass NULL filename to read from stdin
 assembler_output_t *assemble(const char *);
 
 #endif

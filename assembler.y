@@ -196,7 +196,13 @@ assembler_output_t *assemble(const char *filename) {
     line_t *line;
     label_t *label;
 
-    g_input = fopen(filename, "r");
+    if (filename != NULL) {
+        g_input = fopen(filename, "r");
+    }
+    else {
+        g_input = stdin;
+    }
+    
     if (g_input != NULL) {
         status = yyparse();
         fclose(g_input);
