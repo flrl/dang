@@ -25,6 +25,18 @@
 
 int _vm_context_destroy(vm_context_t *);
 
+typedef struct vm_context_registry_node_t {
+    struct vm_context_registry_node_t *m_next;
+    vm_context_t *m_context;
+} vm_context_registry_node_t;
+
+struct {
+    vm_context_registry_node_t *m_nodes;
+    pthread_mutex_t m_mutex;
+    pthread_cond_t m_changed;
+} _vm_context_registry = { NULL, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER };
+
+
 /*
 =head1 NAME
 
@@ -64,6 +76,14 @@ int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
     if (NULL != (context = calloc(1, sizeof(*context)))) {
         vm_context_init(context, bytecode, length, start);
         vm_execute(context);
+    }
+    
+    debug("waiting for other threads to end...\n");
+    if (0 == pthread_mutex_lock(&_vm_context_registry.m_mutex)) {
+        while (_vm_context_registry.m_nodes != NULL) {
+            pthread_cond_wait(&_vm_context_registry.m_changed, &_vm_context_registry.m_mutex);
+        }
+        pthread_mutex_unlock(&_vm_context_registry.m_mutex);
     }
     
     debug("about to start cleaning up\n");
@@ -307,14 +327,40 @@ int vm_context_init(vm_context_t *self, const uint8_t *bytecode, size_t bytecode
             self->m_bytecode = bytecode;
             self->m_bytecode_length = bytecode_len;
             self->m_counter = start;
-            return 0;
+            
+            vm_context_registry_node_t *node = calloc(1, sizeof(*node));
+            if (node) {
+                node->m_context = self;
+                if (0 == pthread_mutex_lock(&_vm_context_registry.m_mutex)) {
+                    node->m_next = _vm_context_registry.m_nodes;
+                    _vm_context_registry.m_nodes = node;
+                    pthread_mutex_unlock(&_vm_context_registry.m_mutex);
+                    pthread_cond_signal(&_vm_context_registry.m_changed);
+                    return 0;
+                }
+                else {
+                    debug("failed to lock _vm_context_registry.m_mutex\n");
+                    free(node);
+                    STACK_DESTROY(function_handle_t, &self->m_return_stack);
+                    STACK_DESTROY(scalar_t, &self->m_data_stack);
+                    return -1;
+                }
+            }
+            else {
+                debug("couldn't allocate memory for a vm_context_registry_node_t\n");
+                STACK_DESTROY(function_handle_t, &self->m_return_stack);
+                STACK_DESTROY(scalar_t, &self->m_data_stack);
+                return -1;
+            }            
         }
         else {
+            debug("return stack initialisation failed\n");
             STACK_DESTROY(scalar_t, &self->m_data_stack);
             return -1;
         }
     }
     else {
+        debug("data stack initialisation failed\n");
         return -1;
     }
 }
@@ -330,6 +376,7 @@ C<vm_execute()>, except by C<vm_execute()> itself.
 int vm_context_destroy(vm_context_t *self) {
     assert(self != NULL);
     
+    // clean up
     STACK_DESTROY(scalar_t, &self->m_data_stack);
     STACK_DESTROY(function_handle_t, &self->m_return_stack);
     
@@ -338,6 +385,37 @@ int vm_context_destroy(vm_context_t *self) {
         self->m_symboltable = NULL;
     }
     
+    // remove from registry
+    if (0 == pthread_mutex_lock(&_vm_context_registry.m_mutex)) {
+        if (_vm_context_registry.m_nodes != NULL) {
+            if (_vm_context_registry.m_nodes->m_context == self) {
+                vm_context_registry_node_t *reg = _vm_context_registry.m_nodes;
+                _vm_context_registry.m_nodes = _vm_context_registry.m_nodes->m_next;
+                memset(reg, 0, sizeof(*reg));
+                free(reg);
+            }
+            else {
+                for (vm_context_registry_node_t *i = _vm_context_registry.m_nodes; i != NULL && i->m_next != NULL; i = i->m_next) {
+                    if (i->m_next->m_context == self) {
+                        vm_context_registry_node_t *reg = i->m_next;
+                        i->m_next = i->m_next->m_next;
+                        memset(reg, 0, sizeof(*reg));
+                        free(reg);
+                    }
+                }
+            }
+        }
+        else {
+            debug("registry has no nodes\n");
+        }
+        pthread_mutex_unlock(&_vm_context_registry.m_mutex);
+        pthread_cond_signal(&_vm_context_registry.m_changed);
+    }
+    else {
+        debug("failed to lock _vm_context_registry.m_mutex - context %p not removed from registry!\n", self);
+    }
+    
+    debug("destroyed %p, returning\n", self);
     return 0;
 }
 
