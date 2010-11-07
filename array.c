@@ -145,13 +145,24 @@ Adds an item at the start of the array.
 int array_unshift(array_handle_t handle, const scalar_t *value) {
     assert(POOL_HANDLE_VALID(array_t, handle));
     
-    if (ARRAY(handle).m_first == 0) {
-        if (0 != _array_grow_front(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
-    }
-    
     scalar_handle_t s = scalar_allocate(0);  FIXME("handle flags\n");
     scalar_set_value(s, value);
-    ARRAY(handle).m_items[--ARRAY(handle).m_first] = s;
+
+    if (ARRAY(handle).m_count == 0) {
+        ARRAY(handle).m_items[ARRAY(handle).m_first] = s;
+        ++ARRAY(handle).m_count;
+    }
+    else {
+        if (ARRAY(handle).m_first == 0) {
+            if (0 != _array_grow_front(&ARRAY(handle), ARRAY(handle).m_count)) {
+                scalar_release(s);
+                return -1;
+            }
+        }
+        
+        ARRAY(handle).m_items[--ARRAY(handle).m_first] = s;
+        ++ARRAY(handle).m_count;
+    }
     return 0;
 }
 
