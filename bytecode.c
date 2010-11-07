@@ -1384,12 +1384,11 @@ int inst_IN(struct vm_context_t *context) {
     scalar_t a = {0};
     size_t bufsize, strsize;
     char buffer[1024];
-    char *str, *tmp;
+    char *str, *tmp, *ret=NULL;
     
     bufsize = strsize = 1024;
     str = calloc(1, strsize);
-
-    while (fgets(buffer, bufsize, stdin) != NULL) {
+    while (NULL != (ret = fgets(buffer, bufsize, stdin))) {
         if (buffer[strlen(buffer) - 1] == '\n') {
             strcat(str, buffer);
             break;
@@ -1405,11 +1404,13 @@ int inst_IN(struct vm_context_t *context) {
         }
     }
     
-    if (str[strlen(str) - 1] == '\n')  str[strlen(str) - 1] = '\0';
+    if (ret != NULL) {
+        if (str[strlen(str) - 1] == '\n')  str[strlen(str) - 1] = '\0';
+        anon_scalar_set_string_value(&a, str);
+    }
 
-    anon_scalar_set_string_value(&a, str);
     free(str);
-    
+
     vm_ds_push(context, &a);
     anon_scalar_destroy(&a);
     return 1;
