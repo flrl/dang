@@ -65,7 +65,7 @@ bytecode
 /*
 =item END ( -- )
  
-Indicates the end of the bytecode stream.
+Terminates execution of the current context (causing vm_execute to return).
  
 =cut
  */
@@ -112,8 +112,6 @@ Reads a jump destination from the following bytecode.  Spawns a new parallel exe
 the jump destination in the new execution context, meanwhile returning immediately in the calling thread.
 
 Pops n and n parameters from the caller's stack and pushes them in the same order to the new context's stack.
-
-Where do params come from? FIXME
 
 =cut
  */
@@ -738,7 +736,7 @@ int inst_ARUNSHFT(struct vm_context_t *context) {
 }
 
 /*
-=item HRINDEX ( k hr - sr )
+=item HRINDEX ( k hr -- sr )
 
 Pops a hash reference and a key from the data stack, and pushes a reference to the value for that key.
 
@@ -767,7 +765,7 @@ int inst_HRINDEX(struct vm_context_t *context) {
 }
 
 /*
-=item HRKEYEX ( k hr - b )
+=item HRKEYEX ( k hr -- b )
 
 Pops a hash reference and a key from the data stack.  If the key exists in the hash, pushes back the value 1.
 If it does not, pushes back the value 0.
@@ -793,7 +791,7 @@ int inst_HRKEYEX(struct vm_context_t *context) {
 }
 
 /*
-=item HRKEYDEL ( k hr - )
+=item HRKEYDEL ( k hr -- )
 
 Pops a hash reference and a key from the data stack.  Deletes the key from the hash.
 
@@ -889,7 +887,7 @@ int inst_CRWRITE(struct vm_context_t *context) {
 
 
 /*
-=item FRCALL ( [params] fr -- [results] )
+=item FRCALL ( [params] fr -- [results] )  ( -- addr )
 
 Pops a function reference from the data stack.  Pushes the location of the following instruction to the return stack, 
 starts a new symbol table scope, then transfers execution control to the destination reference by the function reference.
@@ -916,8 +914,6 @@ Pops a function reference from the data stack.  Spawns a new parallel execution 
 the function reference in the new execution context, meanwhile returning immediately in the calling thread.
 
 Pops n and n parameters from the caller's stack and pushes them in the same order to the new context's stack.
-
-Where do params/results come from? FIXME
 
 =cut
  */
