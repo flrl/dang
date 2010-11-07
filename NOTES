@@ -5,7 +5,23 @@ arrays and channels
     - these needs pools and handles like what i've done for scalars
     - likewise for hashes
     - does it make sense for a scalar to contain a channel reference?
-    
+    - when writing to a channel that is already full, should we:
+        - block until there is space available to write to
+            - this makes some sense: if the consumer is not consuming, the producer should not produce
+            - but if the producer is, for example, keyboard input, we want to let them keep typing until the other side catches up
+            - if the consumer is in a state where it will never read from the channel, this will lead to deadlock with the
+              producer doing nothing (but also not consuming any cpu)
+        - block for a while, but if no space becomes available then grow the channel
+            - how long to wait?
+                - configurable "aggression" set by channel flags?
+                - exponential backoff?
+            - if the consumer is in a state where it will never read from the channel, this will lead to the producer slowly
+              growing the channel towards memory exhaustion, though without as much load on the cpu
+        - immediately grow the channel
+            - could rapidly lead to memory exhaustion if the consumer is waiting on something else, which might lead the the
+              consumer itself failing and the whole thing falling over
+            - if the consumer is in a state where it will never read from the channel, this will lead to the producer spinning
+              hard until memory is exhausted and it crashes
 
 local variables stored on data stack -- no
     - this is re-entrant, since each invocation of the function has its own data stack
@@ -171,10 +187,15 @@ threading
                   signal a condition variable
                     - vm_main would then be able to spin on the registry or wait on the condition, and only do final cleanup
                       once all the other contexts are finished
+                    - this is a bit messy cause i'd need to set up a condition variable and signalling just so a thread can say
+                      that it's ended, and the data in the context isn't actually useful to vm_main anyway
                 - or it could have a registry of pthread_t's, and any that are still around at the end of vm_main get joined
-                    - vm_execute would call pthread_detach(pthread_self()) right before finishing, so that threads that end
-                      politely on their own don't consume resources.  would still need to get rid of the pthread_t from the
-                      registry though
+                    - once vm_execute finishes running bytecode, it would then remove its own pthread_t from the registry
+                      and call pthread_detach on it.  then when it ends a moment later it'll be automatically cleaned up
+                    - then, when vm_main finishes, it loops over the remaining pthread_t's in the registry and joins on them all
+                        - but, when they all finish they're each going to detach themselves -- what happens if a thread detaches
+                          itself while another thread is waiting to join it?
+                            - can't find any clear statement about what happens in this case, so it's probably undefined :/
                 - if a thread is in an infinite loop, vm_main will never end.  caller needs to make sure their threads have
                   a finish (e.g. by tryreading on a control channel)
             - make vm_main kill all the other threads
