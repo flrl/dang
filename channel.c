@@ -188,10 +188,12 @@ int channel_write(channel_handle_t handle, const scalar_t *value) {
     assert(POOL_HANDLE_IN_USE(channel_t, handle));
     assert(value != NULL);
     
-    static const struct timespec wait_timeout = { 0, 250000 };
+    struct timespec wait_timeout = {0};
+    wait_timeout.tv_sec = time(NULL) + 10;
     
     if (0 == _channel_lock(handle)) {
         while (CHANNEL(handle).m_count >= CHANNEL(handle).m_allocated_count) {
+            debug("channel %"PRIuPTR" is full, waiting for space to become available...\n", handle);
             if (ETIMEDOUT == pthread_cond_timedwait(&CHANNEL(handle).m_has_space, CHANNEL_MUTEX(handle), &wait_timeout)) {
                 _channel_reserve_unlocked(&CHANNEL(handle), CHANNEL(handle).m_allocated_count * 2);
             }
@@ -287,6 +289,8 @@ static int _channel_reserve_unlocked(channel_t *self, size_t new_size) {
     assert(self != NULL);
     assert(new_size != 0);
 
+    debug("reserving space for %zd items\n", new_size);
+    
     if (self->m_allocated_count >= new_size)  return 0;
     
     scalar_t *new_ringbuf = calloc(new_size, sizeof(*new_ringbuf));
