@@ -249,7 +249,6 @@ const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, fla
             symbol->m_flags = SYMBOL_HASH;
             symbol->m_referent = (handle ? hash_reference(handle) : hash_allocate());
             break;
-        //...
         case SYMBOL_CHANNEL:
             symbol->m_flags = SYMBOL_CHANNEL;
             symbol->m_referent = (handle ? channel_reference(handle) : channel_allocate());
@@ -258,6 +257,7 @@ const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, fla
             symbol->m_flags = SYMBOL_FUNCTION;
             symbol->m_referent = handle;
             break;
+        //...
         default:
             debug("unhandled symbol type: %"PRIu32"\n", flags);
             break;
@@ -318,7 +318,6 @@ const symbol_t *symbol_clone(symboltable_t *table, identifier_t identifier) {
                 symbol->m_flags = SYMBOL_HASH;
                 symbol->m_referent = hash_reference(remote_symbol->m_referent);
                 break;
-            //...
             case SYMBOL_CHANNEL:
                 symbol->m_flags = SYMBOL_CHANNEL;
                 symbol->m_referent = channel_reference(remote_symbol->m_referent);
@@ -327,6 +326,7 @@ const symbol_t *symbol_clone(symboltable_t *table, identifier_t identifier) {
                 symbol->m_flags = SYMBOL_FUNCTION;
                 symbol->m_referent = remote_symbol->m_referent;
                 break;
+            //...
             default:
                 debug("unhandled symbol type: %"PRIu32"\n", remote_symbol->m_flags);
                 break;
@@ -593,13 +593,13 @@ int _symbol_destroy(symbol_t *self) {
         case SYMBOL_HASH:
             hash_release(self->m_referent);
             break;
-        //...
         case SYMBOL_CHANNEL:
             channel_release(self->m_referent);
             break;
         case SYMBOL_FUNCTION:
             self->m_referent = 0;
             break;
+        //...
         default:
             debug("unhandled symbol type: %"PRIu32"\n", self->m_flags);
             break;
