@@ -18,15 +18,19 @@
 #include "assembler.h"
 #include "vm.h"
 
-const char *options = "aho:x";
+static const char *options = "acho:x";
 
-int  opt_asm_flag = 0;
-int  opt_exe_flag = 0;
-char *opt_out_file = NULL;
-char *opt_in_file = NULL;
+static int  opt_is_assembly    = 0;
+static int  opt_compile_only   = 0;
+static int  opt_is_bytecode    = 0;
+static char *output_file_name  = NULL;
+static char *program_file_name = NULL;
+static assembler_output_t *program = NULL; // FIXME("make program a useful type\n");
 
-void usage(void);
-char *make_filename(const char *, const char *, const char *);
+static void usage(void);
+static char *make_filename(const char *, const char *, const char *);
+static int read_bytecode_file(const char *, assembler_output_t **);
+static int write_bytecode_file(const char *, const assembler_output_t *);
 
 int main(int argc, char *const argv[]) {
     int c, status=0;
@@ -34,18 +38,21 @@ int main(int argc, char *const argv[]) {
     while ((c = getopt(argc, argv, options)) != -1) {
         switch (c) {
             case 'a':
-                opt_asm_flag = 1;
-                opt_exe_flag = 0;
+                opt_is_assembly = 1;
+                opt_is_bytecode = 0;
+                break;
+            case 'c':
+                opt_compile_only = 1;
                 break;
             case 'h':
                 usage();
                 return 0;
             case 'o':
-                opt_out_file = strdup(optarg);
+                output_file_name = strdup(optarg);
                 break;
             case 'x':
-                opt_exe_flag = 1;
-                opt_asm_flag = 0;
+                opt_is_assembly = 0;
+                opt_is_bytecode = 1;
                 break;
             default:
                 usage();
@@ -56,127 +63,182 @@ int main(int argc, char *const argv[]) {
     argv += optind;
     
     if (argc) {
-        opt_in_file = strdup(argv[0]);
-    }
-
-    if (opt_asm_flag) {
-        if (opt_in_file != NULL) {
-            assembler_output_t *data;
-            if ((data = assemble(opt_in_file)) != NULL) {
-                if (opt_out_file == NULL)  opt_out_file = make_filename(opt_in_file, ".dang", ".dong");
-                FILE *out = fopen(opt_out_file, "wb");
-                if (out != NULL) {
-                    fwrite("dong", 4, 1, out);
-                    fwrite(data, sizeof(*data) + data->m_bytecode_length, 1, out);
-                    fclose(out);
-                }
-                else {
-                    status = errno;
-                    perror(opt_out_file);
-                }
-                free(data);
-            }
-            else {
-                fprintf(stderr, "error assembling file `%s'\n", opt_in_file);
-                status = 1;
-            }
-        }
-        else {
-            fprintf(stderr, "no input file specified\n");
-            status = 1;
-        }
-    }
-
-    if (opt_exe_flag) {
-        if (opt_in_file != NULL) {
-            FILE *in = fopen(opt_in_file, "rb");
-            if (in != NULL) {
-                char check[5] = {0};
-                fread(&check, 4, 1, in);
-                assert(strcmp(check, "dong") == 0);
-
-                assembler_output_t header;
-                fread(&header, sizeof(header), 1, in);
-
-                uint8_t *bytecode = malloc(sizeof(*bytecode) * header.m_bytecode_length);            
-                fread(bytecode, header.m_bytecode_length, 1, in);
-
-                fclose(in);
-                
-                status = vm_main(bytecode, header.m_bytecode_length, header.m_bytecode_start);
-                
-                free(bytecode);
-            }
-            else {
-                status = errno;
-                perror(opt_in_file);
-            }
-        }
-        else {
-            fprintf(stderr, "no input file specified\n");
-            status = 1;
-        }
+        if (strcmp(argv[0], "-") != 0)  program_file_name = strdup(argv[0]);
     }
     
-    if (opt_in_file)    free(opt_in_file);
-    if (opt_out_file)   free(opt_out_file);
+    if (opt_is_assembly) {
+            program = assemble(program_file_name);  // reads stdin if filename is NULL
+    }
+    else if (opt_is_bytecode) {
+        if (opt_compile_only == 0) {
+            status = read_bytecode_file(program_file_name, &program);   // reads stdin if filename is NULL
+        }
+        else {
+            FIXME("some meaningful error message when -c and -x are specified together\n");
+            status = EINVAL;
+        }
+    }
+    else {
+        FIXME("parse and compile the language file\n");
+        program = NULL;
+    }
+
+    if (program) {
+        if (opt_compile_only) {
+            if (output_file_name != NULL) {
+                if (strcmp(output_file_name, "-") == 0) {
+                    free(output_file_name);
+                    output_file_name = NULL;
+                }
+            }
+            else {
+                output_file_name = make_filename(program_file_name, ".dang", ".dong");
+            }
+            status = write_bytecode_file(output_file_name, program);  // writes to stdout if filename is NULL
+        }
+        else {
+            status = vm_main(program->m_bytecode, program->m_bytecode_length, program->m_bytecode_start);
+        }
+        
+        free(program);
+    }
+    else {
+        FIXME("print some error if there's no program to execute\n");
+    }
+
+    if (program_file_name)  free(program_file_name);
+    if (output_file_name)   free(output_file_name);
     
     return status;
 }
 
-void usage(void) {
+static void usage(void) {
+/***
+Usage:
+    dang [options] programfile [arguments]
+
+Options:
+    -a      Treat programfile as assembly language. 
+
+    -c      Compile programfile to bytecode, but do not execute it.  
+    
+            By default, the compiled bytecode is written to a file called
+            \"programfile.dong\", where the \".dong\" extension replaces the
+            \".dang\" extension, if any.
+            
+            To specify an alternative output file name, see the -o option.
+
+    -h      Display this help message.
+
+    -o      Specifies the output filename to be used by the -c option.
+
+    -x      Treat programfile as compiled bytecode input (as produced by the
+            -c option).
+***/
     const char *usage =
 "Usage:\n"
-"    dang [options] infile\n"
+"    dang [options] programfile [arguments]\n"
 "\n"
 "Options:\n"
-"    -a      Treat infile as assembly language input, and compile it into a bytecode file.\n"
-"            If no output filename is specified, one is constructed by either replacing a\n"
-"            \".dang\" extension on the input file with \".dong\", or if no \".dang\" extension\n"
-"            exists, by simply appending a \".dong\" extension.\n"
-"            If the input filename is not specified, or is the special value \"-\", input\n"
-"            is read from the standard input channel, and the default output filename is\n"
-"            \"a.dong\".\n"
+"    -a      Treat programfile as assembly language. \n"
 "\n"
-"    -h      Displays this help message\n"
+"    -c      Compile programfile to bytecode, but do not execute it.  \n"
+"    \n"
+"            By default, the compiled bytecode is written to a file called\n"
+"            \"programfile.dong\", where the \".dong\" extension replaces the\n"
+"            \".dang\" extension, if any.\n"
+"            \n"
+"            To specify an alternative output file name, see the -o option.\n"
 "\n"
-"    -o outfile\n"
-"            Specifies the output filename to be used by the -a, ... options.\n"
+"    -h      Display this help message.\n"
 "\n"
-"    -x      Treat infile as compiled bytecode as produced by -a, and execute it\n"
+"    -o      Specifies the output filename to be used by the -c option.\n"
 "\n"
+"    -x      Treat programfile as compiled bytecode input (as produced by the\n"
+"            -c option).\n"
     ;
     fputs(usage, stderr);
 }
 
-char *make_filename(const char *orig, const char *orig_ext, const char *new_ext) {
+static char *make_filename(const char *orig, const char *orig_ext, const char *new_ext) {
     char *filename = NULL;
     int pos;
     
     assert(orig_ext != NULL);
     assert(new_ext != NULL);
     
-    if (strcmp(orig, "-") == 0) {
+    if (orig == NULL) {
         filename = malloc(2 + strlen(new_ext));
         strcpy(filename, "a");
         strcat(filename, new_ext);
         return filename;
     }
+    else {    
+        if ((pos = strlen(orig) - strlen(orig_ext)) > 0) {
+            if (strcmp(&orig[pos], orig_ext) == 0) {
+                // extension found
+                filename = strdup(orig);
+                filename[pos] = '\0';
+                strncat(filename, new_ext, strlen(orig_ext));
+                return filename;
+            }
+        }
     
-    if ((pos = strlen(orig) - strlen(orig_ext)) > 0) {
-        if (strcmp(&orig[pos], orig_ext) == 0) {
-            // extension found
-            filename = strdup(orig);
-            filename[pos] = '\0';
-            strncat(filename, new_ext, strlen(orig_ext));
-            return filename;
+        // no extension found
+        filename = malloc(strlen(orig) + strlen(new_ext) + 1);
+        strcpy(filename, orig);
+        strcat(filename, new_ext);
+        
+        return filename;
+    }
+}
+
+static int read_bytecode_file(const char *filename, assembler_output_t **result) {
+    int status = 0;
+    
+    FILE *in = (filename != NULL ? fopen(filename, "rb") : stdin);
+    if (in != NULL) {
+        char check[5] = {0};
+        fread(&check, 4, 1, in);
+        assert(strcmp(check, "dong") == 0);
+        
+        assembler_output_t header = {0};
+        fread(&header, sizeof(header), 1, in);
+        
+        assembler_output_t *program = malloc(sizeof(*program) + (sizeof(*(*program).m_bytecode) * header.m_bytecode_length));
+        if (program != NULL) {
+            memcpy(program, &header, sizeof(*program));
+            fread(program->m_bytecode, header.m_bytecode_length, 1, in);
+            fclose(in);
+            *result = program;
+        }
+        else {
+            status = errno;
+            perror("some error message here");
         }
     }
-
-    // no extension found
-    filename = malloc(strlen(orig) + strlen(new_ext) + 1);
-    strcpy(filename, orig);
-    strcat(filename, new_ext);
+    else {
+        status = errno;
+        perror(filename);
+    }
     
-    return filename;
+    return status;
+}
+
+
+static int write_bytecode_file(const char *filename, const assembler_output_t *program) {
+    int status = 0;
+    
+    FILE *out = (filename != NULL ? fopen(output_file_name, "wb") : stdout);
+    if (out != NULL) {
+        fwrite("dong", 4, 1, out);
+        fwrite(program, sizeof(*program) + program->m_bytecode_length, 1, out);
+        fclose(out);
+    }
+    else {
+        status = errno;
+        perror(output_file_name);
+    }
+
+    return status;
 }
