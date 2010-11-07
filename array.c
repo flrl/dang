@@ -21,9 +21,12 @@ POOL_SOURCE_CONTENTS(array_t);
 
 static const size_t _array_initial_reserve_size = 16;
 
-static int _array_reserve(array_t *, size_t);
-static int _array_grow_back(array_t *, size_t);
-static int _array_grow_front(array_t *, size_t);
+static int _array_reserve_unlocked(array_t *, size_t);
+static int _array_grow_back_unlocked(array_t *, size_t);
+static int _array_grow_front_unlocked(array_t *, size_t);
+
+static inline int _array_lock(array_handle_t);
+static inline int _array_unlock(array_handle_t);
 
 /*
 =head1 NAME
@@ -69,12 +72,12 @@ Functions for managing allocation of arrays.
 
 =cut
  */
-array_handle_t array_allocate(void) {
-    return POOL_ALLOCATE(array_t, 0);
+array_handle_t array_allocate(flags_t flags) {
+    return POOL_ALLOCATE(array_t, flags);
 }
 
-array_handle_t array_allocate_many(size_t n) {
-    return POOL_ALLOCATE_MANY(array_t, n, 0);
+array_handle_t array_allocate_many(size_t n, flags_t flags) {
+    return POOL_ALLOCATE_MANY(array_t, n, flags);
 }
 
 array_handle_t array_reference(array_handle_t handle) {
@@ -99,20 +102,28 @@ done with it.
 */
 scalar_handle_t array_item_at(array_handle_t handle, size_t index) {
     assert(POOL_HANDLE_VALID(array_t, handle));
-
-    if (index >= ARRAY(handle).m_first + ARRAY(handle).m_count) {
-        if (0 != _array_reserve(&ARRAY(handle), index + 1))  return 0;
-        
-        size_t need = index - (ARRAY(handle).m_first + ARRAY(handle).m_count - 1);
-        scalar_handle_t handle = scalar_allocate_many(need, 0);  FIXME("handle flags\n");
-        
-        while (ARRAY(handle).m_count <= index - ARRAY(handle).m_first) {
-            ARRAY(handle).m_items[ARRAY(handle).m_first + ARRAY(handle).m_count++] = handle + 1;
-            ++handle;
+    assert(POOL_HANDLE_IN_USE(array_t, handle));
+    
+    if (0 == _array_lock(handle)) {
+        if (index >= ARRAY(handle).m_first + ARRAY(handle).m_count) {
+            if (0 != _array_reserve_unlocked(&ARRAY(handle), index + 1))  return 0;
+            
+            size_t need = index - (ARRAY(handle).m_first + ARRAY(handle).m_count - 1);
+            scalar_handle_t handle = scalar_allocate_many(need, 0);  FIXME("handle flags\n");
+            
+            while (ARRAY(handle).m_count <= index - ARRAY(handle).m_first) {
+                ARRAY(handle).m_items[ARRAY(handle).m_first + ARRAY(handle).m_count++] = handle + 1;
+                ++handle;
+            }
         }
-    }
 
-    return scalar_reference(ARRAY(handle).m_items[ARRAY(handle).m_first + index]);
+        scalar_handle_t s = scalar_reference(ARRAY(handle).m_items[ARRAY(handle).m_first + index]);
+        _array_unlock(handle);
+        return s;
+    }
+    else {
+        return 0;
+    }
 }
 
 /*
@@ -124,15 +135,22 @@ Adds an item at the end of the array.
 */
 int array_push(array_handle_t handle, const scalar_t *value) {
     assert(POOL_HANDLE_VALID(array_t, handle));
+    assert(POOL_HANDLE_IN_USE(array_t, handle));
+    
+    if (0 == _array_lock(handle)) {
+        if (ARRAY(handle).m_first + ARRAY(handle).m_count == ARRAY(handle).m_allocated_count) {
+            if (0 != _array_grow_back_unlocked(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
+        }
 
-    if (ARRAY(handle).m_first + ARRAY(handle).m_count == ARRAY(handle).m_allocated_count) {
-        if (0 != _array_grow_back(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
+        scalar_handle_t s = scalar_allocate(0); FIXME("handle flags\n");
+        scalar_set_value(s, value);
+        ARRAY(handle).m_items[ARRAY(handle).m_count++] = s;
+        _array_unlock(handle);
+        return 0;
     }
-
-    scalar_handle_t s = scalar_allocate(0); FIXME("handle flags\n");
-    scalar_set_value(s, value);
-    ARRAY(handle).m_items[ARRAY(handle).m_count++] = s;
-    return 0;
+    else {
+        return -1;
+    }
 }
 
 /*
@@ -144,26 +162,35 @@ Adds an item at the start of the array.
 */
 int array_unshift(array_handle_t handle, const scalar_t *value) {
     assert(POOL_HANDLE_VALID(array_t, handle));
+    assert(POOL_HANDLE_IN_USE(array_t, handle));
     
-    scalar_handle_t s = scalar_allocate(0);  FIXME("handle flags\n");
-    scalar_set_value(s, value);
+    int status = 0;
+    if (0 == _array_lock(handle)) {
+        scalar_handle_t s = scalar_allocate(0);  FIXME("handle flags\n");
+        scalar_set_value(s, value);
 
-    if (ARRAY(handle).m_count == 0) {
-        ARRAY(handle).m_items[ARRAY(handle).m_first] = s;
-        ++ARRAY(handle).m_count;
+        if (ARRAY(handle).m_count == 0) {
+            ARRAY(handle).m_items[ARRAY(handle).m_first] = s;
+            ++ARRAY(handle).m_count;
+        }
+        else {
+            if (ARRAY(handle).m_first == 0) {
+                if (0 != _array_grow_front_unlocked(&ARRAY(handle), ARRAY(handle).m_count)) {
+                    scalar_release(s);
+                    status = -1;
+                }
+            }
+            
+            ARRAY(handle).m_items[--ARRAY(handle).m_first] = s;
+            ++ARRAY(handle).m_count;
+        }
+        _array_unlock(handle);
     }
     else {
-        if (ARRAY(handle).m_first == 0) {
-            if (0 != _array_grow_front(&ARRAY(handle), ARRAY(handle).m_count)) {
-                scalar_release(s);
-                return -1;
-            }
-        }
-        
-        ARRAY(handle).m_items[--ARRAY(handle).m_first] = s;
-        ++ARRAY(handle).m_count;
+        status = -1;
     }
-    return 0;
+    
+    return status;
 }
 
 /*
@@ -176,16 +203,27 @@ done with it.
 */
 int array_pop(array_handle_t handle, scalar_t *result) {
     assert(POOL_HANDLE_VALID(array_t, handle));
-
-    if (ARRAY(handle).m_count > 0) {
-        scalar_handle_t s = ARRAY(handle).m_items[ARRAY(handle).m_first + --ARRAY(handle).m_count];
-        if (result != NULL)  scalar_get_value(s, result);
-        scalar_release(s);
-        return 0;
+    assert(POOL_HANDLE_IN_USE(array_t, handle));
+    
+    int status = 0;
+    
+    if (0 == _array_lock(handle)) {
+        if (ARRAY(handle).m_count > 0) {
+            scalar_handle_t s = ARRAY(handle).m_items[ARRAY(handle).m_first + --ARRAY(handle).m_count];
+            if (result != NULL)  scalar_get_value(s, result);
+            scalar_release(s);
+            status = 0;
+        }
+        else {
+            status = -1;
+        }
+        _array_unlock(handle);
     }
     else {
-        return -1;
+        status = -1;
     }
+    
+    return status;
 }
 
 /*
@@ -198,17 +236,28 @@ done with it.
 */
 int array_shift(array_handle_t handle, scalar_t *result) {
     assert(POOL_HANDLE_VALID(array_t, handle));
+    assert(POOL_HANDLE_IN_USE(array_t, handle));
+    
+    int status = 0;
 
-    if (ARRAY(handle).m_count > 0) {
-        --ARRAY(handle).m_count;
-        scalar_handle_t s = ARRAY(handle).m_items[ARRAY(handle).m_first++];
-        if (result != NULL)  scalar_get_value(s, result);
-        scalar_release(s);
-        return 0;
+    if (0 == _array_lock(handle)) {
+        if (ARRAY(handle).m_count > 0) {
+            --ARRAY(handle).m_count;
+            scalar_handle_t s = ARRAY(handle).m_items[ARRAY(handle).m_first++];
+            if (result != NULL)  scalar_get_value(s, result);
+            scalar_release(s);
+            status = 0;
+        }
+        else {
+            status = -1;
+        }
+        _array_unlock(handle);
     }
     else {
-        return -1;
+        status = -1;
     }
+    
+    return status;
 }
 
 /*
@@ -220,6 +269,25 @@ int array_shift(array_handle_t handle, scalar_t *result) {
 
 =cut
 */
+
+/*
+=item _array_lock()
+
+=item _array_unlock()
+
+Lock and unlock arrays
+
+=cut
+ */
+static inline int _array_lock(array_handle_t handle) {
+    assert(POOL_HANDLE_VALID(array_t, handle));
+    return POOL_LOCK(array_t, handle);
+}
+
+static inline int _array_unlock(array_handle_t handle) {
+    assert(POOL_HANDLE_VALID(array_t, handle));
+    return POOL_UNLOCK(array_t, handle);
+}
 
 /*
 =item _array_init()
@@ -258,19 +326,19 @@ int _array_destroy(array_t *self) {
 }
 
 /*
-=item _array_reserve()
+=item _array_reserve_unlocked()
 
 Ensure an array has space for a certain number of items.  Additional space, if any, is allocated at the end of the array.
 
 =cut
  */
-static int _array_reserve(array_t *self, size_t target_size) {
+static int _array_reserve_unlocked(array_t *self, size_t target_size) {
     assert(self != NULL);
     
     size_t effective_size = self->m_allocated_count - self->m_first;
     
     if (effective_size < target_size) {
-        return _array_grow_back(self, target_size - effective_size);
+        return _array_grow_back_unlocked(self, target_size - effective_size);
     }
     else {
         return 0;
@@ -278,13 +346,13 @@ static int _array_reserve(array_t *self, size_t target_size) {
 }
 
 /*
-=item _array_grow_back()
+=item _array_grow_back_unlocked()
 
 Allocates space for an additional n items at the end of the current allocation.
 
 =cut
 */
-static int _array_grow_back(array_t *self, size_t n) {
+static int _array_grow_back_unlocked(array_t *self, size_t n) {
     assert(self != NULL);
     scalar_handle_t *new_items = calloc(self->m_allocated_count + n, sizeof(*new_items));
     if (new_items != NULL) {
@@ -301,13 +369,13 @@ static int _array_grow_back(array_t *self, size_t n) {
 }
 
 /*
-=item _array_grow_front()
+=item _array_grow_front_unlocked()
 
 Allocates space for an additional n items at the front of the current allocation.
 
 =cut
 */
-static int _array_grow_front(array_t *self, size_t n) {
+static int _array_grow_front_unlocked(array_t *self, size_t n) {
     assert(self != NULL);
     scalar_handle_t *new_items = calloc(self->m_allocated_count + n, sizeof(*new_items));
     if (new_items != NULL) {

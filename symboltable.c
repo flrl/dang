@@ -243,7 +243,7 @@ const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, fla
             break;
         case SYMBOL_ARRAY:
             symbol->m_flags = SYMBOL_ARRAY;
-            symbol->m_referent = (handle ? array_reference(handle) : array_allocate());
+            symbol->m_referent = (handle ? array_reference(handle) : array_allocate(flags & ~SYMBOL_TYPE_MASK));
             break;
         case SYMBOL_HASH:
             symbol->m_flags = SYMBOL_HASH;
