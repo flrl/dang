@@ -221,8 +221,8 @@ int symboltable_garbage_collect(void) {
 /*
 =item symbol_define()
 
-Define a symbol within the current scope.  If handle is 0, allocates a new handle of the type indicated by flags.
-Otherwise, associates the symbol with the specified handle.
+Define a symbol within the current scope.  If handle is 0 and the flags do not indicate a function handle, allocates
+a new handle of the type indicated by flags.  Otherwise, associates the symbol with the specified handle.
 
 Returns the new symbol, or NULL on failure.
 
@@ -253,6 +253,10 @@ const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, fla
         case SYMBOL_CHANNEL:
             symbol->m_flags = SYMBOL_CHANNEL;
             symbol->m_referent = (handle ? channel_reference(handle) : channel_allocate());
+            break;
+        case SYMBOL_FUNCTION:
+            symbol->m_flags = SYMBOL_FUNCTION;
+            symbol->m_referent = handle;
             break;
         default:
             debug("unhandled symbol type: %"PRIu32"\n", flags);
@@ -318,6 +322,10 @@ const symbol_t *symbol_clone(symboltable_t *table, identifier_t identifier) {
             case SYMBOL_CHANNEL:
                 symbol->m_flags = SYMBOL_CHANNEL;
                 symbol->m_referent = channel_reference(remote_symbol->m_referent);
+                break;
+            case SYMBOL_FUNCTION:
+                symbol->m_flags = SYMBOL_FUNCTION;
+                symbol->m_referent = remote_symbol->m_referent;
                 break;
             default:
                 debug("unhandled symbol type: %"PRIu32"\n", remote_symbol->m_flags);
@@ -588,6 +596,9 @@ int _symbol_destroy(symbol_t *self) {
         //...
         case SYMBOL_CHANNEL:
             channel_release(self->m_referent);
+            break;
+        case SYMBOL_FUNCTION:
+            self->m_referent = 0;
             break;
         default:
             debug("unhandled symbol type: %"PRIu32"\n", self->m_flags);
