@@ -1404,11 +1404,7 @@ int inst_IN(struct vm_context_t *context) {
         }
     }
     
-    if (ret != NULL) {
-        if (str[strlen(str) - 1] == '\n')  str[strlen(str) - 1] = '\0';
-        anon_scalar_set_string_value(&a, str);
-    }
-
+    if (ret != NULL)  anon_scalar_set_string_value(&a, str);
     free(str);
 
     vm_ds_push(context, &a);
