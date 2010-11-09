@@ -33,12 +33,6 @@ This also means that it's generally not useful to use a reference type as a hash
 
 #include "hash.h"
 
-#ifdef POOL_INITIAL_SIZE
-#undef POOL_INITIAL_SIZE
-#define POOL_INITIAL_SIZE (64)
-#endif
-#include "pool.h"
-
 #define HASH(handle)    POOL_OBJECT(hash_t, handle)
 
 static int _hash_bucket_init(hash_bucket_t *);
