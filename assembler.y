@@ -333,8 +333,9 @@ assembler_output_t *assemble(const char *filename) {
                     }
                     break;
 
-                case i_BRANCH:
-                case i_BRANCH0:
+                case i_JMP:
+                case i_JMP0:
+                case i_JMPU:
                     if (line->m_params != NULL && line->m_params->m_type == P_LABEL_OFF) {
                         intptr_t offset = line->m_params->m_value.as_label->m_line->m_position - line->m_position;
                         * (intptr_t *) &(output->m_bytecode[line->m_position + 1]) = offset;

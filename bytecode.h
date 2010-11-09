@@ -28,8 +28,9 @@ typedef enum instruction_t {
     i_OR,
     i_XOR,
     i_NOT,
-    i_BRANCH,       /* intptr_t */
-    i_BRANCH0,      /* intptr_t */
+    i_JMP,          /* intptr_t */
+    i_JMP0,         /* intptr_t */
+    i_JMPU,         /* intptr_t */
     i_SYMDEF,       /* flags_t identifier_t */
     i_SYMFIND,      /* identifier_t */
     i_SYMCLONE,     /* identifier_t */

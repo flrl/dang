@@ -294,26 +294,27 @@ int inst_NOT(struct vm_context_t *context) {
 }
 
 /*
-=item BRANCH ( -- )
+=item JMP ( -- )
  
 Reads a jump destination from the following bytecode and transfers execution control to it.
  
 =cut
  */
-int inst_BRANCH(vm_context_t *context) {
+int inst_JMP(vm_context_t *context) {
     const intptr_t offset = *(const intptr_t *) NEXT_BYTE(context);
     return offset;
 }
 
 /*
-=item BRANCH0 ( a -- )
+=item JMP0 ( a -- )
 
-Reads a jump destination from the following bytecode.  Pops a value from the data stack.  If the value popped is false, transfers
-execution control to the jump destination.  Otherwise, transfers execution control to the next instruction.
+Reads a jump destination from the following bytecode.  Pops a value from the data stack.  If the value popped is a zero
+value (0, 0.0, "0" or ""), transfers execution control to the jump destination.  Otherwise, transfers execution control 
+to the next instruction.
  
 =cut
  */
-int inst_BRANCH0(vm_context_t *context) {
+int inst_JMP0(vm_context_t *context) {
     const intptr_t branch_offset = *(const intptr_t *) NEXT_BYTE(context);
     int incr = 0;
 
@@ -332,6 +333,33 @@ int inst_BRANCH0(vm_context_t *context) {
     anon_scalar_destroy(&a);
     return incr;
 }
+
+/*
+=item JMPU ( a -- )
+
+Reads a jump destination from the following bytecode.  Pops a value from the data stack.  If the value popped is undefined, 
+transfers execution control to the jump destination.  Otherwise, transfers execution control to the next instruction.
+
+=cut
+*/
+int inst_JMPU(struct vm_context_t *context) {
+    const intptr_t branch_offset = *(const intptr_t *) NEXT_BYTE(context);
+    int incr = 0;
+    
+    scalar_t a = {0};
+    vm_ds_pop(context, &a);
+    if (anon_scalar_is_defined(&a) == 0) {
+        // branch by offset
+        incr = branch_offset;
+    }
+    else {
+        incr = 1 + sizeof(branch_offset);
+    }
+    
+    anon_scalar_destroy(&a);
+    return incr;
+}
+
 
 /*
 =item SYMDEF ( a -- ref )
