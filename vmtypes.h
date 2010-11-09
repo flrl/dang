@@ -20,6 +20,7 @@ typedef handle_t array_handle_t;
 typedef handle_t hash_handle_t;
 typedef handle_t channel_handle_t;
 typedef handle_t function_handle_t;
+typedef handle_t file_handle_t;
 
 typedef uint32_t flags_t;
 typedef uintptr_t identifier_t;
