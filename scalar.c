@@ -320,6 +320,33 @@ void anon_scalar_set_function_reference(scalar_t *self, function_handle_t handle
 }
 
 /*
+=item anon_scalar_is_defined()
+
+Returns 1 if a scalar has some sort of value, or zero if it is undefined.
+
+=cut
+ */
+intptr_t anon_scalar_is_defined(const scalar_t * self) {
+    assert(self != NULL);
+    switch (self->m_flags & SCALAR_TYPE_MASK) {
+        case SCALAR_UNDEF:
+            return 0;
+        case SCALAR_INT:
+        case SCALAR_SCAREF:
+        case SCALAR_ARRREF:
+        case SCALAR_HASHREF:
+        case SCALAR_CHANREF:
+        case SCALAR_FUNCREF:
+        case SCALAR_FLOAT:
+        case SCALAR_STRING:
+            return 1;
+        default:
+            debug("unhandled scalar type: %"PRIu32"\n", self->m_flags);
+            return 0;
+    }
+}
+
+/*
 
 =item anon_scalar_get_bool_value()
 

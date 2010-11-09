@@ -79,6 +79,7 @@ void anon_scalar_set_int_value(scalar_t *, intptr_t);
 void anon_scalar_set_float_value(scalar_t *, floatptr_t);
 void anon_scalar_set_string_value(scalar_t *, const char *);
 
+intptr_t anon_scalar_is_defined(const scalar_t *);
 intptr_t anon_scalar_get_bool_value(const scalar_t *);
 intptr_t anon_scalar_get_int_value(const scalar_t *);
 floatptr_t anon_scalar_get_float_value(const scalar_t *);
@@ -262,6 +263,24 @@ static inline void scalar_set_function_reference(scalar_handle_t handle, functio
     }
 }
 
+/*
+=item scalar_is_defined()
+
+Returns 1 if the scalar has some sort of value, or 0 if it is undefined
+
+=cut
+ */
+static inline intptr_t scalar_is_defined(scalar_handle_t handle) {
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
+    
+    intptr_t value = 0;
+    if (0 == scalar_lock(handle)) {
+        value = anon_scalar_is_defined(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return value;
+}
 
 /*
 =item scalar_get_bool_value()
