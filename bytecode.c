@@ -327,7 +327,7 @@ int inst_JMP0(vm_context_t *context) {
     }
     else {
         // skip to the next instruction
-        incr = 1 + sizeof(intptr_t);
+        incr = 1 + sizeof(branch_offset);
     }
     
     anon_scalar_destroy(&a);
