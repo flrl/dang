@@ -37,8 +37,14 @@ Setup and tear down functions for the io pool
 
 =cut
  */
-int io_pool_init(void);
-int io_pool_destroy(void);
+int io_pool_init(void) {
+    FIXME("set up stdin/stdout/sterr handles here\n");
+    return POOL_INIT(io_t);
+}
+
+int io_pool_destroy(void) {
+    return POOL_DESTROY(io_t);
+}
 
 /*
 =item io_allocate()
@@ -52,10 +58,21 @@ int io_pool_destroy(void);
 Functions for managing io allocations.
 =cut
  */
-io_handle_t io_allocate(void);
-io_handle_t io_allocate_many(size_t);
-io_handle_t io_reference(io_handle_t);
-int io_release(io_handle_t);
+io_handle_t io_allocate(void) {
+    return POOL_ALLOCATE(io_t, POOL_OBJECT_FLAG_SHARED);
+}
+
+io_handle_t io_allocate_many(size_t n) {
+    return POOL_ALLOCATE_MANY(io_t, n, POOL_OBJECT_FLAG_SHARED);
+}
+
+io_handle_t io_reference(io_handle_t handle) {
+    return POOL_REFERENCE(io_t, handle);
+}
+
+int io_release(io_handle_t handle) {
+    return POOL_RELEASE(io_t, handle);
+}
 
 /*
 =item io_open()
@@ -66,8 +83,18 @@ Functions for opening and closing ios
 
 =cut
  */
-int io_open(io_handle_t, const char *);
-int io_close(io_handle_t);
+int io_open(io_handle_t handle, const char *filename, flags_t flags) {
+    assert(POOL_HANDLE_VALID(io_t, handle));
+    assert(POOL_HANDLE_IN_USE(io_t, handle));
+    
+    FIXME("finish this\n");
+    return -1;
+}
+
+int io_close(io_handle_t handle) {
+    FIXME("finish this\n");
+    return -1;
+}
 
 /*
 =item io_read_until_byte()
@@ -76,7 +103,7 @@ int io_close(io_handle_t);
 
 =cut
  */
-int io_read_until_byte(io_handle_t, char **, size_t *, int);
+int io_read_until(io_handle_t, char **, size_t *, int);
 
 /*
 =item io_read_len()
@@ -85,7 +112,7 @@ int io_read_until_byte(io_handle_t, char **, size_t *, int);
 
 =cut
  */
-int io_read_len(io_handle_t, char **, size_t *, size_t);
+int io_read(io_handle_t, char **, size_t *, size_t);
 
 /*
 =item io_write()
@@ -125,8 +152,18 @@ Setup and teardown functions for io_t objects.
 
 =cut
  */
-int _io_init(io_t *);
-int _io_destroy(io_t *);
+int _io_init(io_t *self) {
+    assert(self != NULL);
+    memset(self, 0, sizeof(*self));
+    return 0;
+}
+
+int _io_destroy(io_t *self) {
+    assert(self != NULL);
+    FIXME("close the file/etc if it's still open\n");
+    memset(self, 0, sizeof(*self));
+    return -1;
+}
 
 /*
 =item _io_bind()
