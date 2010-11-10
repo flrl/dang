@@ -309,8 +309,8 @@ int inst_JMP(vm_context_t *context) {
 =item JMP0 ( a -- )
 
 Reads a jump destination from the following bytecode.  Pops a value from the data stack.  If the value popped is a zero
-value (0, 0.0, "0" or ""), transfers execution control to the jump destination.  Otherwise, transfers execution control 
-to the next instruction.
+value (0, 0.0, "0", "", or undef), transfers execution control to the jump destination.  Otherwise, transfers execution 
+control to the next instruction.
  
 =cut
  */
