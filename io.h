@@ -52,8 +52,8 @@ int io_release(io_handle_t);
 int io_open(io_handle_t, const char *, flags_t);
 int io_close(io_handle_t);
 
-int io_read_until_byte(io_handle_t, char **, size_t *, int);
-int io_read(io_handle_t, char **, size_t *, size_t);
+ssize_t io_read_until(io_handle_t, char **, int);
+ssize_t io_read(io_handle_t, char *, size_t);
 int io_write(io_handle_t, const char *, size_t);
 
 const char *io_get_filename(io_handle_t);

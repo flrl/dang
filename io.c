@@ -97,22 +97,22 @@ int io_close(io_handle_t handle) {
 }
 
 /*
-=item io_read_until_byte()
+=item io_read_until()
 
 ...
 
 =cut
  */
-int io_read_until(io_handle_t, char **, size_t *, int);
+ssize_t io_read_until(io_handle_t, char **, int);
 
 /*
-=item io_read_len()
+=item io_read()
 
 ...
 
 =cut
  */
-int io_read(io_handle_t, char **, size_t *, size_t);
+ssize_t io_read(io_handle_t, char *, size_t);
 
 /*
 =item io_write()
@@ -160,9 +160,10 @@ int _io_init(io_t *self) {
 
 int _io_destroy(io_t *self) {
     assert(self != NULL);
-    FIXME("close the file/etc if it's still open\n");
+    if (m_filename) free(m_filename);
+    if (m_file)     fclose(m_file);
     memset(self, 0, sizeof(*self));
-    return -1;
+    return 0;
 }
 
 /*
