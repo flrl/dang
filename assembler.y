@@ -18,6 +18,7 @@
 #include "assembler.h"
 #include "bytecode.h"
 #include "debug.h"
+#include "extio.h"
 #include "floatptr_t.h"
 #include "vmtypes.h"
 
@@ -438,13 +439,11 @@ void yyerror(char const *s) {
 #endif
 
 static inline int peek(void) {
-    int c = fgetc(g_input);
-    ungetc(c, g_input);
-    return c;
+    return peekc(g_input);
 }
 
 static inline int next(void) {
-    return fgetc(g_input);
+    return getc(g_input);
 }
 
 int yylex(void) {
