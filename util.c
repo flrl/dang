@@ -86,6 +86,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
     
     size_t count = 0, buflen = (*n != 0 ? *n : 256);
     char *buf = *lineptr;
+    int status = 0;
         
     if (buf == NULL && (buf = malloc(buflen)) == NULL) {
         return -1;
@@ -95,7 +96,6 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
         flockfile(stream);
 
         int c;
-        int status = 0;
         while ((c = getc_unlocked(stream)) != EOF) {
             if (buflen - count < 2) {
                 char *tmp;
