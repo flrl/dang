@@ -48,10 +48,16 @@ size_t afreadln(FILE *stream, char **result, int terminator) {
     size_t buflen = 256;
     int status = 0;
     
+    flockfile(stream);
+
     char *buf = malloc(buflen);
+    if (buf == NULL) {
+        status = errno;
+        goto end;
+    }
     
     int c;
-    while ((c = getc(stream))) {
+    while ((c = getc_unlocked(stream))) {
         if (buflen - count < 2) {
             char *tmp = malloc(buflen * 2);
             if (tmp == NULL) {
@@ -76,6 +82,7 @@ size_t afreadln(FILE *stream, char **result, int terminator) {
     if (c == EOF)  status = errno;
 
 end:
+    funlockfile(stream);
     buf[count+1] = '\0';
     *result = buf;
     if (status != 0)  errno = status;
