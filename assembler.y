@@ -18,8 +18,8 @@
 #include "assembler.h"
 #include "bytecode.h"
 #include "debug.h"
-#include "extio.h"
 #include "floatptr_t.h"
+#include "util.h"
 #include "vmtypes.h"
 
     int yylex(void);
