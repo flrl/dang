@@ -160,8 +160,8 @@ int _io_init(io_t *self) {
 
 int _io_destroy(io_t *self) {
     assert(self != NULL);
-    if (m_filename) free(m_filename);
-    if (m_file)     fclose(m_file);
+    if (self->m_filename)   free(self->m_filename);
+    if (self->m_file)       fclose(self->m_file);
     memset(self, 0, sizeof(*self));
     return 0;
 }
