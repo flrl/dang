@@ -31,6 +31,12 @@ static inline int peekc(FILE *stream) {
     return c;
 }
 
+static inline int peekc_unlocked(FILE *stream) {
+    int c = getc_unlocked(stream);
+    ungetc(c, stream);
+    return c;
+}
+
 #ifdef NEED_GETLINE
 static inline ssize_t getline(char **restrict lineptr, size_t *restrict n, FILE *restrict stream) {
     return getdelim(lineptr, n, '\n', stream);
