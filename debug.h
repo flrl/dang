@@ -10,6 +10,8 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 #include <stdio.h>
+#include <inttypes.h>
+#include <stdint.h>
 #endif
 
 // these are redefined each time this file is included, to allow each source file to define NDEBUG independently
