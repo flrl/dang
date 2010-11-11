@@ -12,6 +12,10 @@
 
 #include <stdio.h>
 
+#ifdef NEED_GETDELIM
+ssize_t getdelim(char **restrict, size_t *restrict, int, FILE *restrict);
+#endif
+
 static inline int peekc(FILE *stream) {
     int c;
     flockfile(stream);
@@ -21,7 +25,10 @@ static inline int peekc(FILE *stream) {
     return c;
 }
 
-size_t freads(FILE *, char *, size_t);
-size_t afreadln(FILE *, char **, int);
+#ifdef NEED_GETLINE
+static inline ssize_t getline(char **restrict lineptr, size_t *restrict n, FILE *restrict stream) {
+    return getdelim(lineptr, n, '\n', stream);
+}
+#endif
 
 #endif

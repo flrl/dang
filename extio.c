@@ -14,60 +14,80 @@
 #include "debug.h"
 #include "extio.h"
 
-
 /*
-=item freads()
+=item getdelim()
 
-Reads a string from the specified file.  This is meant to present a similar interface to fread(),
-but with the text-mode semantics of fgets.  Not sure if I actually need this.
+The getdelim() function shall read from stream until it encounters a character matching the delimiter character. The 
+delimiter argument is an int, the value of which the application shall ensure is a character representable as an unsigned
+char of equal value that terminates the read process. If the delimiter argument has any other value, the behavior is 
+undefined.
+
+The application shall ensure that *lineptr is a valid argument that could be passed to the free() function. If *n is 
+non-zero, the application shall ensure that *lineptr either points to an object of size at least *n bytes, or is a null 
+pointer.
+
+The size of the object pointed to by *lineptr shall be increased to fit the incoming line, if it isn't already large 
+enough, including room for the delimiter and a terminating NUL. The characters read, including any delimiter, shall be 
+stored in the string pointed to by the lineptr argument, and a terminating NUL added when the delimiter or end of file 
+is encountered.
+
+The getline() function shall be equivalent to the getdelim() function with the delimiter character equal to the 
+<newline> character.
+
+The getdelim() and getline() functions may mark the last data access timestamp of the file associated with stream for 
+update. The last data access timestamp shall be marked for update by the first successful execution of fgetc(), fgets(), 
+fread(), fscanf(), getc(), getchar(), getdelim(), getline(), gets(), or scanf() using stream that returns data not 
+supplied by a prior call to ungetc().
+
+Upon successful completion, the getline() and getdelim() functions shall return the number of characters written into the
+buffer, including the delimiter character if one was encountered before EOF, but excluding the terminating NUL character. 
+If no characters were read, and the end-of-file indicator for the stream is set, or if the stream is at end-of-file, the 
+end-of-file indicator for the stream shall be set and the function shall return -1. If an error occurs, the error 
+indicator for the stream shall be set, and the function shall return -1 and set errno to indicate the error.
+
+For the conditions under which the getdelim() and getline() functions shall fail and may fail, refer to fgetc .
+
+In addition, these functions shall fail if:
+
+[EINVAL]    lineptr or n is a null pointer.
+[ENOMEM]    Insufficient memory is available.
+
+These functions may fail if:
+
+[EOVERFLOW] More than {SSIZE_MAX} characters were read without encountering the delimiter character.
 
 =cut
  */
-size_t freads(FILE *stream, char *buf, size_t bufsize) {
-    FIXME("do I need this?\n");
-    return -1;
-}
-
-/*
-=item afreadln()
-
-Reads a string from the stream, stopping when the terminator character is encountered.  Returns the number
-of characters read, or zero if no characters could be read at all (due to EOF or error).
-
-If EOF or an error occurs after characters have been read, the returned string will end in a value other
-than the requested terminator.
-
-The pointer provided needs to be freed once it's no longer required.
-
-Write better docs for this.
-
-=cut
- */
-size_t afreadln(FILE *stream, char **result, int terminator) {
-    size_t count = 0;
-    size_t buflen = 256;
-    int status = 0;
-    
-    flockfile(stream);
-
-    char *buf = malloc(buflen);
-    if (buf == NULL) {
-        status = errno;
-        goto end;
+#ifdef NEED_GETDELIM
+ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FILE *restrict stream) {
+    if (lineptr == NULL || n == NULL) {
+        errno = EINVAL;
+        return -1;
     }
     
+    size_t count = 0, buflen = (*n != 0 ? *n : 256);
+    char *buf = *lineptr;
+        
+    if (buf == NULL && (buf = malloc(buflen)) == NULL) {
+        return -1;
+    }
+    
+    // n.b. no more early returns past this point
+    flockfile(stream);
+
     int c;
+    int status = 0;
     while ((c = getc_unlocked(stream))) {
         if (buflen - count < 2) {
-            char *tmp = malloc(buflen * 2);
-            if (tmp == NULL) {
+            char *tmp;
+            if (NULL != (tmp = realloc(buf, buflen * 2))) {
+                buf = tmp;
+                buflen *= 2;
+            }
+            else {
                 status = errno;
                 goto end;
             }
-            memcpy(tmp, buf, count);
-            free(buf);
-            buf = tmp;
-            buflen *= 2;
         }
 
         switch(c) {
@@ -77,14 +97,17 @@ size_t afreadln(FILE *stream, char **result, int terminator) {
                 break;
         }
         
-        if (c == terminator)  break;
+        if (c == delimiter)  break;
     }
-    if (c == EOF)  status = errno;
+    if (c == EOF && ferror(stream))  status = errno;
 
 end:
     funlockfile(stream);
-    buf[count+1] = '\0';
-    *result = buf;
+    
+    buf[count + 1] = '\0';
+    *lineptr = buf;
+    *n = buflen;
     if (status != 0)  errno = status;
     return count;
 }
+#endif
