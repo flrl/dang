@@ -77,7 +77,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
 
     int c;
     int status = 0;
-    while ((c = getc_unlocked(stream))) {
+    while ((c = getc_unlocked(stream)) != EOF) {
         if (buflen - count < 2) {
             char *tmp;
             if (NULL != (tmp = realloc(buf, buflen * 2))) {
