@@ -13,8 +13,11 @@
 #include <stdio.h>
 
 static inline int peekc(FILE *stream) {
-    int c = getc(stream);
+    int c;
+    flockfile(stream);
+    c = getc_unlocked(stream);
     ungetc(c, stream);
+    funlockfile(stream);
     return c;
 }
 
