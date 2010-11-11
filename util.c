@@ -77,6 +77,7 @@ These functions may fail if:
 ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FILE *restrict stream) {
     assert(lineptr != NULL);
     assert(n != NULL);
+    assert(stream != NULL);
     
     if (lineptr == NULL || n == NULL) {
         errno = EINVAL;
@@ -90,37 +91,37 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
         return -1;
     }
     
-    // n.b. no more early returns past this point
-    flockfile(stream);
+    {  // n.b. no early returns within this block
+        flockfile(stream);
 
-    int c;
-    int status = 0;
-    while ((c = getc_unlocked(stream)) != EOF) {
-        if (buflen - count < 2) {
-            char *tmp;
-            if (NULL != (tmp = realloc(buf, buflen * 2))) {
-                buf = tmp;
-                buflen *= 2;
+        int c;
+        int status = 0;
+        while ((c = getc_unlocked(stream)) != EOF) {
+            if (buflen - count < 2) {
+                char *tmp;
+                if (NULL != (tmp = realloc(buf, buflen * 2))) {
+                    buf = tmp;
+                    buflen *= 2;
+                }
+                else {
+                    status = errno;
+                    break;
+                }
             }
-            else {
-                status = errno;
-                goto end;
-            }
-        }
 
-        switch(c) {
-            // any special per-character handling goes here -- line endings?
-            default:
-                buf[count++] = c;
-                break;
+            switch(c) {
+                // any special per-character handling goes here -- line endings?
+                default:
+                    buf[count++] = c;
+                    break;
+            }
+            
+            if (c == delimiter)  break;
         }
-        
-        if (c == delimiter)  break;
+        if (c == EOF && ferror(stream))  status = errno;
+
+        funlockfile(stream);
     }
-    if (c == EOF && ferror(stream))  status = errno;
-
-end:
-    funlockfile(stream);
     
     buf[count + 1] = '\0';
     *lineptr = buf;
