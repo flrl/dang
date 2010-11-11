@@ -11,6 +11,12 @@
 #define UTIL_H
 
 #include <stdio.h>
+#include <stdint.h>
+
+#define MAX(a,b) (((b) > (a)) ? (b) : (a))
+#define MIN(a,b) (((b) < (a)) ? (b) : (a))
+
+uintptr_t nextupow2(uintptr_t);
 
 #ifdef NEED_GETDELIM
 ssize_t getdelim(char **restrict, size_t *restrict, int, FILE *restrict);
