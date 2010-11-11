@@ -1,5 +1,5 @@
 /*
- *  extio.h
+ *  util.h
  *  dang
  *
  *  Created by Ellie on 11/11/10.
@@ -7,8 +7,8 @@
  *
  */
 
-#ifndef EXTIO_H
-#define EXTIO_H
+#ifndef UTIL_H
+#define UTIL_H
 
 #include <stdio.h>
 

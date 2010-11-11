@@ -1,5 +1,5 @@
 /*
- *  extio.c
+ *  util.c
  *  dang
  *
  *  Created by Ellie on 11/11/10.
@@ -12,7 +12,7 @@
 #include <string.h>
 
 #include "debug.h"
-#include "extio.h"
+#include "util.h"
 
 /*
 =item getdelim()
