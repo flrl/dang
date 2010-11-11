@@ -18,6 +18,7 @@ static inline int peekc(FILE *stream) {
     return c;
 }
 
-
+size_t freads(FILE *, char *, size_t);
+size_t afreadln(FILE *, char **, int);
 
 #endif
