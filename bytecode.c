@@ -31,6 +31,7 @@ bytecode
 #include "debug.h"
 #include "hash.h"
 #include "scalar.h"
+#include "util.h"
 #include "vm.h"
 
 #include "bytecode.h"
@@ -1410,30 +1411,14 @@ Reads a scalar from the standard input channel, up until the next newline charac
  */
 int inst_IN(struct vm_context_t *context) {
     scalar_t a = {0};
-    size_t bufsize, strsize;
-    char buffer[1024];
-    char *str, *tmp, *ret=NULL;
-    
-    bufsize = strsize = 1024;
-    str = calloc(1, strsize);
-    while (NULL != (ret = fgets(buffer, bufsize, stdin))) {
-        if (buffer[strlen(buffer) - 1] == '\n') {
-            strcat(str, buffer);
-            break;
-        }
-        else {
-            if (NULL != (tmp = calloc(1, strsize + bufsize))) {
-                memcpy(tmp, str, strsize);
-                strcat(tmp, buffer);
-                free(str);
-                str = tmp;
-                strsize += bufsize;
-            }
-        }
+
+    char *buf = NULL;
+    size_t bufsize = 0;
+
+    if (getline(&buf, &bufsize, stdin) > 0) {
+        anon_scalar_set_string_value(&a, buf);
+        free(buf);
     }
-    
-    if (ret != NULL)  anon_scalar_set_string_value(&a, str);
-    free(str);
 
     vm_ds_push(context, &a);
     anon_scalar_destroy(&a);
