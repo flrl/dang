@@ -7,6 +7,7 @@
  *
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -74,6 +75,9 @@ These functions may fail if:
  */
 #ifdef NEED_GETDELIM
 ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FILE *restrict stream) {
+    assert(lineptr != NULL);
+    assert(n != NULL);
+    
     if (lineptr == NULL || n == NULL) {
         errno = EINVAL;
         return -1;
