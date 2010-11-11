@@ -108,7 +108,7 @@ int symboltable_destroy(symboltable_t *self) {
             if (_symboltable_registry != NULL) {
                 if (_symboltable_registry->m_table == self) {
                     symboltable_registry_node_t *reg = _symboltable_registry;
-                    debug("i'm the first symboltable in the registry: %p\n", reg);
+                    debug("first symboltable in the registry: %p\n", reg);
                     _symboltable_registry = _symboltable_registry->m_next;
                     memset(reg, 0, sizeof(*reg));
                     free(reg);
