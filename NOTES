@@ -149,6 +149,9 @@ bytecode operations
         - should it try and do clever conversion to int/float at input time, or just leave it as a string till you try to use
           it as something else?
             - i guess, putting it that way, leave it as a string, and convert on demand
+        - replace all this with proper io_t handles once they're implemented: 
+            - IN and OUT should each require an io reference from the stack to read/write from
+            - let the language on top handle defaulting to stdin etc
     - CORO, FRCORO for spawning new threads
         - need to track threads and contexts for garbage collection?
         - should vm_execute free the context and exit the thread before it returns?
