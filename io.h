@@ -20,18 +20,20 @@
 #endif
 #include "pool.h"
 
-#define IO_TYPE_FILE    0x00000001
-#define IO_TYPE_FIFO    0x00000002
-#define IO_TYPE_PIPE    0x00000004
-#define IO_TYPE_SOCK    0x00000008
+#define IO_TYPE_UNDEF   0x00000000u
+#define IO_TYPE_FILE    0x00000001u
+#define IO_TYPE_FIFO    0x00000002u
+#define IO_TYPE_PIPE    0x00000004u
+#define IO_TYPE_SOCK    0x00000008u
 
-#define IO_TYPE_MASK    0x0000000F
+#define IO_TYPE_MASK    0x0000000Fu
 
-#define IO_FLAG_READ    0x00000100
-#define IO_FLAG_WRITE   0x00000200
+#define IO_FLAG_READ    0x00000100u
+#define IO_FLAG_WRITE   0x00000200u
 
 typedef struct io_t {
-    /* innards of this struct will most likely change */
+    /* innards of this struct will most likely change a lot */
+    flags_t m_flags;
     char *m_filename;
     FILE *m_file;
 } io_t;
