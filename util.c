@@ -121,7 +121,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
             if (c == delimiter) {
                 break;
             }
-            else if (count == SSIZE_MAX - 1) {
+            else if (count == SSIZE_MAX) {
                 status = EOVERFLOW;
                 break;
             }
@@ -135,7 +135,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
     *lineptr = buf;
     *n = buflen;
 
-    if (count == 0 || count == SSIZE_MAX - 1) {
+    if (count == 0 || count == SSIZE_MAX) {
         errno = status;
         return -1;
     }
