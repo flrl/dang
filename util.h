@@ -18,24 +18,23 @@
 
 uintptr_t nextupow2(uintptr_t);
 
-#ifdef NEED_GETDELIM
-ssize_t getdelim(char **restrict, size_t *restrict, int, FILE *restrict);
-#endif
-
-static inline int peekc(FILE *stream) {
-    int c;
-    flockfile(stream);
-    c = getc_unlocked(stream);
-    ungetc(c, stream);
-    funlockfile(stream);
-    return c;
-}
-
 static inline int peekc_unlocked(FILE *stream) {
     int c = getc_unlocked(stream);
     ungetc(c, stream);
     return c;
 }
+
+static inline int peekc(FILE *stream) {
+    int c;
+    flockfile(stream);
+    c = peekc_unlocked(stream);
+    funlockfile(stream);
+    return c;
+}
+
+#ifdef NEED_GETDELIM
+ssize_t getdelim(char **restrict, size_t *restrict, int, FILE *restrict);
+#endif
 
 #ifdef NEED_GETLINE
 static inline ssize_t getline(char **restrict lineptr, size_t *restrict n, FILE *restrict stream) {
