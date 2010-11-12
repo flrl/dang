@@ -30,6 +30,7 @@
 
 #define STREAM_FLAG_READ    0x00000100u
 #define STREAM_FLAG_WRITE   0x00000200u
+#define STREAM_FLAG_TRUNC   0x00000400u
 
 typedef struct stream_t {
     /* innards of this struct will most likely change a lot */
@@ -51,7 +52,7 @@ stream_handle_t stream_allocate_many(size_t);
 stream_handle_t stream_reference(stream_handle_t);
 int stream_release(stream_handle_t);
 
-int stream_open(stream_handle_t, const char *, flags_t);
+int stream_open(stream_handle_t, flags_t, const char *);
 int stream_close(stream_handle_t);
 
 ssize_t stream_read_delim(stream_handle_t, char **, int);

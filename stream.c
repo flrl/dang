@@ -31,6 +31,9 @@ stream
 
 POOL_SOURCE_CONTENTS(stream_t);
 
+int _stream_open_file(stream_t *, const char *, flags_t);
+void _stream_close(stream_t *);
+
 /*
 =item stream_pool_init()
 
@@ -86,17 +89,46 @@ Functions for opening and closing streams
 
 =cut
  */
-int stream_open(stream_handle_t handle, const char *filename, flags_t flags) {
+int stream_open(stream_handle_t handle, flags_t flags, const char *arg) {
     assert(POOL_HANDLE_VALID(stream_t, handle));
     assert(POOL_HANDLE_IN_USE(stream_t, handle));
     
-    FIXME("finish this\n");
-    return -1;
+    if (0 == POOL_LOCK(stream_t, handle)) {
+        int status = 0;
+        
+        if ((STREAM(handle).m_flags & STREAM_TYPE_MASK) != STREAM_TYPE_UNDEF)  _stream_close(&STREAM(handle));
+
+        switch (flags & STREAM_TYPE_MASK) {
+            case STREAM_TYPE_FILE:
+                status = _stream_open_file(&STREAM(handle), arg, flags);
+                break;
+            default:
+                debug("unhandle stream type: %"PRIu32"\n", flags);
+                return -1;
+                break;
+        }
+
+        return status;
+    }
+    else {
+        debug("failed to lock stream %"PRIuPTR"\n", handle);
+        return -1;
+    }
 }
 
 int stream_close(stream_handle_t handle) {
-    FIXME("finish this\n");
-    return -1;
+    assert(POOL_HANDLE_VALID(stream_t, handle));
+    assert(POOL_HANDLE_IN_USE(stream_t, handle));
+    
+    if (0 == POOL_LOCK(stream_t, handle)) {
+        _stream_close(&STREAM(handle));
+        POOL_UNLOCK(stream_t, handle);
+        return 0;
+    }
+    else {
+        debug("failed to lock stream %"PRIuPTR"\n", handle);
+        return -1;
+    }
 }
 
 /*
@@ -187,10 +219,86 @@ int _stream_init(stream_t *self) {
 
 int _stream_destroy(stream_t *self) {
     assert(self != NULL);
-    if (self->m_filename)   free(self->m_filename);
-    if (self->m_file)       fclose(self->m_file);
+    if ((self->m_flags & STREAM_TYPE_MASK) != STREAM_TYPE_UNDEF) _stream_close(self);
     memset(self, 0, sizeof(*self));
     return 0;
+}
+
+/*
+=item _stream_open_file()
+
+Opens an ordinary file according to flags provided.  Valid flags are STREAM_FLAG_READ, 
+STREAM_FLAG_WRITE, STREAM_FLAG_TRUNC; other flags are ignored.
+
+At least one of STREAM_FLAG_READ and STREAM_FLAG_WRITE must be provided.  If only one
+of these are provided, the file is opened only reading or only writing respectively.
+
+If both STREAM_FLAG_READ and STREAM_FLAG_WRITE are provided, then the file is opened
+for both reading and writing at the beginning of the file.  If the STREAM_FLAG_TRUNC
+flag is provided, the existing contents of the file will be truncated, and the file
+position set to the start of the file; otherwise the existing contents will be left
+alone and the file position set to the start of the file.
+
+FIXME: what about appending to existing files?
+
+=cut
+*/
+int _stream_open_file(stream_t *restrict self, const char *restrict filename, flags_t flags) {
+    assert(self != NULL);
+    assert(self->m_flags == STREAM_TYPE_UNDEF);
+    
+    flags_t truncate = flags & STREAM_FLAG_TRUNC;
+    char *mode;
+    switch (flags & STREAM_FLAG_READ & STREAM_FLAG_WRITE) {
+        case STREAM_FLAG_READ:
+            self->m_flags |= STREAM_FLAG_READ;
+            mode = "r";
+            break;
+        case STREAM_FLAG_WRITE:
+            self->m_flags |= STREAM_FLAG_WRITE;
+            mode = "w";
+            break;
+        case STREAM_FLAG_READ | STREAM_FLAG_WRITE:
+            self->m_flags |= STREAM_FLAG_READ | STREAM_FLAG_WRITE | truncate;
+            mode = (truncate ? "w+" : "r+");
+            break;
+        default:
+            debug("no read or write mode specified: %"PRIu32"\n", flags);
+            return -1;
+    }
+    
+    if (NULL != (self->m_file = fopen(filename, mode))) {
+        self->m_filename = strdup(filename);
+        self->m_flags |= STREAM_TYPE_FILE;
+        return 0;
+    }
+    else {
+        self->m_flags = STREAM_TYPE_UNDEF;
+        return -1;
+    }
+}
+
+/*
+=item _stream_close()
+
+Closes a stream and makes it safe for possible re-use or destruction.
+
+=cut
+*/
+void _stream_close(stream_t *self) {
+    assert(self != NULL);
+    
+    switch (self->m_flags & STREAM_TYPE_MASK) {
+        case STREAM_TYPE_FILE:
+            fclose(self->m_file);
+            free(self->m_filename);
+            break;
+        default:
+            debug("unhandled stream type: %"PRIu32"\n", self->m_flags);
+            assert("shouldn't get here" == 0);
+    }
+    
+    self->m_flags = STREAM_TYPE_UNDEF;
 }
 
 /*
