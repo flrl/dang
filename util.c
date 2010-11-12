@@ -109,7 +109,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
                 }
             }
 
-            switch(c) {
+            switch (c) {
                 // any special per-character handling goes here -- line endings?
                 default:
                     buf[count++] = c;
@@ -123,7 +123,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
         funlockfile(stream);
     }
     
-    buf[count + 1] = '\0';
+    buf[count] = '\0';
     *lineptr = buf;
     *n = buflen;
     if (status != 0)  errno = status;
