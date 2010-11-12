@@ -127,6 +127,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
     *lineptr = buf;
     *n = buflen;
     if (status != 0)  errno = status;
+    if (count == 0)  count = -1;
     return count;
 }
 #endif
