@@ -84,7 +84,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
         return -1;
     }
     
-    size_t count = 0, buflen = (*n != 0 ? *n : 256);
+    size_t count = 0, buflen = (*n ?: 256);
     char *buf = *lineptr;
     int status = 0;
         
