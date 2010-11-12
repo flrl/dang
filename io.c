@@ -119,6 +119,7 @@ ssize_t io_read_delim(io_handle_t handle, char **result, int delimiter) {
             *result = buf;
         }
         else {
+            debug("getdelim returned %d\n", status);
             FIXME("what to do here?\n");
         }
         POOL_UNLOCK(io_t, handle);
