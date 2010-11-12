@@ -93,7 +93,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
         return -1;
     }
     
-    {  // n.b. no early returns within this block
+    {   // n.b. no early returns within this block
         flockfile(stream);
 
         int c;
