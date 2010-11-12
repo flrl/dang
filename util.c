@@ -84,7 +84,8 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
         return -1;
     }
     
-    size_t count = 0, buflen = (*n ?: 256);
+    size_t buflen = (*n ?: 256);
+    ssize_t count = 0;
     char *buf = *lineptr;
     int status = 0;
         
@@ -99,9 +100,10 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
         while ((c = getc_unlocked(stream)) != EOF) {
             if (buflen - count < 2) {
                 char *tmp;
-                if (NULL != (tmp = realloc(buf, buflen * 2))) {
+                size_t newbuflen = nextupow2(buflen);
+                if (NULL != (tmp = realloc(buf, newbuflen))) {
                     buf = tmp;
-                    buflen *= 2;
+                    buflen = newbuflen;
                 }
                 else {
                     status = errno;
@@ -116,7 +118,13 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
                     break;
             }
             
-            if (c == delimiter)  break;
+            if (c == delimiter) {
+                break;
+            }
+            else if (count == SSIZE_MAX - 1) {
+                status = EOVERFLOW;
+                break;
+            }
         }
         if (c == EOF && ferror(stream))  status = errno;
 
@@ -126,8 +134,13 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
     buf[count] = '\0';
     *lineptr = buf;
     *n = buflen;
-    if (status != 0)  errno = status;
-    if (count == 0)  count = -1;
-    return count;
+
+    if (count == 0 || count == SSIZE_MAX - 1) {
+        errno = status;
+        return -1;
+    }
+    else {
+        return count;
+    }
 }
 #endif
