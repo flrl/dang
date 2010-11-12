@@ -25,6 +25,9 @@ io
 #include <string.h>
 
 #include "io.h"
+#include "util.h"
+
+#define IO(handle)  POOL_OBJECT(io_t, handle)
 
 POOL_SOURCE_CONTENTS(io_t);
 
@@ -97,13 +100,36 @@ int io_close(io_handle_t handle) {
 }
 
 /*
-=item io_read_until()
+=item io_read_delim()
 
 ...
 
 =cut
  */
-ssize_t io_read_until(io_handle_t, char **, int);
+ssize_t io_read_delim(io_handle_t handle, char **result, int delimiter) {
+    assert(POOL_HANDLE_VALID(io_t, handle));
+    assert(POOL_HANDLE_IN_USE(io_t, handle));
+    FIXME("make sure it's open for reading\n");
+    ssize_t status;
+
+    if (0 == POOL_LOCK(io_t, handle)) {
+        char *buf = NULL;
+        size_t bufsize = 0;
+        if ((status = getdelim(&buf, &bufsize, delimiter, IO(handle).m_file)) > 0) {
+            *result = buf;
+        }
+        else {
+            FIXME("what to do here?\n");
+        }
+        POOL_UNLOCK(io_t, handle);
+    }
+    else {
+        debug("couldn't lock io_t handle %"PRIuPTR"\n", handle);
+        status = -1;
+    }
+    
+    return status;
+}
 
 /*
 =item io_read()

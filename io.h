@@ -52,7 +52,7 @@ int io_release(io_handle_t);
 int io_open(io_handle_t, const char *, flags_t);
 int io_close(io_handle_t);
 
-ssize_t io_read_until(io_handle_t, char **, int);
+ssize_t io_read_delim(io_handle_t, char **, int);
 ssize_t io_read(io_handle_t, char *, size_t);
 int io_write(io_handle_t, const char *, size_t);
 
