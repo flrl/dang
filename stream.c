@@ -174,7 +174,25 @@ ssize_t stream_read_delim(stream_handle_t handle, char **result, int delimiter) 
 
 =cut
  */
-ssize_t stream_read(stream_handle_t, char *, size_t);
+size_t stream_read(stream_handle_t handle, char *buf, size_t bufsize) {
+    assert(POOL_HANDLE_VALID(stream_t, handle));
+    assert(POOL_HANDLE_IN_USE(stream_t, handle));
+    assert(STREAM(handle).m_flags & STREAM_FLAG_READ);
+    
+    FIXME("do this properly");
+    
+    size_t status;
+    if (0 == POOL_LOCK(stream_t, handle)) {
+        status = fread(buf, bufsize, 1, STREAM(handle).m_file);
+        POOL_UNLOCK(stream_t, handle);
+    }
+    else {
+        debug("couldn't lock stream_t handle %"PRIuPTR"\n", handle);
+        status = 0;
+    }
+    
+    return status;
+}
 
 /*
 =item stream_write()
@@ -183,7 +201,24 @@ ssize_t stream_read(stream_handle_t, char *, size_t);
 
 =cut
  */
-int stream_write(stream_handle_t, const char *, size_t);
+int stream_write(stream_handle_t handle, const char *buf, size_t bufsize) {
+    assert(POOL_HANDLE_VALID(stream_t, handle));
+    assert(POOL_HANDLE_IN_USE(stream_t, handle));
+    assert(STREAM(handle).m_flags & STREAM_FLAG_WRITE);
+    
+    FIXME("do this properly");
+    
+    int status;
+    if (0 == POOL_LOCK(stream_t, handle)) {
+        status = fwrite(buf, bufsize, 1, STREAM(handle).m_file);
+        POOL_UNLOCK(stream_t, handle);
+    }
+    else {
+        status = -1;
+    }
+
+    return status;
+}
 
 /*
 =item stream_get_filename()
