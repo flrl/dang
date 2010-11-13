@@ -37,6 +37,12 @@ POOL_SOURCE_CONTENTS(stream_t);
 int _stream_open_file(stream_t *restrict, flags_t, const char *restrict);
 int _stream_open_pipe(stream_t *restrict, flags_t, const char *restrict);
 void _stream_close(stream_t *);
+int _stream_bind(stream_t *, flags_t, int);
+int _stream_unbind(stream_t *, int);
+
+static stream_handle_t _stream_stdin_handle = 0;
+static stream_handle_t _stream_stdout_handle = 0;
+static stream_handle_t _stream_stderr_handle = 0;
 
 /*
 =item stream_pool_init()
@@ -48,11 +54,25 @@ Setup and tear down functions for the stream pool
 =cut
  */
 int stream_pool_init(void) {
-    FIXME("set up stdin/stdout/sterr handles here\n");
-    return POOL_INIT(stream_t);
+    int status = POOL_INIT(stream_t);
+    
+    _stream_stdin_handle = POOL_ALLOCATE(stream_t, POOL_OBJECT_FLAG_SHARED);
+    _stream_bind(&STREAM(_stream_stdin_handle), STREAM_FLAG_READ, STDIN_FILENO);
+    
+    _stream_stdout_handle = POOL_ALLOCATE(stream_t, POOL_OBJECT_FLAG_SHARED);
+    _stream_bind(&STREAM(_stream_stdout_handle), STREAM_FLAG_WRITE, STDOUT_FILENO);
+    
+    _stream_stderr_handle = POOL_ALLOCATE(stream_t, POOL_OBJECT_FLAG_SHARED);
+    _stream_bind(&STREAM(_stream_stderr_handle), STREAM_FLAG_WRITE, STDERR_FILENO);
+    
+    return status;
 }
 
 int stream_pool_destroy(void) {
+    POOL_RELEASE(stream_t, _stream_stdin_handle);
+    POOL_RELEASE(stream_t, _stream_stderr_handle);
+    POOL_RELEASE(stream_t, _stream_stdout_handle);
+
     return POOL_DESTROY(stream_t);
 }
 
@@ -82,6 +102,29 @@ stream_handle_t stream_reference(stream_handle_t handle) {
 
 int stream_release(stream_handle_t handle) {
     return POOL_RELEASE(stream_t, handle);
+}
+
+/*
+=item stream_stdin_handle()
+
+=item stream_stdout_handle()
+
+=item stream_stderr_handle()
+
+Return handles to stdin, stdout or stderr.
+
+=cut
+*/
+stream_handle_t stream_stdin_handle(void) {
+    return POOL_REFERENCE(stream_t, _stream_stdin_handle);
+}
+
+stream_handle_t stream_stdout_handle(void) {
+    return POOL_REFERENCE(stream_t, _stream_stdout_handle);
+}
+
+stream_handle_t stream_stderr_handle(void) {
+    return POOL_REFERENCE(stream_t, _stream_stderr_handle);
 }
 
 /*
@@ -273,7 +316,7 @@ Opens an ordinary file according to flags provided.  Valid flags are STREAM_FLAG
 STREAM_FLAG_WRITE, STREAM_FLAG_TRUNC; other flags are ignored.
 
 At least one of STREAM_FLAG_READ and STREAM_FLAG_WRITE must be provided.  If only one
-of these are provided, the file is opened only reading or only writing respectively.
+of these are provided, the file is opened as read-only or write-only respectively.
 
 If both STREAM_FLAG_READ and STREAM_FLAG_WRITE are provided, then the file is opened
 for both reading and writing at the beginning of the file.  If the STREAM_FLAG_TRUNC
@@ -430,14 +473,72 @@ void _stream_close(stream_t *self) {
 /*
 =item _stream_bind()
 
-=item _stream_unbind()
+Binds an existing file descriptor to a stream_t object.  Flags must contain at least one of STREAM_FLAG_READ 
+or STREAM_FLAG_WRITE, with the caller being responsible for ensuring that the chosen combination is 
+suitable for the file descriptor being bound.
 
-Functions for binding and unbinding an existing FILE object and a stream_t object.
+If you wish to later unbind the file descriptor, you must keep a copy of fd to use as a "key" to unbind it.
+Alternatively, the stream_t object can be safely closed with C<_stream_close()>.
 
 =cut
- */
-int _stream_bind(stream_t *, int);
-int _stream_unbind(stream_t *, int);
+*/
+int _stream_bind(stream_t *self, flags_t flags, int fd) {
+    assert(self != NULL);
+    assert(self->m_flags == STREAM_TYPE_UNDEF);
+    
+    const char *mode;
+    switch (flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE)) {
+        case STREAM_FLAG_READ:
+            mode = "r";
+            break;
+        case STREAM_FLAG_WRITE:
+            mode = "w";
+            break;
+        case STREAM_FLAG_READ | STREAM_FLAG_WRITE:
+            mode = "r+";
+            break;
+        default:
+            debug("invalid mode: %"PRIu32"\n", flags);
+            return -1;
+    }
+
+    if (NULL != (self->m_file = fdopen(fd, mode))) {
+        self->m_flags = STREAM_TYPE_FILE | (flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE));
+        self->m_meta.filename = strdup("<fd>");
+        return 0;
+    }
+    else {
+        debug("fdopen returned %i\n", errno);
+        self->m_flags = STREAM_TYPE_UNDEF;
+        return -1;
+    }
+}
+
+/*
+=item _stream_unbind()
+
+Unbinds an existing file descriptor from a stream.  The caller must know and supply the original file descriptor;
+the file descriptor will only be unbound if it matches.
+
+To close the stream without knowing the existing file descriptor, simply use C<_stream_close()>.
+
+=cut
+*/
+int _stream_unbind(stream_t *self, int fd) {
+    assert(self != NULL);
+    assert(self->m_flags == STREAM_TYPE_FILE);
+    
+    if (fileno(self->m_file) == fd) {
+        fclose(self->m_file);
+        free(self->m_meta.filename);
+        self->m_flags = STREAM_TYPE_UNDEF;
+        return 0;
+    }
+    else {
+        debug("attempt to unbind from the wrong file descriptor\n");
+        return -1;
+    }
+}
 
 /*
 =back

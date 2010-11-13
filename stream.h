@@ -55,6 +55,10 @@ stream_handle_t stream_allocate_many(size_t);
 stream_handle_t stream_reference(stream_handle_t);
 int stream_release(stream_handle_t);
 
+stream_handle_t stream_stdin_handle(void);
+stream_handle_t stream_stdout_handle(void);
+stream_handle_t stream_stderr_handle(void);
+
 int stream_open(stream_handle_t, flags_t, const char *);
 int stream_close(stream_handle_t);
 
