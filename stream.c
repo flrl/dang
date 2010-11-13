@@ -106,9 +106,12 @@ int stream_open(stream_handle_t handle, flags_t flags, const char *arg) {
             case STREAM_TYPE_FILE:
                 status = _stream_open_file(&STREAM(handle), flags, arg);
                 break;
+            case STREAM_TYPE_PIPE:
+                status = _stream_open_pipe(&STREAM(handle), flags, arg);
+                break;
             default:
                 debug("unhandle stream type: %"PRIu32"\n", flags);
-                return -1;
+                status = -1;
                 break;
         }
 
