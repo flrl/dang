@@ -335,92 +335,60 @@ int _stream_open_pipe(stream_t *restrict self, flags_t flags, const char *restri
     assert(self != NULL);
     assert(self->m_flags == STREAM_TYPE_UNDEF);
     
-    flags_t rwmode = flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE);
+    flags_t flag_mode = flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE);
+    int fildes[2], pid, child_end, parent_end;
+    char *stream_mode;
     
-    if (rwmode == STREAM_FLAG_READ) {
-        int fildes[2];
-        int pid;
-        if (0 == pipe(fildes)) {
-            if (-1 == (pid = fork())) {
-                debug("fork() failed with error %i\n", errno);
-                return -1;
-            }
-            else if (pid == 0) {    /* child */
-                close(fildes[0]);
-                dup2(fildes[1], 1);
-                close(fildes[1]);
-                execl("/bin/sh", "sh", "-c", command, NULL);
-                debug("execl failed with error %i\n", errno);
-                _exit(1);
-            }
-            else {                  /* parent */
-                close(fildes[1]);
-                if (NULL != (self->m_file = fdopen(fildes[0], "r"))) {
-                    fcntl(fileno(self->m_file), F_SETFD, 1);
-                    self->m_meta.child_pid = pid;
-                    self->m_flags = STREAM_TYPE_PIPE | STREAM_FLAG_READ;
-                    return 0;
-                }
-                else {
-                    debug("fdopen failed with error %i\n", errno);
-                    close(fildes[0]);
-                    debug("waiting for child pid %i to terminate...\n", pid);
-                    while (waitpid(self->m_meta.child_pid, NULL, 0) == -1 && errno == EINTR) {
-                        ;
-                    }
-                    debug("child pid %i terminated\n", pid);
-                    return -1;
-                }
-            }
-        }
-        else {
-            debug("pipe failed with error %i\n", errno);
-            return -1;
-        }
+    if (flag_mode == STREAM_FLAG_READ) {
+        child_end = 1;
+        parent_end = 0;
+        stream_mode = "r";
     }
-    else if (rwmode == STREAM_FLAG_WRITE) {
-        int fildes[2];
-        int pid;
-        if (0 == pipe(fildes)) {
-            if (-1 == (pid = fork())) {
-                debug("fork() failed with error %i\n", errno);
-                return -1;
-            }
-            else if (pid == 0) {    /* child */
-                close(fildes[1]);
-                dup2(fildes[0], 0);
-                close(fildes[0]);
-                execl("/bin/sh", "sh", "-c", command, NULL);
-                debug("execl failed with error %i\n", errno);
-                _exit(1);
-            }
-            else {                  /* parent */
-                close(fildes[0]);
-                if (NULL != (self->m_file = fdopen(fildes[1], "r"))) {
-                    fcntl(fileno(self->m_file), F_SETFD, 1);
-                    self->m_meta.child_pid = pid;
-                    self->m_flags = STREAM_TYPE_PIPE | STREAM_FLAG_READ;
-                    return 0;
-                }
-                else {
-                    debug("fdopen failed with error %i\n", errno);
-                    close(fildes[0]);
-                    debug("waiting for child pid %i to terminate...\n", pid);
-                    while (waitpid(self->m_meta.child_pid, NULL, 0) == -1 && errno == EINTR) {
-                        ;
-                    }
-                    debug("child pid %i terminated\n", pid);
-                    return -1;
-                }
-            }
-        }
-        else {
-            debug("pipe failed with error %i\n", errno);
-            return -1;
-        }
+    else if (flag_mode == STREAM_FLAG_WRITE) {
+        child_end = 0;
+        parent_end = 1;
+        stream_mode = "w";
     }
     else {
         debug("invalid flags: %"PRIu32"\n", flags);
+        return -1;
+    }
+
+    if (0 == pipe(fildes)) {
+        if (-1 == (pid = fork())) {
+            debug("fork() failed with error %i\n", errno);
+            return -1;
+        }
+        else if (pid == 0) {    /* child */
+            close(fildes[parent_end]);
+            dup2(fildes[child_end], child_end);
+            close(fildes[child_end]);
+            execl("/bin/sh", "sh", "-c", command, NULL);
+            debug("execl failed with error %i\n", errno);
+            _exit(1);
+        }
+        else {                  /* parent */
+            close(fildes[child_end]);
+            if (NULL != (self->m_file = fdopen(fildes[parent_end], stream_mode))) {
+                fcntl(fileno(self->m_file), F_SETFD, 1);
+                self->m_meta.child_pid = pid;
+                self->m_flags = STREAM_TYPE_PIPE | flag_mode;
+                return 0;
+            }
+            else {
+                debug("fdopen failed with error %i\n", errno);
+                close(fildes[parent_end]);
+                debug("waiting for child pid %i to terminate...\n", pid);
+                while (waitpid(self->m_meta.child_pid, NULL, 0) == -1 && errno == EINTR) {
+                    ;
+                }
+                debug("child pid %i terminated\n", pid);
+                return -1;
+            }
+        }
+    }
+    else {
+        debug("pipe failed with error %i\n", errno);
         return -1;
     }
 }
