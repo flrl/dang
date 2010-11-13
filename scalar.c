@@ -357,13 +357,14 @@ intptr_t anon_scalar_is_defined(const scalar_t * self) {
         case SCALAR_UNDEF:
             return 0;
         case SCALAR_INT:
+        case SCALAR_FLOAT:
+        case SCALAR_STRING:
         case SCALAR_SCAREF:
         case SCALAR_ARRREF:
         case SCALAR_HASHREF:
         case SCALAR_CHANREF:
         case SCALAR_FUNCREF:
-        case SCALAR_FLOAT:
-        case SCALAR_STRING:
+        case SCALAR_STRMREF:
             return 1;
         default:
             debug("unhandled scalar type: %"PRIu32"\n", self->m_flags);
@@ -394,9 +395,9 @@ intptr_t anon_scalar_get_bool_value(const scalar_t *self) {
         case SCALAR_SCAREF:
         case SCALAR_ARRREF:
         case SCALAR_HASHREF:
-        //...
         case SCALAR_CHANREF:
         case SCALAR_FUNCREF:
+        case SCALAR_STRMREF:
             return (self->m_value.as_int != 0);
         case SCALAR_FLOAT:
             return (self->m_value.as_float != 0);
@@ -498,7 +499,6 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
             snprintf(buffer, sizeof(buffer), "HASH(%"PRIuPTR")", self->m_value.as_hash_handle);
             *result = strdup(buffer);
             break;
-        //...
         case SCALAR_CHANREF:
             snprintf(buffer, sizeof(buffer), "CHANNEL(%"PRIuPTR")", self->m_value.as_channel_handle);
             *result = strdup(buffer);
@@ -507,7 +507,11 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
             snprintf(buffer, sizeof(buffer), "FUNCTION(%"PRIuPTR")", self->m_value.as_function_handle);
             *result = strdup(buffer);
             break;
-        
+        case SCALAR_STRMREF:
+            snprintf(buffer, sizeof(buffer), "STREAM(%"PRIuPTR")", self->m_value.as_stream_handle);
+            *result = strdup(buffer);
+            break;
+        //...        
         default:
             debug("unexpected type value %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
             *result = strdup("");
