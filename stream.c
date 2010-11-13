@@ -34,7 +34,8 @@ stream
 
 POOL_SOURCE_CONTENTS(stream_t);
 
-int _stream_open_file(stream_t *, const char *, flags_t);
+int _stream_open_file(stream_t *restrict, flags_t, const char *restrict);
+int _stream_open_pipe(stream_t *restrict, flags_t, const char *restrict);
 void _stream_close(stream_t *);
 
 /*
@@ -103,7 +104,7 @@ int stream_open(stream_handle_t handle, flags_t flags, const char *arg) {
 
         switch (flags & STREAM_TYPE_MASK) {
             case STREAM_TYPE_FILE:
-                status = _stream_open_file(&STREAM(handle), arg, flags);
+                status = _stream_open_file(&STREAM(handle), flags, arg);
                 break;
             default:
                 debug("unhandle stream type: %"PRIu32"\n", flags);
@@ -177,12 +178,12 @@ ssize_t stream_read_delim(stream_handle_t handle, char **result, int delimiter) 
 size_t stream_read(stream_handle_t handle, char *buf, size_t bufsize) {
     assert(POOL_HANDLE_VALID(stream_t, handle));
     assert(POOL_HANDLE_IN_USE(stream_t, handle));
-    assert(STREAM(handle).m_flags & STREAM_FLAG_READ);
-    
     FIXME("do this properly");
     
     size_t status;
     if (0 == POOL_LOCK(stream_t, handle)) {
+        assert(STREAM(handle).m_flags & STREAM_FLAG_READ);
+    
         status = fread(buf, bufsize, 1, STREAM(handle).m_file);
         POOL_UNLOCK(stream_t, handle);
     }
@@ -281,7 +282,7 @@ FIXME: what about appending to existing files?
 
 =cut
 */
-int _stream_open_file(stream_t *restrict self, const char *restrict filename, flags_t flags) {
+int _stream_open_file(stream_t *restrict self, flags_t flags, const char *restrict filename) {
     assert(self != NULL);
     assert(self->m_flags == STREAM_TYPE_UNDEF);
     
