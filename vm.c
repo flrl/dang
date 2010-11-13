@@ -21,6 +21,7 @@
 #include "hash.h"
 #include "scalar.h"
 #include "stack.h"
+#include "stream.h"
 #include "vm.h"
 
 int _vm_context_destroy(vm_context_t *);
@@ -72,6 +73,7 @@ int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
     array_pool_init();
     hash_pool_init();
     channel_pool_init();
+    stream_pool_init();
     
     if (NULL != (context = calloc(1, sizeof(*context)))) {
         vm_context_init(context, bytecode, length, start);
@@ -92,6 +94,7 @@ int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
         sleep(1);
     }
 
+    stream_pool_destroy();
     channel_pool_destroy();
     hash_pool_destroy();
     array_pool_destroy();
