@@ -250,8 +250,18 @@ int _channel_init(channel_t *self) {
     return -1;
 }
 
-int _channel_destroy(channel_t *self) {  FIXME("implement this\n");
+int _channel_destroy(channel_t *self) {
     assert(self != NULL);
+    
+    for (size_t i = 0; i < self->m_count; i++) {
+        anon_scalar_destroy(&self->m_items[(self->m_start + self->m_count) % self->m_allocated_count]);
+    }
+    free(self->m_items);
+
+    self->m_items = NULL;
+    self->m_allocated_count = self->m_count = self->m_start = 0;    
+    pthread_cond_destroy(&self->m_has_items);
+    pthread_cond_destroy(&self->m_has_space);
     
     return 0;
 }
