@@ -201,7 +201,7 @@ ssize_t stream_read_delim(stream_handle_t handle, char **result, int delimiter) 
             *result = buf;
         }
         else {
-            debug("getdelim returned %ld\n", status);
+            debug("getdelim returned %zd\n", status);
             FIXME("what to do here?\n");
         }
         POOL_UNLOCK(stream_t, handle);
