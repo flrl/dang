@@ -35,8 +35,11 @@
 typedef struct stream_t {
     /* innards of this struct will most likely change a lot */
     flags_t m_flags;
-    char *m_filename;
     FILE *m_file;
+    union {
+        char *filename;
+        int child_pid;
+    } m_meta;
 } stream_t;
 
 int _stream_init(stream_t *);

@@ -21,8 +21,11 @@ stream
  */
 
 #include <assert.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "stream.h"
 #include "util.h"
@@ -249,7 +252,7 @@ int _stream_open_file(stream_t *restrict self, const char *restrict filename, fl
     
     flags_t truncate = flags & STREAM_FLAG_TRUNC;
     char *mode;
-    switch (flags & STREAM_FLAG_READ & STREAM_FLAG_WRITE) {
+    switch (flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE)) {
         case STREAM_FLAG_READ:
             self->m_flags |= STREAM_FLAG_READ;
             mode = "r";
@@ -268,12 +271,120 @@ int _stream_open_file(stream_t *restrict self, const char *restrict filename, fl
     }
     
     if (NULL != (self->m_file = fopen(filename, mode))) {
-        self->m_filename = strdup(filename);
+        fcntl(fileno(self->m_file), F_SETFD, 1);
+        self->m_meta.filename = strdup(filename);
         self->m_flags |= STREAM_TYPE_FILE;
         return 0;
     }
     else {
         self->m_flags = STREAM_TYPE_UNDEF;
+        return -1;
+    }
+}
+
+/*
+=item _stream_open_pipe()
+
+Opens a pipe to or from the the specified command, according to the specified flags.
+
+Flags must have exactly one of STREAM_FLAG_READ or STREAM_FLAG_WRITE set.  If STREAM_FLAG_READ
+is set, the pipe is attached to the standard output of the command.  If STREAM_FLAG_WRITE is
+set, the pipe is attached to the standard input of the command.
+
+The command is interpreted by /bin/sh.
+
+=cut
+*/
+int _stream_open_pipe(stream_t *restrict self, flags_t flags, const char *restrict command) {
+    assert(self != NULL);
+    assert(self->m_flags == STREAM_TYPE_UNDEF);
+    
+    flags_t rwmode = flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE);
+    
+    if (rwmode == STREAM_FLAG_READ) {
+        int fildes[2];
+        int pid;
+        if (0 == pipe(fildes)) {
+            if (-1 == (pid = fork())) {
+                debug("fork() failed with error %i\n", errno);
+                return -1;
+            }
+            else if (pid == 0) {    /* child */
+                close(fildes[0]);
+                dup2(fildes[1], 1);
+                close(fildes[1]);
+                execl("/bin/sh", "sh", "-c", command, NULL);
+                debug("execl failed with error %i\n", errno);
+                _exit(1);
+            }
+            else {                  /* parent */
+                close(fildes[1]);
+                if (NULL != (self->m_file = fdopen(fildes[0], "r"))) {
+                    fcntl(fileno(self->m_file), F_SETFD, 1);
+                    self->m_meta.child_pid = pid;
+                    self->m_flags = STREAM_TYPE_PIPE | STREAM_FLAG_READ;
+                    return 0;
+                }
+                else {
+                    debug("fdopen failed with error %i\n", errno);
+                    close(fildes[0]);
+                    debug("waiting for child pid %i to terminate...\n", pid);
+                    while (waitpid(self->m_meta.child_pid, NULL, 0) == -1 && errno == EINTR) {
+                        ;
+                    }
+                    debug("child pid %i terminated\n", pid);
+                    return -1;
+                }
+            }
+        }
+        else {
+            debug("pipe failed with error %i\n", errno);
+            return -1;
+        }
+    }
+    else if (rwmode == STREAM_FLAG_WRITE) {
+        int fildes[2];
+        int pid;
+        if (0 == pipe(fildes)) {
+            if (-1 == (pid = fork())) {
+                debug("fork() failed with error %i\n", errno);
+                return -1;
+            }
+            else if (pid == 0) {    /* child */
+                close(fildes[1]);
+                dup2(fildes[0], 0);
+                close(fildes[0]);
+                execl("/bin/sh", "sh", "-c", command, NULL);
+                debug("execl failed with error %i\n", errno);
+                _exit(1);
+            }
+            else {                  /* parent */
+                close(fildes[0]);
+                if (NULL != (self->m_file = fdopen(fildes[1], "r"))) {
+                    fcntl(fileno(self->m_file), F_SETFD, 1);
+                    self->m_meta.child_pid = pid;
+                    self->m_flags = STREAM_TYPE_PIPE | STREAM_FLAG_READ;
+                    return 0;
+                }
+                else {
+                    debug("fdopen failed with error %i\n", errno);
+                    close(fildes[0]);
+                    debug("waiting for child pid %i to terminate...\n", pid);
+                    while (waitpid(self->m_meta.child_pid, NULL, 0) == -1 && errno == EINTR) {
+                        ;
+                    }
+                    debug("child pid %i terminated\n", pid);
+                    return -1;
+                }
+            }
+        }
+        else {
+            debug("pipe failed with error %i\n", errno);
+            return -1;
+        }
+    }
+    else {
+        debug("invalid flags: %"PRIu32"\n", flags);
         return -1;
     }
 }
@@ -291,7 +402,15 @@ void _stream_close(stream_t *self) {
     switch (self->m_flags & STREAM_TYPE_MASK) {
         case STREAM_TYPE_FILE:
             fclose(self->m_file);
-            free(self->m_filename);
+            free(self->m_meta.filename);
+            break;
+        case STREAM_TYPE_PIPE:
+            fclose(self->m_file);
+            debug("waiting for child pid %i to terminate...\n", self->m_meta.child_pid);
+            while (waitpid(self->m_meta.child_pid, NULL, 0) == -1 && errno == EINTR) {
+                ;
+            }
+            debug("child pid %i terminated\n", self->m_meta.child_pid);
             break;
         default:
             debug("unhandled stream type: %"PRIu32"\n", self->m_flags);
