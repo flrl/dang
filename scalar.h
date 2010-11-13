@@ -30,13 +30,13 @@
 #define SCALAR_INT              0x01u
 #define SCALAR_FLOAT            0x02u
 #define SCALAR_STRING           0x03u
-#define SCALAR_FILEHANDLE       0x04u
 // ...
 #define SCALAR_SCAREF           0x11u
 #define SCALAR_ARRREF           0x12u
 #define SCALAR_HASHREF          0x13u
 #define SCALAR_CHANREF          0x14u
 #define SCALAR_FUNCREF          0x15u
+#define SCALAR_STRMREF          0x16u
 
 #define SCALAR_TYPE_MASK        0x0000001Fu
 #define SCALAR_FLAGS_MASK       0xFFFFFFE0u
@@ -64,6 +64,7 @@ typedef struct scalar_t {
         hash_handle_t as_hash_handle;
         channel_handle_t as_channel_handle;
         function_handle_t as_function_handle;
+        stream_handle_t as_stream_handle;
     } m_value;
 } scalar_t;
 
@@ -90,12 +91,22 @@ void anon_scalar_set_array_reference(scalar_t *, array_handle_t);
 void anon_scalar_set_hash_reference(scalar_t *, hash_handle_t);
 void anon_scalar_set_channel_reference(scalar_t *, channel_handle_t);
 void anon_scalar_set_function_reference(scalar_t *, function_handle_t);
+void anon_scalar_set_stream_reference(scalar_t *, stream_handle_t);
 
 scalar_handle_t anon_scalar_deref_scalar_reference(const scalar_t *);
 array_handle_t anon_scalar_deref_array_reference(const scalar_t *);
 hash_handle_t anon_scalar_deref_hash_reference(const scalar_t *);
 channel_handle_t anon_scalar_deref_channel_reference(const scalar_t *);
 function_handle_t anon_scalar_deref_function_reference(const scalar_t *);
+stream_handle_t anon_scalar_deref_stream_reference(const scalar_t *);
+
+/*
+=head2 Pooled Scalar Functions
+
+=over
+
+=cut
+*/
 
 
 int scalar_pool_init(void);
@@ -106,14 +117,6 @@ scalar_handle_t scalar_allocate_many(size_t, uint32_t);
 scalar_handle_t scalar_reference(scalar_handle_t);
 int scalar_release(scalar_handle_t);
 
-/*
-=head2 Pooled Scalar Functions
-
-=over
-
-=cut
- */
- 
 /*
 =item scalar_lock()
 
@@ -209,6 +212,8 @@ static inline void scalar_set_value(scalar_handle_t handle, const scalar_t *val)
 
 =item scalar_set_function_reference()
 
+=item scalar_set_stream_reference()
+
 Functions for setting up references
 
 =cut
@@ -259,6 +264,16 @@ static inline void scalar_set_function_reference(scalar_handle_t handle, functio
     
     if (0 == scalar_lock(handle)) {
         anon_scalar_set_function_reference(&SCALAR(handle), f);
+        scalar_unlock(handle);
+    }
+}
+
+static inline void scalar_set_stream_reference(scalar_handle_t handle, stream_handle_t s) {
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
+    
+    if (0 == scalar_lock(handle)) {
+        anon_scalar_set_stream_reference(&SCALAR(handle), s);
         scalar_unlock(handle);
     }
 }
@@ -367,6 +382,8 @@ static inline void scalar_get_value(scalar_handle_t handle, scalar_t *result) {
 
 =item scalar_deref_function_reference()
 
+=item scalar_deref_stream_reference()
+
 Functions for dereferencing references in pooled scalars
 
 =cut
@@ -426,6 +443,18 @@ static inline function_handle_t scalar_deref_function_reference(scalar_handle_t 
     function_handle_t ref = 0;
     if (0 == scalar_lock(handle)) {
         ref = anon_scalar_deref_function_reference(&SCALAR(handle));
+        scalar_unlock(handle);
+    }
+    return ref;
+}
+
+static inline stream_handle_t scalar_deref_stream_reference(scalar_handle_t handle) {
+    assert(POOL_HANDLE_VALID(scalar_t, handle));
+    assert(POOL_HANDLE_IN_USE(scalar_t, handle));
+    
+    stream_handle_t ref = 0;
+    if (0 == scalar_lock(handle)) {
+        ref = anon_scalar_deref_stream_reference(&SCALAR(handle));
         scalar_unlock(handle);
     }
     return ref;

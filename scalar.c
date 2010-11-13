@@ -14,8 +14,9 @@
 
 #include "array.h"
 #include "channel.h"
-#include "hash.h"
 #include "debug.h"
+#include "hash.h"
+#include "stream.h"
 
 #include "scalar.h"
 
@@ -145,13 +146,19 @@ int anon_scalar_destroy(scalar_t *self) {
             case SCALAR_ARRREF:
                 array_release(self->m_value.as_array_handle);
                 break;
-            //...
+            case SCALAR_HASHREF:
+                hash_release(self->m_value.as_hash_handle);
+                break;
             case SCALAR_CHANREF:
                 channel_release(self->m_value.as_channel_handle);
                 break;
             case SCALAR_FUNCREF:
                 /* function references aren't allocated anywhere, and don't need to be released */
                 break;
+            case SCALAR_STRMREF:
+                stream_release(self->m_value.as_stream_handle);
+                break;
+            //...
             default:
                 debug("unexpected anon scalar type: %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
                 break;
@@ -191,7 +198,10 @@ int anon_scalar_clone(scalar_t * restrict self, const scalar_t * restrict other)
             self->m_flags = SCALAR_ARRREF;
             self->m_value.as_array_handle = array_reference(other->m_value.as_array_handle);
             break;
-        //...
+        case SCALAR_HASHREF:
+            self->m_flags = SCALAR_HASHREF;
+            self->m_value.as_hash_handle = hash_reference(other->m_value.as_hash_handle);
+            break;
         case SCALAR_CHANREF:
             self->m_flags = SCALAR_CHANREF;
             self->m_value.as_channel_handle = channel_reference(other->m_value.as_channel_handle);
@@ -200,6 +210,11 @@ int anon_scalar_clone(scalar_t * restrict self, const scalar_t * restrict other)
             self->m_flags = SCALAR_FUNCREF;
             self->m_value.as_function_handle = other->m_value.as_function_handle;
             break;
+        case SCALAR_STRMREF:
+            self->m_flags = SCALAR_STRMREF;
+            self->m_value.as_stream_handle = stream_reference(other->m_value.as_stream_handle);
+            break;
+        //...
         default:
             memcpy(self, other, sizeof(*self));
     }
@@ -273,6 +288,8 @@ void anon_scalar_set_string_value(scalar_t *self, const char *sval) {
 
 =item anon_scalar_set_function_reference()
 
+=item anon_scalar_set_stream_reference()
+
 Functions for setting up anonymous scalar_t objects to reference other objects.  Any previous value is properly
 cleaned up.
 
@@ -317,6 +334,14 @@ void anon_scalar_set_function_reference(scalar_t *self, function_handle_t handle
     
     self->m_flags = SCALAR_FUNCREF;
     self->m_value.as_function_handle = handle;
+}
+
+void anon_scalar_set_stream_reference(scalar_t *self, stream_handle_t handle) {
+    assert(self != NULL);
+    if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
+    
+    self->m_flags = SCALAR_STRMREF;
+    self->m_value.as_stream_handle = handle;
 }
 
 /*
@@ -503,6 +528,8 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
 
 =item anon_scalar_deref_function_reference()
 
+=item anon_scalar_deref_stream_reference()
+
 Dereference reference type anonymous scalars
 
 =cut
@@ -541,6 +568,14 @@ function_handle_t anon_scalar_deref_function_reference(const scalar_t *self) {
     
     return self->m_value.as_function_handle;
 }
+
+stream_handle_t anon_scalar_deref_stream_reference(const scalar_t *self) {
+    assert(self != NULL);
+    assert((self->m_flags & SCALAR_TYPE_MASK) == SCALAR_STRMREF);
+    
+    return self->m_value.as_stream_handle;
+}
+
 
 /*
 =back
