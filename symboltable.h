@@ -17,6 +17,7 @@
 #define SYMBOL_HASH         0x03u
 #define SYMBOL_CHANNEL      0x04u
 #define SYMBOL_FUNCTION     0x05u
+#define SYMBOL_STREAM       0x06u
 
 #define SYMBOL_TYPE_MASK    0x0000000Fu
 

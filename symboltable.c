@@ -18,6 +18,7 @@
 #include "debug.h"
 #include "hash.h"
 #include "scalar.h"
+#include "stream.h"
 
 #include "symboltable.h"
 
@@ -257,6 +258,9 @@ const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, fla
             symbol->m_flags = SYMBOL_FUNCTION;
             symbol->m_referent = handle;
             break;
+        case SYMBOL_STREAM:
+            symbol->m_flags = SYMBOL_STREAM;
+            symbol->m_referent = (handle ? stream_reference(handle) : stream_allocate());
         //...
         default:
             debug("unhandled symbol type: %"PRIu32"\n", flags);
@@ -325,6 +329,10 @@ const symbol_t *symbol_clone(symboltable_t *table, identifier_t identifier) {
             case SYMBOL_FUNCTION:
                 symbol->m_flags = SYMBOL_FUNCTION;
                 symbol->m_referent = remote_symbol->m_referent;
+                break;
+            case SYMBOL_STREAM:
+                symbol->m_flags = SYMBOL_STREAM;
+                symbol->m_referent = stream_reference(remote_symbol->m_referent);
                 break;
             //...
             default:
@@ -598,6 +606,9 @@ int _symbol_destroy(symbol_t *self) {
             break;
         case SYMBOL_FUNCTION:
             self->m_referent = 0;
+            break;
+        case SYMBOL_STREAM:
+            stream_release(self->m_referent);
             break;
         //...
         default:
