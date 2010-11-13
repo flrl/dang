@@ -107,8 +107,8 @@ line    :   labeldef '\n'               { $$ = get_line($1, UINTPTR_MAX, NULL); 
         ;
 
 labeldef:   /* empty */                 { $$ = NULL; }
-        |   LABEL ':'                   { $$ = get_label($1, NULL); g_last_label_defined = $$->m_label; }
-        |   '.' LABEL ':'               { $$ = get_label(g_last_label_defined, $2); }
+        |   LABEL ':'                   { $$ = get_label($1, NULL); g_last_label_defined = $$->m_label; free($1); }
+        |   '.' LABEL ':'               { $$ = get_label(g_last_label_defined, $2); free($2); }
         ;
 
 params  :   /* empty */                 { $$ = NULL; }
@@ -126,9 +126,9 @@ param   :   INTEGER                     { $$ = calloc(1, sizeof(*$$)); $$->m_typ
         |   '~' label                   { $$ = calloc(1, sizeof(*$$)); $$->m_type = P_LABEL_OFF; $$->m_value.as_label = $2; }
         ;
 
-label   :   LABEL '.' LABEL             { $$ = get_label($1, $3); }
-        |   '.' LABEL                   { $$ = get_label(g_last_label_defined, $2); }
-        |   LABEL                       { $$ = get_label($1, NULL); }
+label   :   LABEL '.' LABEL             { $$ = get_label($1, $3); free($1); free($3); }
+        |   '.' LABEL                   { $$ = get_label(g_last_label_defined, $2); free($2); }
+        |   LABEL                       { $$ = get_label($1, NULL); free($1); }
         ;
 
 %%
