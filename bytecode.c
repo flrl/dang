@@ -31,6 +31,7 @@ bytecode
 #include "debug.h"
 #include "hash.h"
 #include "scalar.h"
+#include "stream.h"
 #include "util.h"
 #include "vm.h"
 
@@ -1435,6 +1436,91 @@ Pushes an undefined value to the data stack
 int inst_UNDEF(struct vm_context_t *context) {
     scalar_t a = {0};
     vm_ds_push(context, &a);
+    anon_scalar_destroy(&a);
+    return 1;
+}
+
+/*
+=item ZERO ( -- a )
+
+Pushes a zero to the data stack.
+
+=cut
+*/
+int inst_ZERO(struct vm_context_t *context) {
+    scalar_t a = {0};
+    anon_scalar_set_int_value(&a, 0);
+    vm_ds_push(context, &a);
+    anon_scalar_destroy(&a);
+    return 1;    
+}
+
+/*
+=item ONE ( -- a )
+
+Pushes a one to the data stack.
+
+=cut
+*/
+int inst_ONE(struct vm_context_t *context) {
+    scalar_t a = {0};
+    anon_scalar_set_int_value(&a, 1);
+    vm_ds_push(context, &a);
+    anon_scalar_destroy(&a);
+    return 1;    
+}
+
+/*
+=item STDIN ( -- stream )
+
+Pushes a reference to the stdin stream to the data stack.
+
+=cut
+*/
+int inst_STDIN(struct vm_context_t *context) {
+    scalar_t stream = {0};
+    
+    stream_handle_t handle = stream_stdin_handle();
+    anon_scalar_set_stream_reference(&stream, handle);
+    vm_ds_push(context, &stream);
+    anon_scalar_destroy(&stream);
+    stream_release(handle);
+    return 1;
+}
+
+/*
+=item STDOUT ( -- stream )
+
+Pushes a reference to the stdout stream to the data stack.
+
+=cut
+*/
+int inst_STDOUT(struct vm_context_t *context) {
+    scalar_t stream = {0};
+    
+    stream_handle_t handle = stream_stdout_handle();
+    anon_scalar_set_stream_reference(&stream, handle);
+    vm_ds_push(context, &stream);
+    anon_scalar_destroy(&stream);
+    stream_release(handle);
+    return 1;
+}
+
+/*
+=item STDERR ( -- stream )
+
+Pushes a reference to the stderr stream to the data stack.
+
+=cut
+*/
+int inst_STDERR(struct vm_context_t *context) {
+    scalar_t stream = {0};
+    
+    stream_handle_t handle = stream_stderr_handle();
+    anon_scalar_set_stream_reference(&stream, handle);
+    vm_ds_push(context, &stream);
+    anon_scalar_destroy(&stream);
+    stream_release(handle);
     return 1;
 }
 
