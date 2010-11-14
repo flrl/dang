@@ -158,8 +158,22 @@ bytecode operations
             - it can't free the thread because it is the thread
         - should the context_t object store the thread id?
     - compare two scalars for equality -- numeric and stringwise, like == and eq
-
-
+    - scalars
+        - chomp a delimiter off the end of a string?
+        - split a string into an array of characters
+        - join an array of characters into a string
+    - hashes and arrays:
+        - put contents of an array onto the stack
+        - put keys from a hash onto the stack
+        - put values from a hash onto the stack
+        - put keys and values from a hash onto the stack
+        - populate an array from the stack
+        - populate a hash from the stack
+    - stream i/o
+        - IN:  takes a stream ref and a number of bytes to read from the stream, puts back the value read
+        - INL: takes a stream ref and an integer delimiter value, puts back the value read including the delimiter
+        - OUT: takes a stream ref and a value to output, outputs just the value
+        - OUTL: takes a stream ref, a value to output, and a delimiter; outputs the value followed by the delimiter
 
 
 threading
