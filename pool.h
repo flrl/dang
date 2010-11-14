@@ -360,9 +360,9 @@ static inline handle_type type##_POOL_ALLOCATE_MANY(size_t many, uint32_t flags)
                                                                                                 \
 static inline handle_type type##_POOL_REFERENCE(handle_type handle) {                           \
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
-    assert(POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_FLAG_INUSE);                   \
-    assert(POOL_WRAPPER(type, handle).m_references > 0);                                        \
     if (0 == POOL_LOCK(type, handle)) {                                                         \
+        assert(POOL_HANDLE_IN_USE(type, handle));                                               \
+        assert(POOL_WRAPPER(type, handle).m_references > 0);                                    \
         ++POOL_WRAPPER(type,handle).m_references;                                               \
         POOL_UNLOCK(type, handle);                                                              \
         return handle;                                                                          \
@@ -374,9 +374,9 @@ static inline handle_type type##_POOL_REFERENCE(handle_type handle) {           
                                                                                                 \
 static inline int type##_POOL_RELEASE(handle_type handle) {                                     \
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
-    assert(POOL_HANDLE_IN_USE(type, handle));                                                   \
-    assert(POOL_WRAPPER(type, handle).m_references > 0);                                        \
     if (0 == POOL_LOCK(type, handle)) {                                                         \
+        assert(POOL_HANDLE_IN_USE(type, handle));                                               \
+        assert(POOL_WRAPPER(type, handle).m_references > 0);                                    \
         if (POOL_WRAPPER(type, handle).m_references == 1) {                                     \
             destroy(&POOL_OBJECT(type, handle));                                                \
             if (POOL_WRAPPER(type, handle).m_mutex != NULL) {                                   \
