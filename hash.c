@@ -297,6 +297,7 @@ static scalar_handle_t _hash_key_item_unlocked(hash_t *self, const char *key) {
                 else {
                     bucket->m_first_item = new_item;
                 }
+                ++bucket->m_count;
                 handle = scalar_reference(new_item->m_value);
             }
             break;
@@ -339,6 +340,7 @@ static int _hash_key_delete_unlocked(hash_t *self, const char *key) {
             else {
                 bucket->m_first_item = item->m_next_item;
             }
+            --bucket->m_count;
             _hash_item_destroy(item);
             break;
         }
