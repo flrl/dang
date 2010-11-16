@@ -3,10 +3,10 @@
 ; 102 - control
 main:
         undef
-        symdef  4, 101
+        symdef  0x04, 101
         undef
-        symdef  4, 102
-        intlit  2
+        symdef  0x04, 102
+        byte    2
         coro    &fib
 .top:   
         strlit  "main: about to read from input channel"
@@ -23,7 +23,7 @@ main:
         jmp0 ~.top
         strlit  "main: about to write to control channel"
         outl
-        byte 1
+        byte    1
         symfind 102
         crwrite
 .clean: 
@@ -42,10 +42,10 @@ main:
 ; 1001  - output 
 ; 1002  - control
 fib:
-        symdef  0, 1002
+        symdef  0x00, 1002
         drop
-        symdef  0, 1001
-        byte 1
+        symdef  0x00, 1001
+        byte    1
         dup
         symfind 1001
         over

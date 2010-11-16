@@ -2,7 +2,7 @@
 ; 101 - array
 main:
             undef
-            symdef  2, 101
+            symdef  0x00000002, 101
 .input:     in
             dup
             jmpu ~.tupni
