@@ -29,6 +29,8 @@
     char *read_quoted(void);
     int read_hex_byte(void);
     int read_octal_byte(void);
+    int read_hex_value(void);
+    int read_octal_value(void);
     
     typedef struct line_t line_t;
     typedef struct param_t param_t;
@@ -457,6 +459,20 @@ int yylex(void) {
     // bail out at end of file
     if (c == EOF)  return EOF;
     
+    if (c == '0') {
+        // parse a literal integer in either hex or octal
+        
+        if (peek() == 'x') {
+            c = next();
+            yylval.ival = read_hex_value();
+            return INTEGER;
+        }
+        else {
+            yylval.ival = read_octal_value();
+            return INTEGER;
+        }
+    }
+
     if (isdigit(c)) {
         // parse a literal number - either int or float
         intptr_t i = digittoint(c);
@@ -637,4 +653,38 @@ int read_octal_byte(void) {
         fprintf(stderr, "warning: octal byte value out of range '\\%s'\n", digits);
     }
     return (char) val;
+}
+
+int read_hex_value(void) {
+    int i = 0, val;
+    char digits[64], *endptr;
+    
+    memset(digits, 0, sizeof(digits));
+    while(i < sizeof(digits) - 1 && isxdigit(peek())) {
+        digits[i] = (char) next();
+    }
+    
+    val = strtol(digits, &endptr, 16);
+    if (endptr != NULL) {
+        fprintf(stderr, "warning: invalid characters in hex value '0x%s'\n", digits);
+    }
+    
+    return val;
+}
+
+int read_octal_value(void) {
+    int i = 0, val;
+    char digits[64], *endptr;
+    
+    memset(digits, 0, sizeof(digits));
+    while(i < sizeof(digits) - 1 && isdigit(peek())) {
+        digits[i] = (char) next();
+    }
+    
+    val = strtol(digits, &endptr, 8);
+    if (endptr != NULL) {
+        fprintf(stderr, "warning: invalid characters in octal value '0%s'\n", digits);
+    }
+    
+    return val;
 }
