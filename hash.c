@@ -133,7 +133,7 @@ scalar_handle_t hash_key_item(hash_handle_t handle, const struct scalar_t *key) 
     if (0 == POOL_LOCK(hash_t, handle)) {
         char *skey;
         anon_scalar_get_string_value(key, &skey);
-        scalar_handle_t item = _hash_key_item_unlocked(&POOL_OBJECT(hash_t, handle), skey);
+        scalar_handle_t item = _hash_key_item_unlocked(&HASH(handle), skey);
         free(skey);
         POOL_UNLOCK(hash_t, handle);
         return item;
@@ -158,7 +158,7 @@ int hash_key_delete(hash_handle_t handle, const struct scalar_t *key) {
     if (0 == POOL_LOCK(hash_t, handle)) {
         char *skey;
         anon_scalar_get_string_value(key, &skey);
-        status = _hash_key_delete_unlocked(&POOL_OBJECT(hash_t, handle), skey);
+        status = _hash_key_delete_unlocked(&HASH(handle), skey);
         free(skey);
         POOL_UNLOCK(hash_t, handle);
     }
@@ -183,7 +183,7 @@ int hash_key_exists(hash_handle_t handle, const struct scalar_t *key) {
     if (0 == POOL_LOCK(hash_t, handle)) {
         char *skey;
         anon_scalar_get_string_value(key, &skey);
-        status = _hash_key_exists_unlocked(&POOL_OBJECT(hash_t, handle), skey);
+        status = _hash_key_exists_unlocked(&HASH(handle), skey);
         free(skey);
         POOL_UNLOCK(hash_t, handle);
     }
