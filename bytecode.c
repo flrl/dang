@@ -674,6 +674,96 @@ int inst_ARINDEX(struct vm_context_t *context) {
 }
 
 /*
+=item ARSLICE ( [indexes] count ar -- [references] count )
+
+Pops an array reference, a count, and count indices from the data stack.  Pushes back references to the indexed items
+in the array, followed by the count.
+
+Indexes that are larger than the current size of the array result in the array automatically growing to accomodate the 
+index, and a reference to the new undefined scalar being pushed back.
+
+The behaviour of negative indexes or a negative count is undefined.
+
+=cut
+*/
+int inst_ARSLICE(struct vm_context_t *context) {
+    scalar_t ar = {0}, count = {0};
+    
+    vm_ds_pop(context, &ar);
+    vm_ds_pop(context, &count);
+
+    intptr_t c = anon_scalar_get_int_value(&count);
+    if (c > 0) {
+        scalar_t *indices = calloc(c, sizeof(*indices));
+        if (indices != NULL) {
+            vm_ds_npop(context, c, indices);
+
+            for (int i = 0; i < c; i++) {
+                anon_scalar_set_scalar_reference(&indices[i], array_item_at(ar.m_value.as_array_handle, i));
+            }
+            
+            vm_ds_npush(context, c, indices);
+
+            for (int i = 0; i < c; i++) {
+                anon_scalar_destroy(&indices[i]);
+            }
+            
+            free(indices);
+
+            vm_ds_push(context, &count);
+        }
+        else {
+            debug("calloc failed\n");
+        }
+    }
+    else {
+        anon_scalar_set_int_value(&count, 0);
+        vm_ds_push(context, &count);
+    }
+    
+    anon_scalar_destroy(&count);
+    anon_scalar_destroy(&ar);
+
+    return 1;
+}
+
+/*
+=item ARLIST ( ar -- [values] count )
+
+Pops an array reference from the data stack.  Pushes back the value of each item in the array in order, followed by
+the number of items in the array.
+
+=cut
+*/
+int inst_ARLIST(struct vm_context_t *context) {
+    scalar_t ar = {0}, s = {0};
+    
+    vm_ds_pop(context, &ar);
+    
+    array_handle_t array_handle = array_reference(anon_scalar_deref_array_reference(&ar));
+
+    size_t size = array_size(array_handle);
+    for (size_t i = size; i > 0; i--) {
+        scalar_handle_t scalar_handle = array_item_at(array_handle, i - 1);
+        scalar_get_value(scalar_handle, &s);
+
+        vm_ds_push(context, &s);
+        
+        scalar_release(scalar_handle);
+    }
+
+    array_release(array_handle);
+    
+    anon_scalar_set_int_value(&s, size);
+    vm_ds_push(context, &s);
+    
+    anon_scalar_destroy(&s);
+    anon_scalar_destroy(&ar);
+    
+    return 1;
+}
+
+/*
 =item ARPUSH ( a ar -- )
 
 Pops an array reference and a scalar value from the data stack, and adds the scalar value to the end of the array.
