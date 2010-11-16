@@ -633,15 +633,15 @@ char *read_quoted(void) {
 
 int read_hex_byte(void) {
     int i = 0, val;
-    char digits[3], *endptr;
+    char digits[3], *endptr=NULL;
     
     memset(digits, 0, sizeof(digits));
     while (i < 2 && isxdigit(peek())) {
-        digits[i] = (char) next();
+        digits[i++] = (char) next();
     }
     
     val = strtol(digits, &endptr, 16);
-    if (endptr != NULL) {
+    if (endptr != NULL && *endptr != '\0') {
         fprintf(stderr, "warning: invalid characters in hex byte '\\x%s'\n", digits);
     }
     return (char) val;
@@ -649,15 +649,15 @@ int read_hex_byte(void) {
 
 int read_octal_byte(void) {
     int i = 0, val;
-    char digits[4], *endptr;
+    char digits[4], *endptr=NULL;
     
     memset(digits, 0, sizeof(digits));
     while (i < 3 && isdigit(peek())) {
-        digits[i] = (char) next();
+        digits[i++] = (char) next();
     }
     
     val = strtol(digits, &endptr, 8);
-    if (endptr != NULL) {
+    if (endptr != NULL && *endptr != '\0') {
         fprintf(stderr, "warning: invalid characters in octal byte '\\%s'\n", digits);
     }
     if (val > 0xFF) {
@@ -668,15 +668,15 @@ int read_octal_byte(void) {
 
 int read_hex_value(void) {
     int i = 0, val;
-    char digits[64], *endptr;
+    char digits[64], *endptr=NULL;
     
     memset(digits, 0, sizeof(digits));
     while(i < sizeof(digits) - 1 && isxdigit(peek())) {
-        digits[i] = (char) next();
+        digits[i++] = (char) next();
     }
     
     val = strtol(digits, &endptr, 16);
-    if (endptr != NULL) {
+    if (endptr != NULL && *endptr != '\0') {
         fprintf(stderr, "warning: invalid characters in hex value '0x%s'\n", digits);
     }
     
@@ -685,15 +685,15 @@ int read_hex_value(void) {
 
 int read_octal_value(void) {
     int i = 0, val;
-    char digits[64], *endptr;
+    char digits[64], *endptr=NULL;
     
     memset(digits, 0, sizeof(digits));
     while(i < sizeof(digits) - 1 && isdigit(peek())) {
-        digits[i] = (char) next();
+        digits[i++] = (char) next();
     }
     
     val = strtol(digits, &endptr, 8);
-    if (endptr != NULL) {
+    if (endptr != NULL && *endptr != '\0') {
         fprintf(stderr, "warning: invalid characters in octal value '0%s'\n", digits);
     }
     
