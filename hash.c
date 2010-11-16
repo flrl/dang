@@ -255,6 +255,7 @@ static int _hash_bucket_destroy(hash_bucket_t *self) {
             item = tmp;
         }
     }
+    memset(self, 0, sizeof(*self));
     return 0;
 }
 
