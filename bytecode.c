@@ -1624,8 +1624,9 @@ int inst_IN(struct vm_context_t *context) {
 
     if (getline(&buf, &bufsize, stdin) > 0) {
         anon_scalar_set_string_value(&a, buf);
-        free(buf);
     }
+
+    if (buf != NULL)  free(buf);
 
     vm_ds_push(context, &a);
     anon_scalar_destroy(&a);
