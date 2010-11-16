@@ -101,6 +101,7 @@ static inline int type##_STACK_RESERVE(struct type##_STACK *stack, size_t new_si
     memcpy(tmp, stack->m_items, stack->m_count * sizeof(stack->m_items[0]));            \
     free(stack->m_items);                                                               \
     stack->m_items = tmp;                                                               \
+    stack->m_allocated_count = new_size;                                                \
     return 0;                                                                           \
 }                                                                                       \
                                                                                         \
