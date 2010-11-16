@@ -289,6 +289,17 @@ assembler_output_t *assemble(const char *filename) {
         output->m_bytecode[line->m_position] = (uint8_t) line->m_instruction;
         if (line->m_length > 1) {
             switch (line->m_instruction) {
+                case i_BYTE:
+                    if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
+                        uint8_t i = (uint8_t) line->m_params->m_value.as_integer;
+                        output->m_bytecode[line->m_position + 1] = i;
+                    }
+                    else {
+                        debug("instruction '%s' requires an integer parameter\n", instruction_names[line->m_instruction]);
+                        status = -1;
+                    }
+                    break;
+                
                 case i_CALL:
                 case i_CORO:
                 case i_FUNLIT:
