@@ -1025,13 +1025,13 @@ int inst_BYTE(vm_context_t *context) {
 
 
 /*
- =item INTLIT ( -- a ) 
- 
- Reads an integer value from the following bytecode and pushes it onto the data stack.  Transfers execution control to the 
- bytecode following the integer value.
- 
- =cut
- */
+=item INTLIT ( -- a ) 
+
+Reads an integer value from the following bytecode and pushes it onto the data stack.  Transfers execution control to the 
+bytecode following the integer value.
+
+=cut
+*/
 int inst_INTLIT(vm_context_t *context) {
     const intptr_t lit = *(const intptr_t *) NEXT_BYTE(context);
     
