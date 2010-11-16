@@ -1,0 +1,22 @@
+; array tests
+; 101 - array
+main:
+        undef
+        symdef  2, 101
+.fill:  in
+        dup
+        jmpu    ~.filld
+        over
+        arpush
+        jmp     ~.fill
+.filld: drop
+        arlist
+.dump:  dup
+        jmp0    ~.fin
+        swap
+        out
+        intdecr
+        jmp     ~.dump
+        
+.fin:   drop
+        end
