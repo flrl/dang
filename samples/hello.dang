@@ -1,0 +1,8 @@
+main:
+    strlit "Hello"
+    strlit " "
+    strlit "World"
+    strcat
+    strcat
+    outl
+    end

@@ -1,0 +1,20 @@
+; tac
+; 101 - array
+main:
+            undef
+            symdef  2, 101
+.input:     in
+            dup
+            jmpu ~.tupni
+            over
+            arunshft
+            jmp  ~.input
+.tupni:     drop
+.output:    dup
+            arshft
+            dup
+            jmpu ~.tuptuo
+            out
+            jmp  ~.output
+.tuptuo:    drop
+            return

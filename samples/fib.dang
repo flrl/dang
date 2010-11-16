@@ -1,0 +1,83 @@
+; fibonacci sequence
+; 101 - input
+; 102 - control
+main:
+        undef
+        symdef  4, 101
+        undef
+        symdef  4, 102
+        intlit  2
+        coro    &fib
+.top:   
+        strlit  "main: about to read from input channel"
+        outl
+        symfind 101
+        crread
+        dup
+        outl
+;        strlit  ", "
+;        out
+        intlit  500
+        intsubt
+        intgt0
+        jmp0 ~.top
+        strlit  "main: about to write to control channel"
+        outl
+        byte 1
+        symfind 102
+        crwrite
+.clean: 
+        strlit "main: waiting for channel data to end..."
+        outl
+        symfind 101
+        crtryrd
+;        dup
+;        outl
+        not
+        jmp0 ~.clean
+        return
+
+
+; ( output control -- )
+; 1001  - output 
+; 1002  - control
+fib:
+        symdef  0, 1002
+        drop
+        symdef  0, 1001
+        byte 1
+        dup
+        symfind 1001
+        over
+        over
+        over
+        swap
+        strlit  "fib: about to write to output channel"
+        outl
+        crwrite
+        swap
+        strlit  "fib: about to write to output channel"
+        outl
+        crwrite
+.top:   swap
+        over
+        intadd
+        dup
+        strlit  "fib: about to write to output channel"
+        outl
+        symfind 1001 
+        crwrite
+        strlit  "fib: about to tryread from control channel"
+        outl
+        symfind 1002
+        crtryrd
+        jmp0 ~.top
+;        jmp  ~.top
+    
+.bot:   
+        strlit  "fib: finished, about to return"
+        outl
+        return
+
+
+

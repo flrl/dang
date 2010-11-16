@@ -1,0 +1,287 @@
+inttest:
+        strlit  "testing integers:"
+        outl
+        strlit  "addition: "
+        out
+        intlit  0
+.t1:    dup
+        intlit  10
+        intsubt
+        jmp0 ~.b1
+        intlit  1
+        intadd
+        dup
+        out
+        strlit  ", "
+        out
+        jmp  ~.t1
+.b1:    strlit  "\n"
+        out
+        strlit  "subtraction: "
+        out
+.t2:    dup
+        jmp0 ~.b2
+        intlit  1
+        intsubt
+        dup
+        out
+        strlit  ", "
+        out
+        jmp  ~.t2
+.b2:    strlit "\n"
+        out
+        strlit  "multiplication: "
+        out
+        intlit  5
+        dup
+        out
+        strlit  "x"
+        out
+        intlit  4
+        dup
+        out
+        intmult
+        strlit  "="
+        out
+        outl
+        strlit  "division: "
+        out
+        intlit 20
+        dup
+        out
+        strlit "/"
+        out
+        intlit 4
+        dup
+        out
+        intdiv
+        strlit "="
+        out
+        outl
+        strlit "modulus: "
+        out
+        intlit 20
+        dup
+        out
+        strlit "%"
+        out
+        intlit 3
+        dup
+        out
+        intmod
+        strlit "="
+        out
+        outl
+        strlit "increment: "
+        out
+        intlit 0
+        dup
+        out
+        intincr
+        strlit "->"
+        out
+        outl
+        strlit "decrement: "
+        out
+        intlit 0
+        dup
+        out
+        intdecr
+        strlit "->"
+        out
+        outl
+        strlit "132 > 0 ? "
+        out
+        intlit 132
+        intgt0
+        outl
+        strlit "-123 > 0 ? "
+        out
+        intlit 0
+        intlit 123
+        intsubt
+        intgt0
+        outl
+        strlit "0 > 0 ? "
+        out
+        intlit 0
+        intgt0
+        outl
+        strlit "123 < 0 ? "
+        out
+        intlit 123
+        intlt0
+        outl
+        strlit "-123 < 0 ? "
+        out
+        intlit 0
+        intlit 123
+        intsubt
+        intlt0
+        outl
+        strlit "0 < 0 ? "
+        out
+        intlit 0
+        intlt0
+        outl
+        return
+        
+
+logictest:
+        strlit "logic tests:"
+        outl
+        strlit "1 and 1: "
+        out
+        intlit 1
+        dup
+        and
+        outl
+        strlit "1 and 0: "
+        out
+        intlit 1
+        intlit 0
+        and
+        outl
+        strlit "0 and 1: "
+        out
+        intlit 0
+        intlit 1
+        and
+        outl
+        strlit "0 and 0: "
+        out
+        intlit 0
+        dup
+        and
+        outl
+        strlit "1 or 1: "
+        out
+        intlit 1
+        dup
+        or
+        outl
+        strlit "1 or 0: "
+        out
+        intlit 1
+        intlit 0
+        or
+        outl
+        strlit "0 or 1: "
+        out
+        intlit 0
+        intlit 1
+        or
+        outl
+        strlit "0 or 0: "
+        out
+        intlit 0
+        dup
+        or
+        outl
+        strlit "1 xor 1: "
+        out
+        intlit 1
+        dup
+        xor
+        outl
+        strlit "1 xor 0: "
+        out
+        intlit 1
+        intlit 0
+        xor
+        outl
+        strlit "0 xor 1: "
+        out
+        intlit 0
+        intlit 1
+        xor
+        outl
+        strlit "0 xor 0: "
+        out
+        intlit 0
+        dup
+        xor
+        outl
+
+
+
+sheep:  
+        strlit "hello world "
+        fltlit 1.0
+.top:   dup
+        fltlit 0.5
+        fltadd
+        fltadd
+        strcat
+        return
+main:
+        intlit  10
+.top:   dup
+        outl
+        dup
+        jmp0 ~.bottom
+        intlit  1
+        intsubt
+        jmp  ~.top
+.bottom: drop
+        call &sheep
+        outl
+        undef
+        symdef  1, 999
+        symdef  0, 14
+#        strlit "first symfind... "
+#        out
+#        symfind 999
+#        strlit "ok"
+#        outl
+        intlit 1337
+        swap
+        srwrite
+        call &sheep
+        strlit "second symfind... "
+        out
+        symfind 999
+        strlit "ok"
+        outl
+        srread
+        strlit "read value: "
+        out
+        outl
+        strlit "multi ref symfind... "
+        out
+        symfind 14
+        strlit "ok"
+        outl
+        srread
+        strlit "read value: "
+        out
+        outl
+        symundef 999
+        strlit "third symfind... "
+        out
+        symfind 999
+        strlit "ok"
+        outl
+        jmp0 ~.else
+        strlit "symbol is still defined"
+        outl
+        jmp0 ~.endif
+.else:  strlit "symbol is no longer defined"
+        outl
+.endif: 
+        strlit "enter a value followed by enter: "
+        out
+        in
+        strlit "you entered: "
+        outl
+        outl
+        call    &inttest
+        call    &logictest
+        strlit "function literal: "
+        out
+        funlit &sheep
+        dup
+        outl
+        frcall
+        outl
+        return
