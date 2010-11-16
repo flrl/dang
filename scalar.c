@@ -534,7 +534,13 @@ void anon_scalar_get_string_value(const scalar_t *self, char **result) {
 
 =item anon_scalar_deref_stream_reference()
 
-Dereference reference type anonymous scalars
+Dereference reference type anonymous scalars.  
+
+These do not increase the reference count of the referenced object, so you a) should not call C<foo_release>
+on the handle that you get back, and b) should not depend on the handle remaining valid for any length of time.
+
+To ensure the handle remains valid, call C<foo_reference> on the return value from this function, and then
+when you are finished with it call C<foo_release> to release it.
 
 =cut
 */
