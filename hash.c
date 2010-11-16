@@ -94,6 +94,30 @@ int hash_release(hash_handle_t handle) {
 }
 
 /*
+=item hash_size()
+
+Returns the number of items in the hash
+
+=cut
+*/
+size_t hash_size(hash_handle_t handle) {
+    assert(POOL_HANDLE_VALID(hash_t, handle));
+    
+    if (0 == POOL_LOCK(hash_t, handle)) {
+        assert(POOL_HANDLE_IN_USE(hash_t, handle));
+        size_t count = 0;
+        for (size_t i = 0; i < HASH_BUCKETS; i++) {
+            count += HASH(handle).m_buckets[i].m_count;
+        }
+        return count;
+    }
+    else {
+        debug("couldn't lock hash handle %"PRIuPTR"\n", handle);
+        return 0;
+    }
+}
+
+/*
 =item hash_key_item()
 
 Returns a handle to the item in the hash with the given scalar key.  If the key is not currently defined, 

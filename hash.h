@@ -50,6 +50,7 @@ hash_handle_t hash_allocate_many(size_t);
 hash_handle_t hash_reference(hash_handle_t);
 int hash_release(hash_handle_t);
 
+size_t hash_size(hash_handle_t);
 scalar_handle_t hash_key_item(hash_handle_t, const struct scalar_t *);
 int hash_key_delete(hash_handle_t, const struct scalar_t *);
 int hash_key_exists(hash_handle_t, const struct scalar_t *);
