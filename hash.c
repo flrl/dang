@@ -241,11 +241,13 @@ Setup and teardown for hash_bucket_t objects
 =cut
  */
 static int _hash_bucket_init(hash_bucket_t *self) {
+    assert(self != NULL);
     memset(self, 0, sizeof(*self));
     return 0;
 }
 
 static int _hash_bucket_destroy(hash_bucket_t *self) {
+    assert(self != NULL);
     if (self->m_count > 0) {
         hash_item_t *item = self->m_first_item;
         while (item != NULL) {
