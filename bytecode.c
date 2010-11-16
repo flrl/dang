@@ -878,6 +878,28 @@ int inst_ARUNSHFT(struct vm_context_t *context) {
 }
 
 /*
+=item HRLEN ( hr -- n )
+
+Pops a hash reference from the stack.  Pushes back the number of items in the hash.
+
+=cut
+*/
+int inst_HRLEN(struct vm_context_t *context) {
+    scalar_t hr = {0}, n = {0};
+    
+    vm_ds_pop(context, &hr);
+    
+    anon_scalar_set_int_value(&n, hash_size(anon_scalar_deref_hash_reference(&hr)));
+    
+    vm_ds_push(context, &n);
+    
+    anon_scalar_destroy(&n);
+    anon_scalar_destroy(&hr);
+    
+    return 1;
+}
+
+/*
 =item HRINDEX ( k hr -- sr )
 
 Pops a hash reference and a key from the data stack, and pushes a reference to the value for that key.
@@ -904,6 +926,58 @@ int inst_HRINDEX(struct vm_context_t *context) {
     anon_scalar_destroy(&hr);
     
     return 1;
+}
+
+/*
+=item HRSLICE ( [keys] count hr -- [references] count )
+
+Pops a hash reference, a count, and a list of keys from the data stack.  Pushes back references to the values for
+the keys and the number of items returned.
+
+If any keys are not currently defined in the hash, they are automatically created and their values set to undefined.
+
+=cut
+*/
+int inst_HRSLICE(struct vm_context_t *context) {
+    FIXME("write this\n");
+    return 0;
+}
+
+/*
+=item HRLISTK ( hr -- [keys] count )
+
+Pops a hash reference from the data stack.  Pushes back a list of the keys defined in it, and their count.
+
+=cut
+*/
+int inst_HRLISTK(struct vm_context_t *context) {
+    FIXME("write this\n");
+    return 0;
+}
+
+/*
+=item HRLISTV ( hr -- [values] count )
+
+Pops a hash reference from the data stack.  Pushes back a list of the values defined in it, and their count.
+
+=cut
+*/
+int inst_HRLISTV(struct vm_context_t *context) {
+    FIXME("write this\n");
+    return 0;
+}
+
+/*
+=item HRLISTP ( hr -- [value key] count )
+
+Pops a hash reference from the data stack.  Pushes back a list of the key and value pairs defined in it, and the 
+count of pairs.
+
+=cut
+*/
+int inst_HRLISTP(struct vm_context_t *context) {
+    FIXME("write this\n");
+    return 0;
 }
 
 /*
