@@ -127,6 +127,28 @@ scalar_handle_t array_item_at(array_handle_t handle, size_t index) {
 }
 
 /*
+=item array_size()
+
+Returns the number of items in the array.
+
+=cut
+*/
+size_t array_size(array_handle_t handle) {
+    assert(POOL_HANDLE_VALID(array_t, handle));
+    assert(POOL_HANDLE_IN_USE(array_t, handle));
+    
+    if (0 == _array_lock(handle)) {
+        size_t size = ARRAY(handle).m_count;
+        _array_unlock(handle);
+        return size;
+    }
+    else {
+        debug("couldn't lock array handle %"PRIuPTR"\n", handle);
+        return 0;
+    }
+}
+
+/*
 =item array_push()
 
 Adds an item at the end of the array.
