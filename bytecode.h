@@ -42,6 +42,7 @@ typedef enum instruction_t {
     i_ARINDEX,
     i_ARSLICE,
     i_ARLIST,
+    i_ARLEN,
     i_ARPUSH,
     i_ARPOP,
     i_ARSHFT,

@@ -764,6 +764,28 @@ int inst_ARLIST(struct vm_context_t *context) {
 }
 
 /*
+=item ARLEN ( ar -- n )
+
+Pops an array reference from the stack.  Pushes back the number of items it contains.
+
+=cut
+*/
+int inst_ARLEN(struct vm_context_t *context) {
+    scalar_t ar = {0}, n = {0};
+    
+    vm_ds_pop(context, &ar);
+    
+    anon_scalar_set_int_value(&n, array_size(anon_scalar_deref_array_reference(&ar)));
+    
+    vm_ds_push(context, &n);
+    
+    anon_scalar_destroy(&n);
+    anon_scalar_destroy(&ar);
+    
+    return 1;
+}
+
+/*
 =item ARPUSH ( a ar -- )
 
 Pops an array reference and a scalar value from the data stack, and adds the scalar value to the end of the array.
