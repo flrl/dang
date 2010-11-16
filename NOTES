@@ -163,6 +163,7 @@ bytecode operations
         - split a string into an array of characters
         - join an array of characters into a string
         - byte with a single byte number, and rename intlit, strlit, fltlit to int str flt
+        - replace an int with its char value and vice-versa
     - hashes and arrays:
         - put contents of an array onto the stack
         - put keys from a hash onto the stack
