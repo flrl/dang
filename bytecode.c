@@ -1005,6 +1005,26 @@ int inst_FRCORO(struct vm_context_t *context) {
 }
 
 /*
+=item BYTE ( -- a )
+
+Reads the next byte in the bytecode and pushes its integer value onto the data stack.  Transfers execution control to the
+bytecode following it.
+
+=cut
+*/
+int inst_BYTE(vm_context_t *context) {
+    const uint8_t byte = *(const uint8_t *) NEXT_BYTE(context);
+    
+    scalar_t a = {0};
+    anon_scalar_set_int_value(&a, byte);
+    vm_ds_push(context, &a);
+    anon_scalar_destroy(&a);
+    
+    return 1 + sizeof(byte);
+}
+
+
+/*
  =item INTLIT ( -- a ) 
  
  Reads an integer value from the following bytecode and pushes it onto the data stack.  Transfers execution control to the 

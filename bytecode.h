@@ -52,6 +52,7 @@ typedef enum instruction_t {
     i_CRWRITE,
     i_FRCALL,
     i_FRCORO,
+    i_BYTE,         /* uint8_t */
     i_INTLIT,       /* intptr_t */
     i_INTADD,
     i_INTSUBT,
