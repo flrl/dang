@@ -78,8 +78,6 @@ typedef enum instruction_t {
     i_OUTL,
     i_IN,
     i_UNDEF,
-    i_ZERO,
-    i_ONE,
     i_STDIN,
     i_STDOUT,
     i_STDERR,

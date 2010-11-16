@@ -1461,36 +1461,6 @@ int inst_UNDEF(struct vm_context_t *context) {
 }
 
 /*
-=item ZERO ( -- a )
-
-Pushes a zero to the data stack.
-
-=cut
-*/
-int inst_ZERO(struct vm_context_t *context) {
-    scalar_t a = {0};
-    anon_scalar_set_int_value(&a, 0);
-    vm_ds_push(context, &a);
-    anon_scalar_destroy(&a);
-    return 1;    
-}
-
-/*
-=item ONE ( -- a )
-
-Pushes a one to the data stack.
-
-=cut
-*/
-int inst_ONE(struct vm_context_t *context) {
-    scalar_t a = {0};
-    anon_scalar_set_int_value(&a, 1);
-    vm_ds_push(context, &a);
-    anon_scalar_destroy(&a);
-    return 1;    
-}
-
-/*
 =item STDIN ( -- stream )
 
 Pushes a reference to the stdin stream to the data stack.
