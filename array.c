@@ -151,11 +151,53 @@ scalar_handle_t array_item_at(array_handle_t handle, size_t index) {
 /*
 =item array_slice()
 
-...
+Takes an array of n scalar elements, each containing an index.  Replaces each element with a reference to
+the item in the array at that index.  Negative indices are treated as starting from the end of the array,
+thus -1 is the last item in the array.
+
+If an index specified is greater that the current size of the array, the array is grown to accomodate it,
+with the new items added set to undefined.
+
+If the array of elements consists of both negative indices and indices that cause the array to grow, the
+behaviour of the negative indices is undefined.
 
 =cut
 */
-int array_slice(array_handle_t, struct scalar_t *, size_t);
+int array_slice(array_handle_t handle, struct scalar_t *elements, size_t n) {
+    assert(POOL_HANDLE_VALID(array_t, handle));
+    
+    if (n == 0)  return 0;
+    
+    if (0 == _array_lock(handle)) {
+        assert(POOL_HANDLE_IN_USE(array_t, handle));
+        for (size_t i = 0; i < n; i++) {
+            int index = anon_scalar_get_int_value(&elements[i]);
+            
+            // grow if out of range
+            if (index >= ARRAY(handle).m_first + ARRAY(handle).m_count) {
+                if (0 != _array_reserve_unlocked(&ARRAY(handle), index + 1))  return 0;
+                
+                size_t need = index - (ARRAY(handle).m_first + ARRAY(handle).m_count - 1);
+                scalar_handle_t handle = scalar_allocate_many(need, 0);  FIXME("handle flags\n");
+                
+                while (ARRAY(handle).m_count <= index - ARRAY(handle).m_first) {
+                    ARRAY(handle).m_items[ARRAY(handle).m_first + ARRAY(handle).m_count++] = handle + 1;
+                    ++handle;
+                }
+            }
+
+            // negative indices are relative to the end
+            if (index < 0)  index += ARRAY(handle).m_count;
+
+            anon_scalar_set_scalar_reference(&elements[i], ARRAY(handle).m_items[ARRAY(handle).m_first + index]);
+        }
+        return 0;
+    }
+    else {
+        debug("couldn't lock array handle %"PRIuPTR"\n", handle);
+        return -1;
+    }
+}
 
 /*
 =item array_list()
