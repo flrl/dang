@@ -89,6 +89,28 @@ int array_release(array_handle_t handle) {
 }
 
 /*
+=item array_size()
+
+Returns the number of items in the array.
+
+=cut
+*/
+size_t array_size(array_handle_t handle) {
+    assert(POOL_HANDLE_VALID(array_t, handle));
+    assert(POOL_HANDLE_IN_USE(array_t, handle));
+    
+    if (0 == _array_lock(handle)) {
+        size_t size = ARRAY(handle).m_count;
+        _array_unlock(handle);
+        return size;
+    }
+    else {
+        debug("couldn't lock array handle %"PRIuPTR"\n", handle);
+        return 0;
+    }
+}
+
+/*
 =item array_item_at()
 
 Gets a handle to the item in the array at a given index.  If the index is beyond the current 
@@ -127,26 +149,31 @@ scalar_handle_t array_item_at(array_handle_t handle, size_t index) {
 }
 
 /*
-=item array_size()
+=item array_slice()
 
-Returns the number of items in the array.
+...
 
 =cut
 */
-size_t array_size(array_handle_t handle) {
-    assert(POOL_HANDLE_VALID(array_t, handle));
-    assert(POOL_HANDLE_IN_USE(array_t, handle));
-    
-    if (0 == _array_lock(handle)) {
-        size_t size = ARRAY(handle).m_count;
-        _array_unlock(handle);
-        return size;
-    }
-    else {
-        debug("couldn't lock array handle %"PRIuPTR"\n", handle);
-        return 0;
-    }
-}
+int array_slice(array_handle_t, struct scalar_t *, size_t);
+
+/*
+=item array_list()
+
+...
+
+=cut
+*/
+int array_list(array_handle_t, struct scalar_t **restrict, size_t *restrict);
+
+/*
+=item array_fill()
+
+...
+
+=cut
+*/
+int array_fill(array_handle_t, const struct scalar_t *, size_t);
 
 /*
 =item array_push()
