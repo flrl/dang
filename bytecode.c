@@ -786,6 +786,21 @@ int inst_ARLIST(struct vm_context_t *context) {
 }
 
 /*
+=item ARFILL ( [items] count ar -- )
+
+Pops an array reference, a count, and count items from the data stack, and replaces the current contents of the 
+array (if any) with the items.
+
+To empty an array, provide a count of zero.
+
+=cut
+*/
+int inst_ARFILL(struct vm_context_t *context) {
+    FIXME("write this\n");
+    return 0;
+}
+
+/*
 =item ARPUSH ( a ar -- )
 
 Pops an array reference and a scalar value from the data stack, and adds the scalar value to the end of the array.
@@ -979,6 +994,22 @@ int inst_HRLISTP(struct vm_context_t *context) {
     FIXME("write this\n");
     return 0;
 }
+
+/*
+=item HRFILL ( [value key] count hr -- )
+
+Pops a hash reference, a count, and count key/value pairs from the data stack, and replaces the current contents of 
+the hash (if any) with the pairs.
+
+To empty a hash, provide a count of zero.
+
+=cut
+*/
+int inst_HRFILL(struct vm_context_t *context) {
+    FIXME("write this\n");
+    return 0;
+}
+
 
 /*
 =item HRKEYEX ( k hr -- b )
