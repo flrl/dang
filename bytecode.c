@@ -720,10 +720,8 @@ int inst_ARSLICE(struct vm_context_t *context) {
         if (indices != NULL) {
             vm_ds_npop(context, c, indices);
 
-            for (int i = 0; i < c; i++) {
-                anon_scalar_set_scalar_reference(&indices[i], array_item_at(ar.m_value.as_array_handle, i));
-            }
-            
+            array_slice(ar.m_value.as_array_handle, indices, c);
+
             vm_ds_npush(context, c, indices);
 
             for (int i = 0; i < c; i++) {
