@@ -336,7 +336,10 @@ int hash_list_pairs(hash_handle_t handle, struct scalar_t **results, size_t *cou
 /*
 =item hash_fill()
 
-...
+Cleans up the current contents of the hash, if any, and then fills the hash with the provided key value pairs.
+
+The array of pairs must contain an even number of elements, thus (key1, value1, key2, value2, ... keyn, valuen).
+The count is the number of I<pairs>.
 
 =cut
 */
