@@ -285,7 +285,47 @@ int hash_list_values(hash_handle_t handle, struct scalar_t **results, size_t *co
 
 =cut
 */
-int hash_list_pairs(hash_handle_t, struct scalar_t **, size_t *);
+int hash_list_pairs(hash_handle_t handle, struct scalar_t **results, size_t *count) {
+    assert(POOL_HANDLE_VALID(hash_t, handle));
+    assert(results != NULL);
+    assert(count != NULL);
+    
+    if (0 == POOL_LOCK(hash_t, handle)) {
+        size_t n = _hash_size_unlocked(&HASH(handle));
+        scalar_t *pairs;
+        int status = 0;
+
+        if (NULL != (pairs = calloc(2 * n, sizeof(*pairs)))) {
+            size_t bucket = 0, i = 0;
+            while (i < n && bucket < HASH_BUCKETS) {
+                if (HASH(handle).m_buckets[i].m_count > 0) {
+                    hash_item_t *item = HASH(handle).m_buckets[i].m_first_item;
+                    while (i < n && item != NULL) {
+                        anon_scalar_set_string_value(&pairs[2 * i], item->m_key);
+                        scalar_get_value(item->m_value, &pairs[2 * i + 1]);
+                        item = item->m_next_item;
+                        ++i;
+                    }
+                }
+                ++bucket;
+            }
+            *results = pairs;
+            *count = n;
+            status = 0;
+        }
+        else {
+            debug("calloc failed: %i\n", errno);
+            status = -1;
+        }
+    
+        POOL_UNLOCK(hash_t, handle);
+        return status;
+    }
+    else {
+        debug("failed to lock hash handle %"PRIuPTR"\n", handle);
+        return -1;
+    }
+}
 
 /*
 =item hash_fill()
