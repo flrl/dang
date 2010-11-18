@@ -114,22 +114,30 @@ size_t array_size(array_handle_t handle) {
 /*
 =item array_item_at()
 
-Gets a handle to the item in the array at a given index.  If the index is beyond the current 
-bounds of the array, the array is grown to accommodate the index, with new items being set
-to undefined.
+Gets a handle to the item in the array at a given index.  Negative indices are treated as 
+starting from the end of the array, thus -1 is the last item in the array.
+
+If the index is beyond the current bounds of the array, the array is grown to accommodate the index, 
+with new items being set to undefined.  
 
 Returns a handle to the item, or 0 on error.  The caller must release the handle when they are
 done with it.
 
 =cut
 */
-scalar_handle_t array_item_at(array_handle_t handle, size_t index) {
+scalar_handle_t array_item_at(array_handle_t handle, intptr_t index) {
     assert(POOL_HANDLE_VALID(array_t, handle));
-    assert(POOL_HANDLE_IN_USE(array_t, handle));
-    
+
     if (0 == _array_lock(handle)) {
+        assert(POOL_HANDLE_IN_USE(array_t, handle));
+    
+        if (index < 0)  index += ARRAY(handle).m_count;
+
         if (index >= ARRAY(handle).m_first + ARRAY(handle).m_count) {
-            if (0 != _array_reserve_unlocked(&ARRAY(handle), index + 1))  return 0;
+            if (0 != _array_reserve_unlocked(&ARRAY(handle), index + 1)) {
+                _array_unlock(handle);
+                return 0;
+            }
             
             size_t need = index - (ARRAY(handle).m_first + ARRAY(handle).m_count - 1);
             scalar_handle_t handle = scalar_allocate_many(need, 0);  FIXME("handle flags\n");

@@ -672,7 +672,9 @@ int inst_ARLEN(struct vm_context_t *context) {
 
 Pops an array reference and an index from the data stack.  Pushes back a reference to the item in the array at index.
 
-If the index is out of range, the array automatically grows to accomodate it.
+If the index is out of range, the array automatically grows to accomodate it.  
+
+Negative indices are treated as relative to the end of the array, thus -1 is the last element.
 
 =cut
  */
@@ -683,7 +685,7 @@ int inst_ARINDEX(struct vm_context_t *context) {
     vm_ds_pop(context, &i);
     
     assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    scalar_handle_t s = array_item_at(anon_scalar_deref_array_reference(&ar), (size_t) anon_scalar_get_int_value(&i));
+    scalar_handle_t s = array_item_at(anon_scalar_deref_array_reference(&ar), anon_scalar_get_int_value(&i));
     anon_scalar_set_scalar_reference(&sr, s);
     scalar_release(s);
     vm_ds_push(context, &sr);

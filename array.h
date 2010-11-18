@@ -40,7 +40,7 @@ array_handle_t array_reference(array_handle_t);
 int array_release(array_handle_t);
 
 size_t array_size(array_handle_t);
-scalar_handle_t array_item_at(array_handle_t, size_t);
+scalar_handle_t array_item_at(array_handle_t, intptr_t);
 
 int array_slice(array_handle_t, struct scalar_t *, size_t);
 int array_list(array_handle_t, struct scalar_t **restrict, size_t *restrict);
