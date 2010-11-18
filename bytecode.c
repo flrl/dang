@@ -1042,11 +1042,8 @@ int inst_HRLISTK(struct vm_context_t *context) {
         if (n > 0) {
             vm_ds_npush(context, n, keys);
             free(keys);
-            anon_scalar_set_int_value(&count, n);
         }
-        else {
-            anon_scalar_set_int_value(&count, 0);
-        }
+        anon_scalar_set_int_value(&count, n);
     }
     
     vm_ds_push(context, &count);
@@ -1075,11 +1072,8 @@ int inst_HRLISTV(struct vm_context_t *context) {
         if (n > 0) {
             vm_ds_npush(context, n, values);
             free(values);
-            anon_scalar_set_int_value(&count, n);
         }
-        else {
-            anon_scalar_set_int_value(&count, 0);
-        }
+        anon_scalar_set_int_value(&count, n);
     }
     
     vm_ds_push(context, &count);
@@ -1109,11 +1103,8 @@ int inst_HRLISTP(struct vm_context_t *context) {
         if (n > 0) {
             vm_ds_npush(context, 2 * n, pairs);
             free(pairs);
-            anon_scalar_set_int_value(&count, 2 * n);
         }
-        else {
-            anon_scalar_set_int_value(&count, 0);
-        }
+        anon_scalar_set_int_value(&count, 2 * n);
     }
     
     vm_ds_push(context, &count);
