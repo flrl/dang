@@ -251,11 +251,39 @@ int array_list(array_handle_t handle, struct scalar_t **restrict results, size_t
 /*
 =item array_fill()
 
-...
+Cleans up the current contents of the array, if any, and then fills the array with the provided values.
 
 =cut
 */
-int array_fill(array_handle_t, const struct scalar_t *, size_t);
+int array_fill(array_handle_t handle, const struct scalar_t *values, size_t count) {
+    assert(POOL_HANDLE_VALID(array_t, handle));
+    
+    if (0 == _array_lock(handle)) {
+        assert(POOL_HANDLE_IN_USE(array_t, handle));
+        int status = 0;
+    
+        for (size_t i = ARRAY(handle).m_first; i < ARRAY(handle).m_first + ARRAY(handle).m_count; i++) {
+            scalar_release(ARRAY(handle).m_items[i]);
+        }
+        memset(ARRAY(handle).m_items, 0, sizeof(*ARRAY(handle).m_items) * ARRAY(handle).m_allocated_count);
+        ARRAY(handle).m_first = 0;
+
+        _array_reserve_unlocked(&ARRAY(handle), count);        
+        scalar_handle_t s = scalar_allocate_many(count, 0); FIXME("handle flags\n");
+        for (size_t i = 0; i < count; i++) {            
+            ARRAY(handle).m_items[i] = s++;
+            scalar_set_value(ARRAY(handle).m_items[i], &values[i]);
+        }
+        ARRAY(handle).m_count = count;
+    
+        _array_unlock(handle);
+        return status;
+    }
+    else {
+        debug("failed to lock array handle %"PRIuPTR"\n", handle);
+        return -1;
+    }
+}
 
 /*
 =item array_push()
