@@ -1097,8 +1097,29 @@ count of pairs.
 =cut
 */
 int inst_HRLISTP(struct vm_context_t *context) {
-    FIXME("write this\n");
-    return 0;
+    scalar_t hr = {0}, *pairs = NULL, count = {0};
+    size_t n;
+    
+    vm_ds_pop(context, &hr);
+    assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
+
+    if (0 == hash_list_pairs(anon_scalar_deref_hash_reference(&hr), &pairs, &n)) {
+        if (n > 0) {
+            vm_ds_npush(context, 2 * n, pairs);
+            free(pairs);
+            anon_scalar_set_int_value(&count, 2 * n);
+        }
+        else {
+            anon_scalar_set_int_value(&count, 0);
+        }
+    }
+    
+    vm_ds_push(context, &count);
+    
+    anon_scalar_destroy(&count);
+    anon_scalar_destroy(&hr);
+
+    return 1;
 }
 
 /*
