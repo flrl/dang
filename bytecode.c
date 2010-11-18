@@ -1064,8 +1064,28 @@ Pops a hash reference from the data stack.  Pushes back a list of the values def
 =cut
 */
 int inst_HRLISTV(struct vm_context_t *context) {
-    FIXME("write this\n");
-    return 0;
+    scalar_t hr = {0}, *values = NULL, count = {0};
+    size_t n;
+    
+    vm_ds_pop(context, &hr);
+    assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
+
+    if (0 == hash_list_values(anon_scalar_deref_hash_reference(&hr), &values, &n)) {
+        if (n > 0) {
+            vm_ds_npush(context, n, values);
+            free(values);
+        }
+        else {
+            anon_scalar_set_int_value(&count, 0);
+        }
+    }
+    
+    vm_ds_push(context, &count);
+    
+    anon_scalar_destroy(&count);
+    anon_scalar_destroy(&hr);
+
+    return 1;
 }
 
 /*
