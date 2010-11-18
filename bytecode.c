@@ -807,6 +807,7 @@ int inst_ARFILL(struct vm_context_t *context) {
         if (NULL != (values = calloc(n, sizeof(*values)))) {
             vm_ds_npop(context, n, values);
             array_fill(anon_scalar_deref_array_reference(&ar), values, n);
+            for (size_t i = 0; i < n; i++)  anon_scalar_destroy(&values[i]);
             free(values);
         }
         else {
