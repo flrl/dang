@@ -756,28 +756,25 @@ the number of items in the array.
 =cut
 */
 int inst_ARLIST(struct vm_context_t *context) {
-    scalar_t ar = {0}, s = {0};
+    scalar_t ar = {0}, *values = NULL, count = {0};
+    size_t n = 0;
     
     vm_ds_pop(context, &ar);
     
-    array_handle_t array_handle = array_reference(anon_scalar_deref_array_reference(&ar));
-
-    size_t size = array_size(array_handle);
-    for (size_t i = size; i > 0; i--) {
-        scalar_handle_t scalar_handle = array_item_at(array_handle, i - 1);
-        scalar_get_value(scalar_handle, &s);
-
-        vm_ds_push(context, &s);
-        
-        scalar_release(scalar_handle);
+    if (0 == array_list(ar.m_value.as_array_handle, &values, &n)) {
+        vm_ds_npush(context, n, values);
+        anon_scalar_set_int_value(&count, n);
     }
 
-    array_release(array_handle);
+    vm_ds_push(context, &count);
     
-    anon_scalar_set_int_value(&s, size);
-    vm_ds_push(context, &s);
-    
-    anon_scalar_destroy(&s);
+    if (values != NULL) {
+        for (size_t i = 0; i < n; i++) {
+            anon_scalar_destroy(&values[i]);
+        }
+        free(values);
+    }
+    anon_scalar_destroy(&count);
     anon_scalar_destroy(&ar);
     
     return 1;
