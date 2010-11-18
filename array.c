@@ -218,6 +218,7 @@ int array_list(array_handle_t handle, struct scalar_t **restrict results, size_t
     assert(count != NULL);
     
     if (0 == _array_lock(handle)) {
+        assert(POOL_HANDLE_IN_USE(array_t, handle));
         int status = 0;
         if (ARRAY(handle).m_count > 0) {
             scalar_t *buf = calloc(ARRAY(handle).m_count, sizeof(*buf));
