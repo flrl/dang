@@ -40,6 +40,7 @@ static int _hash_bucket_destroy(hash_bucket_t *);
 static int _hash_item_init(hash_item_t *, const char *);
 static int _hash_item_destroy(hash_item_t *);
 
+static size_t _hash_size_unlocked(hash_t *);
 static scalar_handle_t _hash_key_item_unlocked(hash_t *, const char *);
 static int _hash_key_delete_unlocked(hash_t *, const char *);
 static int _hash_key_exists_unlocked(hash_t *, const char *);
@@ -356,6 +357,23 @@ static int _hash_item_destroy(hash_item_t *self) {
     return 0;
 }
     
+/*
+=item _hash_size_unlocked()
+
+Returns the number of keys currently defined in the hash.
+
+=cut
+*/
+static size_t _hash_size_unlocked(hash_t *self) {
+    assert(self != NULL);
+    
+    size_t count = 0;
+    for (size_t i = 0; i < HASH_BUCKETS; i++) {
+        count += self->m_buckets[i].m_count;
+    }
+    return count;
+}
+
 /*
 =item _hash_key_item_unlocked()
 
