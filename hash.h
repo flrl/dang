@@ -52,6 +52,13 @@ int hash_release(hash_handle_t);
 
 size_t hash_size(hash_handle_t);
 scalar_handle_t hash_key_item(hash_handle_t, const struct scalar_t *);
+
+int hash_slice(hash_handle_t, struct scalar_t *, size_t);
+int hash_list_keys(hash_handle_t, struct scalar_t **, size_t *);
+int hash_list_values(hash_handle_t, struct scalar_t **, size_t *);
+int hash_list_pairs(hash_handle_t, struct scalar_t **, size_t *);
+int hash_fill(hash_handle_t, const struct scalar_t *, size_t);
+
 int hash_key_delete(hash_handle_t, const struct scalar_t *);
 int hash_key_exists(hash_handle_t, const struct scalar_t *);
 
