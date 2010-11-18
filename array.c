@@ -296,26 +296,45 @@ int array_fill(array_handle_t handle, const struct scalar_t *values, size_t coun
 /*
 =item array_push()
 
-Adds an item at the end of the array.
+Adds items at the end of the array.
 
 =cut
 */
-int array_push(array_handle_t handle, const scalar_t *value) {
+int array_push(array_handle_t handle, const scalar_t *values, size_t count) {
     assert(POOL_HANDLE_VALID(array_t, handle));
-    assert(POOL_HANDLE_IN_USE(array_t, handle));
     
     if (0 == _array_lock(handle)) {
-        if (ARRAY(handle).m_first + ARRAY(handle).m_count == ARRAY(handle).m_allocated_count) {
-            if (0 != _array_grow_back_unlocked(&ARRAY(handle), ARRAY(handle).m_count))  return -1;
+        assert(POOL_HANDLE_IN_USE(array_t, handle));
+        int status = 0;
+    
+        if (count > 0) {
+            while (ARRAY(handle).m_first + ARRAY(handle).m_count + count < ARRAY(handle).m_allocated_count) {
+                if (0 != _array_grow_back_unlocked(&ARRAY(handle), ARRAY(handle).m_count)) {
+                    debug("couldn't grow array\n");
+                    _array_unlock(handle);
+                    return -1;
+                }
+            }
+            
+            scalar_handle_t s = scalar_allocate_many(count, 0); FIXME("handle flags\n");
+            if (s != 0) {
+                for (size_t i = 0; i < count; i++) {
+                    scalar_set_value(s, &values[i]);
+                    ARRAY(handle).m_items[ARRAY(handle).m_first + ARRAY(handle).m_count + i] = s;
+                    ++s;
+                }
+            }
+            else {
+                debug("couldn't allocate scalars\n");
+                status = -1;
+            }
         }
-
-        scalar_handle_t s = scalar_allocate(0); FIXME("handle flags\n");
-        scalar_set_value(s, value);
-        ARRAY(handle).m_items[ARRAY(handle).m_count++] = s;
+    
         _array_unlock(handle);
-        return 0;
+        return status;
     }
     else {
+        debug("failed to lock array handle %"PRIuPTR"\n", handle);
         return -1;
     }
 }

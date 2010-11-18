@@ -46,7 +46,7 @@ int array_slice(array_handle_t, struct scalar_t *, size_t);
 int array_list(array_handle_t, struct scalar_t **restrict, size_t *restrict);
 int array_fill(array_handle_t, const struct scalar_t *, size_t);
 
-int array_push(array_handle_t, const struct scalar_t *);
+int array_push(array_handle_t, const struct scalar_t *, size_t);
 int array_unshift(array_handle_t, const struct scalar_t *);
 
 int array_pop(array_handle_t, struct scalar_t *);

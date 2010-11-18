@@ -824,23 +824,37 @@ int inst_ARFILL(struct vm_context_t *context) {
 }
 
 /*
-=item ARPUSH ( a ar -- )
+=item ARPUSH ( [values] count ar -- )
 
-Pops an array reference and a scalar value from the data stack, and adds the scalar value to the end of the array.
+Pops an array reference, a count, and count values from the data stack, and adds the values to the end of the array.
 
 =cut
  */
 int inst_ARPUSH(struct vm_context_t *context) {
-    scalar_t a = {0}, ar = {0};
+    scalar_t *values = NULL, count = {0}, ar = {0};
     
-    vm_ds_pop(context, &ar);
-    vm_ds_pop(context, &a);
-    
+    vm_ds_pop(context, &ar);    
     assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    array_push(ar.m_value.as_array_handle, &a);
+
+    vm_ds_pop(context, &count);
+    size_t n = anon_scalar_get_int_value(&count);
     
+    if (n > 0) {
+        if (NULL != (values = calloc(n, sizeof(*values)))) {
+            vm_ds_npop(context, n, values);
+
+            array_push(anon_scalar_deref_array_reference(&ar), values, n);
+            
+            for (size_t i = 0; i < n; i++)  anon_scalar_destroy(&values[i]);
+            free(values);
+        }
+        else {
+            debug("couldn't allocated values\n");
+        }
+    }
+    
+    anon_scalar_destroy(&count);
     anon_scalar_destroy(&ar);
-    anon_scalar_destroy(&a);
     
     return 1;
 }
