@@ -21,6 +21,7 @@ bytecode
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <inttypes.h>
 #include <math.h>
 #include <stdlib.h>
@@ -991,8 +992,36 @@ If any keys are not currently defined in the hash, they are automatically create
 =cut
 */
 int inst_HRSLICE(struct vm_context_t *context) {
-    FIXME("write this\n");
-    return 0;
+    scalar_t *elements = NULL, count = {0}, hr = {0};
+    
+    vm_ds_pop(context, &hr);
+    assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
+    
+    vm_ds_pop(context, &count);
+    size_t n = anon_scalar_get_int_value(&count);
+    
+    if (n > 0) {
+        if (NULL != (elements = calloc(n, sizeof(*elements)))) {
+            vm_ds_npop(context, n, elements);
+            hash_slice(anon_scalar_deref_hash_reference(&hr), elements, n);
+            vm_ds_npush(context, n, elements);
+            free(elements);
+        }
+        else {
+            debug("calloc failed: %i\n", errno);
+            anon_scalar_set_int_value(&count, 0);
+        }
+    }
+    else {
+        anon_scalar_set_int_value(&count, 0);
+    }
+
+    vm_ds_push(context, &count);
+    
+    anon_scalar_destroy(&count);
+    anon_scalar_destroy(&hr);
+
+    return 1;
 }
 
 /*
