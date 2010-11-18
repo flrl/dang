@@ -25,6 +25,7 @@ This also means that it's generally not useful to use a reference type as a hash
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -178,11 +179,53 @@ int hash_slice(hash_handle_t handle, struct scalar_t *elements, size_t count) {
 /*
 =item hash_list_keys()
 
-...
+Allocates an array of scalars and populates it with the keys defined in the hash.  Passes back the array
+and the count of values within it.  The scalars in the array must be destroyed when finished with, and the
+array itself freed.
+
+Returns zero on success, non-zero on failure.
 
 =cut
 */
-int hash_list_keys(hash_handle_t, struct scalar_t **, size_t *);
+int hash_list_keys(hash_handle_t handle, struct scalar_t **results, size_t *count) {
+    assert(POOL_HANDLE_VALID(hash_t, handle));
+    assert(results != NULL);
+    assert(count != NULL);
+    
+    if (0 == POOL_LOCK(hash_t, handle)) {
+        size_t n = _hash_size_unlocked(&HASH(handle));
+        scalar_t *keys;
+        int status = 0;
+
+        if (NULL != (keys = calloc(n, sizeof(*keys)))) {
+            size_t bucket = 0, i = 0;
+            while (i < n && bucket < HASH_BUCKETS) {
+                if (HASH(handle).m_buckets[i].m_count > 0) {
+                    hash_item_t *item = HASH(handle).m_buckets[i].m_first_item;
+                    while (i < n && item != NULL) {
+                        anon_scalar_set_string_value(&keys[i++], item->m_key);
+                        item = item->m_next_item;
+                    }
+                }
+                ++bucket;
+            }
+            *results = keys;
+            *count = n;
+            status = 0;
+        }
+        else {
+            debug("calloc failed: %i\n", errno);
+            status = -1;
+        }
+    
+        POOL_UNLOCK(hash_t, handle);
+        return status;
+    }
+    else {
+        debug("failed to lock hash handle %"PRIuPTR"\n", handle);
+        return -1;
+    }
+}
 
 /*
 =item hash_list_values()
