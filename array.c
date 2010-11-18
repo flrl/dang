@@ -204,7 +204,11 @@ int array_slice(array_handle_t handle, struct scalar_t *elements, size_t n) {
 /*
 =item array_list()
 
-...
+Allocates an array of scalars and populates it with the values held by the array.  Passes back the array
+and the count of values within it.  The scalars in the array must be destroyed when finished with, and the
+array itself freed.
+
+Returns zero on success, non-zero on failure.
 
 =cut
 */
