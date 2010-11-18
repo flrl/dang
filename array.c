@@ -8,6 +8,7 @@
  */
 
 #include <assert.h>
+#include <errno.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -207,7 +208,40 @@ int array_slice(array_handle_t handle, struct scalar_t *elements, size_t n) {
 
 =cut
 */
-int array_list(array_handle_t, struct scalar_t **restrict, size_t *restrict);
+int array_list(array_handle_t handle, struct scalar_t **restrict results, size_t *restrict count) {
+    assert(POOL_HANDLE_VALID(array_t, handle));
+    assert(results != NULL);
+    assert(count != NULL);
+    
+    if (0 == _array_lock(handle)) {
+        int status = 0;
+        if (ARRAY(handle).m_count > 0) {
+            scalar_t *buf = calloc(ARRAY(handle).m_count, sizeof(*buf));
+            if (buf != NULL) {
+                for (size_t i = 0; i < ARRAY(handle).m_count; i++) {
+                    scalar_get_value(ARRAY(handle).m_items[ARRAY(handle).m_first + i], &buf[i]);
+                }
+                *results = buf;
+                *count = ARRAY(handle).m_count;
+            }
+            else {
+                debug("calloc failed: %i\n", errno);
+                *count = 0;
+                status = -1;
+            }
+        }
+        else {
+            *count = 0;
+        }
+    
+        _array_unlock(handle);
+        return status;
+    }
+    else {
+        debug("failed to lock array handle %"PRIuPTR"\n", handle);
+        return -1;
+    }
+}
 
 /*
 =item array_fill()
