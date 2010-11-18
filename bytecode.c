@@ -791,8 +791,33 @@ To empty an array, provide a count of zero.
 =cut
 */
 int inst_ARFILL(struct vm_context_t *context) {
-    FIXME("write this\n");
-    return 0;
+    scalar_t ar = {0}, count = {0}, *values = NULL;
+    
+    vm_ds_pop(context, &ar);
+    assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+
+    vm_ds_pop(context, &count);
+    size_t n = anon_scalar_get_int_value(&count);
+    
+    if (n > 0) {
+        if (NULL != (values = calloc(n, sizeof(*values)))) {
+            vm_ds_npop(context, n, values);
+            array_fill(anon_scalar_deref_array_reference(&ar), values, n);
+            free(values);
+        }
+        else {
+            debug("calloc failed\n");
+            return 0;
+        }
+    }
+    else {
+        array_fill(anon_scalar_deref_array_reference(&ar), NULL, 0);
+    }
+    
+    anon_scalar_destroy(&count);
+    anon_scalar_destroy(&ar);
+
+    return 1;
 }
 
 /*
