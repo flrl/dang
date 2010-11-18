@@ -7,6 +7,8 @@ main:
         dup
         jmpu    ~.filld
         over
+        byte    1
+        swap
         arpush
         jmp     ~.fill
 .filld: drop
