@@ -340,7 +340,31 @@ int hash_list_pairs(hash_handle_t handle, struct scalar_t **results, size_t *cou
 
 =cut
 */
-int hash_fill(hash_handle_t, const struct scalar_t *, size_t);
+int hash_fill(hash_handle_t handle, const struct scalar_t *pairs, size_t count) {
+    assert(POOL_HANDLE_VALID(hash_t, handle));
+    assert(count == 0 || pairs != NULL);
+
+    if (0 == POOL_LOCK(hash_t, handle)) {
+        _hash_destroy(&HASH(handle));
+        _hash_init(&HASH(handle));
+        
+        for (size_t i = 0; i < count; i++) {
+            char *key;
+            anon_scalar_get_string_value(&pairs[2 * i], &key);
+            scalar_handle_t value_handle = _hash_key_item_unlocked(&HASH(handle), key);
+            scalar_set_value(value_handle, &pairs[2 * i + 1]);
+            scalar_release(value_handle);
+            free(key);
+        }
+    
+        POOL_UNLOCK(hash_t, handle);
+        return 0;
+    }
+    else {
+        debug("failed to lock hash handle %"PRIuPTR"\n", handle);
+        return -1;
+    }
+}
 
 /*
 =item hash_key_delete()
