@@ -146,11 +146,33 @@ scalar_handle_t hash_key_item(hash_handle_t handle, const struct scalar_t *key) 
 /*
 =item hash_slice()
 
-...
+Takes an array of n scalar elements, each containing a key.  Replaces each element with a reference to
+the item in the hash with that key.  Keys that don't currently exist in the hash are automatically created
+and their value set to undefined.
 
 =cut
 */
-int hash_slice(hash_handle_t, struct scalar_t *, size_t);
+int hash_slice(hash_handle_t handle, struct scalar_t *elements, size_t count) {
+    assert(POOL_HANDLE_VALID(hash_t, handle));
+    
+    if (0 == POOL_LOCK(hash_t, handle)) {
+        for (size_t i = 0; i < count; i++) {
+            char *key;
+            anon_scalar_get_string_value(&elements[i], &key);
+            scalar_handle_t scalar_handle = _hash_key_item_unlocked(&HASH(handle), key);
+            anon_scalar_set_scalar_reference(&elements[i], scalar_handle);
+            scalar_release(scalar_handle);
+            free(key);
+        }
+    
+        POOL_UNLOCK(hash_t, handle);
+        return 0;
+    }
+    else {
+        debug("failed to lock hash handle %"PRIuPTR"\n", handle);
+        return -1;
+    }
+}
 
 /*
 =item hash_list_keys()
