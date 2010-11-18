@@ -230,7 +230,11 @@ int hash_list_keys(hash_handle_t handle, struct scalar_t **results, size_t *coun
 /*
 =item hash_list_values()
 
-...
+Allocates an array of scalars and populates it with the values defined in the hash.  Passes back the array
+and the count of values within it.  The scalars in the array must be destroyed when finished with, and the
+array itself freed.
+
+Returns zero on success, non-zero on failure.
 
 =cut
 */
