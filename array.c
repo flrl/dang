@@ -191,6 +191,7 @@ int array_slice(array_handle_t handle, struct scalar_t *elements, size_t n) {
 
             anon_scalar_set_scalar_reference(&elements[i], ARRAY(handle).m_items[ARRAY(handle).m_first + index]);
         }
+        _array_unlock(handle);
         return 0;
     }
     else {
