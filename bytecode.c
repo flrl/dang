@@ -846,6 +846,28 @@ int inst_ARPUSH(struct vm_context_t *context) {
 }
 
 /*
+=item ARUNSHFT ( a ar -- )
+
+Pops an array reference and a scalar value from the data stack, and adds the scalar value to the start of the array.
+
+=cut
+ */
+int inst_ARUNSHFT(struct vm_context_t *context) {
+    scalar_t a = {0}, ar = {0};
+    
+    vm_ds_pop(context, &ar);
+    vm_ds_pop(context, &a);
+    
+    assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
+    array_unshift(ar.m_value.as_array_handle, &a);
+    
+    anon_scalar_destroy(&ar);
+    anon_scalar_destroy(&a);
+    
+    return 1;    
+}
+
+/*
 =item ARPOP ( ar -- a )
 
 Pops an array reference from the data stack.  Pops the last item off the referenced array, and pushes its value back to the
@@ -889,28 +911,6 @@ int inst_ARSHFT(struct vm_context_t *context) {
     
     anon_scalar_destroy(&a);
     anon_scalar_destroy(&ar);
-    
-    return 1;    
-}
-
-/*
-=item ARUNSHFT ( a ar -- )
-
-Pops an array reference and a scalar value from the data stack, and adds the scalar value to the start of the array.
-
-=cut
- */
-int inst_ARUNSHFT(struct vm_context_t *context) {
-    scalar_t a = {0}, ar = {0};
-    
-    vm_ds_pop(context, &ar);
-    vm_ds_pop(context, &a);
-    
-    assert((ar.m_flags & SCALAR_TYPE_MASK) == SCALAR_ARRREF);
-    array_unshift(ar.m_value.as_array_handle, &a);
-    
-    anon_scalar_destroy(&ar);
-    anon_scalar_destroy(&a);
     
     return 1;    
 }
