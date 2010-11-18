@@ -308,7 +308,7 @@ int array_push(array_handle_t handle, const scalar_t *values, size_t count) {
         int status = 0;
     
         if (count > 0) {
-            while (ARRAY(handle).m_first + ARRAY(handle).m_count + count < ARRAY(handle).m_allocated_count) {
+            while (ARRAY(handle).m_first + ARRAY(handle).m_count + count > ARRAY(handle).m_allocated_count) {
                 if (0 != _array_grow_back_unlocked(&ARRAY(handle), ARRAY(handle).m_count)) {
                     debug("couldn't grow array\n");
                     _array_unlock(handle);
@@ -323,6 +323,7 @@ int array_push(array_handle_t handle, const scalar_t *values, size_t count) {
                     ARRAY(handle).m_items[ARRAY(handle).m_first + ARRAY(handle).m_count + i] = s;
                     ++s;
                 }
+                ARRAY(handle).m_count += count;
             }
             else {
                 debug("couldn't allocate scalars\n");

@@ -337,9 +337,9 @@ static inline handle_type type##_POOL_ALLOCATE_MANY(size_t many, uint32_t flags)
                     &POOL_SINGLETON(type).m_shared_mutex_attr);                                 \
             }                                                                                   \
                                                                                                 \
+            POOL_WRAPPER(type, i).m_next_free = POOL_OBJECT_FLAG_INUSE;                         \
             if (0 == POOL_LOCK(type, i)) {                                                      \
                 POOL_WRAPPER(type, i).m_references = 1;                                         \
-                POOL_WRAPPER(type, i).m_next_free = POOL_OBJECT_FLAG_INUSE;                     \
                 init(&POOL_OBJECT(type, i));                                                    \
                 POOL_UNLOCK(type, i);                                                           \
             }                                                                                   \

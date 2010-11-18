@@ -765,7 +765,7 @@ int inst_ARLIST(struct vm_context_t *context) {
     vm_ds_pop(context, &ar);
     
     if (0 == array_list(ar.m_value.as_array_handle, &values, &n)) {
-        vm_ds_npush(context, n, values);
+        if (n > 0)  vm_ds_npush(context, n, values);
         anon_scalar_set_int_value(&count, n);
     }
 
