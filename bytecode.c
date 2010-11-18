@@ -698,15 +698,16 @@ int inst_ARINDEX(struct vm_context_t *context) {
 }
 
 /*
-=item ARSLICE ( [indexes] count ar -- [references] count )
+=item ARSLICE ( [indices] count ar -- [references] count )
 
 Pops an array reference, a count, and count indices from the data stack.  Pushes back references to the indexed items
-in the array, followed by the count.
+in the array, followed by the count.  Negative indices are treated as relative to the end of the array.
 
 Indexes that are larger than the current size of the array result in the array automatically growing to accomodate the 
 index, and a reference to the new undefined scalar being pushed back.
 
-The behaviour of negative indexes or a negative count is undefined.
+If the indices contain both a negative index and an index greater than the current extent of the array, the results
+are undefined.
 
 =cut
 */
