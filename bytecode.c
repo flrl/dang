@@ -1126,8 +1126,34 @@ To empty a hash, provide a count of zero.
 =cut
 */
 int inst_HRFILL(struct vm_context_t *context) {
-    FIXME("write this\n");
-    return 0;
+    scalar_t hr = {0}, count = {0}, *pairs = NULL;
+    
+    vm_ds_pop(context, &hr);
+    assert((hr.m_flags & SCALAR_TYPE_MASK) == SCALAR_HASHREF);
+
+    vm_ds_pop(context, &count);
+    size_t n = anon_scalar_get_int_value(&count);
+    
+    if (n > 0) {
+        if (NULL != (pairs = calloc(2 * n, sizeof(*pairs)))) {
+            vm_ds_npop(context, 2 * n, pairs);
+            hash_fill(anon_scalar_deref_hash_reference(&hr), pairs, n);
+            for (size_t i = 0; i < 2 * n; i++)  anon_scalar_destroy(&pairs[i]);
+            free(pairs);
+        }
+        else {
+            debug("calloc failed\n");
+            return 0;
+        }
+    }
+    else {
+        hash_fill(anon_scalar_deref_hash_reference(&hr), NULL, 0);
+    }
+    
+    anon_scalar_destroy(&count);
+    anon_scalar_destroy(&hr);
+
+    return 1;
 }
 
 
