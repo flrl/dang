@@ -281,7 +281,13 @@ int hash_list_values(hash_handle_t handle, struct scalar_t **results, size_t *co
 /*
 =item hash_list_pairs()
 
-...
+Allocates an array of scalars and populates it with the keys and values defined in the hash, such that the array
+contains the contents ( key1, value1, key2, value2, ... keyn, valuen ).  Passes back the array and the count of 
+I<pairs> within it.
+
+The scalars in the array must be destroyed when finished with, and the array itself freed.
+
+Returns zero on success, non-zero on failure.
 
 =cut
 */
