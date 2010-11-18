@@ -1042,6 +1042,7 @@ int inst_HRLISTK(struct vm_context_t *context) {
         if (n > 0) {
             vm_ds_npush(context, n, keys);
             free(keys);
+            anon_scalar_set_int_value(&count, n);
         }
         else {
             anon_scalar_set_int_value(&count, 0);
@@ -1074,6 +1075,7 @@ int inst_HRLISTV(struct vm_context_t *context) {
         if (n > 0) {
             vm_ds_npush(context, n, values);
             free(values);
+            anon_scalar_set_int_value(&count, n);
         }
         else {
             anon_scalar_set_int_value(&count, 0);
