@@ -144,6 +144,51 @@ scalar_handle_t hash_key_item(hash_handle_t handle, const struct scalar_t *key) 
 }
 
 /*
+=item hash_slice()
+
+...
+
+=cut
+*/
+int hash_slice(hash_handle_t, struct scalar_t *, size_t);
+
+/*
+=item hash_list_keys()
+
+...
+
+=cut
+*/
+int hash_list_keys(hash_handle_t, struct scalar_t **, size_t *);
+
+/*
+=item hash_list_values()
+
+...
+
+=cut
+*/
+int hash_list_values(hash_handle_t, struct scalar_t **, size_t *);
+
+/*
+=item hash_list_pairs()
+
+...
+
+=cut
+*/
+int hash_list_pairs(hash_handle_t, struct scalar_t **, size_t *);
+
+/*
+=item hash_fill()
+
+...
+
+=cut
+*/
+int hash_fill(hash_handle_t, const struct scalar_t *, size_t);
+
+/*
 =item hash_key_delete()
 
 Deletes the item in the hash with the given scalar key.  If the key is not currently defined, this does nothing.
