@@ -1879,6 +1879,55 @@ int inst_STDERR(struct vm_context_t *context) {
     return 1;
 }
 
+/*
+=item CHR ( i -- a )
+
+Pops an integer value from the data stack.  Pushes back a string containing the character represented by that integer.
+
+=cut
+*/
+int inst_CHR(struct vm_context_t *context) {
+    scalar_t i = {0}, a = {0};
+    char str[2] = {0};
+    
+    vm_ds_pop(context, &i);
+
+    str[0] = (char) anon_scalar_get_int_value(&i);
+    anon_scalar_set_string_value(&a, str);
+    
+    vm_ds_push(context, &a);
+    
+    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&i);
+    
+    return 1;
+}
+
+/*
+=item ORD ( a -- i )
+
+Pops a string value from the data stack.  Pushes back the integer value of the first character in the string, 
+or undefined if the string is empty.
+
+=cut
+*/
+int inst_ORD(struct vm_context_t *context) {
+    scalar_t i = {0}, a = {0};
+    char *str = NULL;
+    
+    vm_ds_pop(context, &a);
+    
+    anon_scalar_get_string_value(&a, &str);
+    if (str[0] != '\0')  anon_scalar_set_int_value(&i, str[0]);
+    free(str);
+    
+    vm_ds_push(context, &i);
+    
+    anon_scalar_destroy(&i);
+    anon_scalar_destroy(&a);
+    
+    return 1;
+}
 
 /*
 =back

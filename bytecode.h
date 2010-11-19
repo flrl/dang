@@ -91,6 +91,8 @@ typedef enum instruction_t {
     i_STDIN,
     i_STDOUT,
     i_STDERR,
+    i_CHR,
+    i_ORD,
 /*-- INSTRUCTIONS END --*/
     
 //    iOVER,
