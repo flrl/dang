@@ -4,7 +4,7 @@ main:
     strlit  "Hello"
     byte    3
     strcat
-    byte    10
+    byte    '\n'
     stdout
     outl
     end
