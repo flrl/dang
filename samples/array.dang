@@ -3,7 +3,9 @@
 main:
         undef
         symdef  0x00000002, 101
-.fill:  in
+.fill:  byte    '\n'
+        stdin
+        inl
         dup
         jmpu    ~.filld
         over
