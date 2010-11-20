@@ -18,7 +18,7 @@ int string_reserve(string_t **self, size_t new_size) {
     assert(self != NULL && *self != NULL);
     
     if (new_size > (*self)->m_allocated_size) {
-        new_size = nextupow2(new_size + 1);
+        new_size = nextupow2(new_size);
         string_t *tmp = calloc(1, sizeof(*tmp) + new_size);
         if (tmp) {
             memcpy(tmp, *self, (*self)->m_length);
