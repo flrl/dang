@@ -34,6 +34,8 @@ static inline string_t *string_alloc(size_t initial_length, const char *initial_
     return self;
 }
 
+static inline string_t *string_dup(const string_t *orig) { return string_alloc(orig->m_length, orig->m_bytes); }
+
 static inline void string_free(string_t *self) { free(self); }
 
 int string_reserve(string_t **, size_t);
