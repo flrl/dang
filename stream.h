@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 
+#include "string.h"
 #include "vmtypes.h"
 
 #ifdef POOL_INITIAL_SIZE
@@ -64,7 +65,7 @@ int stream_close(stream_handle_t);
 
 ssize_t stream_read_delim(stream_handle_t, char **, int);
 size_t stream_read(stream_handle_t, char *, size_t);
-int stream_write(stream_handle_t, const char *, size_t);
+int stream_write(stream_handle_t, const string_t *);
 
 const char *stream_get_filename(stream_handle_t);
 

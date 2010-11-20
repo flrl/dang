@@ -247,20 +247,18 @@ size_t stream_read(stream_handle_t handle, char *buf, size_t bufsize) {
 /*
 =item stream_write()
 
-...
+Writes a string to the stream.
 
 =cut
  */
-int stream_write(stream_handle_t handle, const char *buf, size_t bufsize) {
+int stream_write(stream_handle_t handle, const string_t *string) {
     assert(POOL_HANDLE_VALID(stream_t, handle));
-    assert(POOL_HANDLE_IN_USE(stream_t, handle));
-    assert(STREAM(handle).m_flags & STREAM_FLAG_WRITE);
-    
-    FIXME("do this properly\n");
     
     int status;
     if (0 == POOL_LOCK(stream_t, handle)) {
-        status = fwrite(buf, bufsize, 1, STREAM(handle).m_file);
+        assert(POOL_HANDLE_IN_USE(stream_t, handle));
+        assert(STREAM(handle).m_flags & STREAM_FLAG_WRITE);
+        status = fwrite(string_cstr(string), string_length(string), 1, STREAM(handle).m_file);
         POOL_UNLOCK(stream_t, handle);
     }
     else {
