@@ -1824,42 +1824,61 @@ int inst_FUNLIT(struct vm_context_t *context) {
 }
 
 /*
-=item OUT ( a -- )
+=item OUT ( value stream -- )
 
-Pops a scalar from the stack and prints out its value.
+Pops a stream reference and a scalar value from from the stack, and prints the value to the stream.
 
 =cut
  */
 int inst_OUT(struct vm_context_t *context) {
-    scalar_t a = {0};
-    char *str;
+    scalar_t value = {0}, stream = {0};
     
-    vm_ds_pop(context, &a);
-    anon_scalar_get_string_value(&a, &str);
-    printf("%s", str);
-
+    vm_ds_pop(context, &stream);
+    assert((stream.m_flags & SCALAR_TYPE_MASK) == SCALAR_STRMREF);
+    
+    vm_ds_pop(context, &value);
+    char *str;
+    anon_scalar_get_string_value(&value, &str);
+    stream_write(anon_scalar_deref_stream_reference(&stream), str, strlen(str));
     free(str);
-    anon_scalar_destroy(&a);
+    
+    anon_scalar_destroy(&value);
+    anon_scalar_destroy(&stream);
+    
     return 1;
 }
 
 /*
-=item OUTL ( a -- )
+=item OUTL ( string delimiter stream -- )
 
-Pops a scalar from the stack and prints out its value, followed by a newline.
+Pops a stream reference, a delimiter byte value, and a string value from the data stack.  Outputs the string followed by
+the delimiter to the stream.
 
 =cut
  */
 int inst_OUTL(struct vm_context_t *context) {
-    scalar_t a = {0};
-    char *str;
+    scalar_t string = {0}, delimiter = {0}, stream = {0};
     
-    vm_ds_pop(context, &a);
-    anon_scalar_get_string_value(&a, &str);
-    printf("%s\n", str);
-
+    vm_ds_pop(context, &stream);
+    assert((stream.m_flags & SCALAR_TYPE_MASK) == SCALAR_STRMREF);
+    FIXME("make this atomic on stream\n");
+    
+    vm_ds_pop(context, &delimiter);
+    vm_ds_pop(context, &string);
+    
+    char *str;
+    anon_scalar_get_string_value(&string, &str);
+    stream_write(anon_scalar_deref_stream_reference(&stream), str, strlen(str));
     free(str);
-    anon_scalar_destroy(&a);
+    
+    char tmp[2] = {0};
+    tmp[0] = (char) anon_scalar_get_int_value(&delimiter);
+    stream_write(anon_scalar_deref_stream_reference(&stream), tmp, sizeof(tmp));
+    
+    anon_scalar_destroy(&string);
+    anon_scalar_destroy(&delimiter);
+    anon_scalar_destroy(&stream);
+
     return 1;
 }
 
