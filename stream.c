@@ -207,9 +207,7 @@ string_t *stream_read_delim(stream_handle_t handle, int delimiter) {
             string = string_alloc(len, buf);
             free(buf);
         }
-        else {
-            debug("getdelim returned %zd\n", len);
-        }
+
         POOL_UNLOCK(stream_t, handle);
     }
     else {
