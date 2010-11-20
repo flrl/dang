@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "scalar.h"
+#include "util.h"
 
 #include "array.h"
 
@@ -343,34 +344,48 @@ int array_push(array_handle_t handle, const scalar_t *values, size_t count) {
 /*
 =item array_unshift()
 
-Adds an item at the start of the array.
+Adds items at the start of the array.
 
 =cut
 */
-int array_unshift(array_handle_t handle, const scalar_t *value) {
+int array_unshift(array_handle_t handle, const scalar_t *values, size_t count) {
     assert(POOL_HANDLE_VALID(array_t, handle));
-    assert(POOL_HANDLE_IN_USE(array_t, handle));
     
     int status = 0;
     if (0 == _array_lock(handle)) {
-        scalar_handle_t s = scalar_allocate(0);  FIXME("handle flags\n");
-        scalar_set_value(s, value);
+        assert(POOL_HANDLE_IN_USE(array_t, handle));
 
-        if (ARRAY(handle).m_count == 0) {
-            ARRAY(handle).m_items[ARRAY(handle).m_first] = s;
-            ++ARRAY(handle).m_count;
-        }
-        else {
-            if (ARRAY(handle).m_first == 0) {
-                if (0 != _array_grow_front_unlocked(&ARRAY(handle), ARRAY(handle).m_count)) {
-                    scalar_release(s);
-                    status = -1;
+        if (count > 0) {
+            size_t start;
+
+            if (ARRAY(handle).m_count == 0) {
+                start = 0;
+                while (ARRAY(handle).m_allocated_count < count) {
+                    _array_grow_back_unlocked(&ARRAY(handle), ARRAY(handle).m_allocated_count);
                 }
             }
+            else if (ARRAY(handle).m_first <= count) {
+                _array_grow_front_unlocked(&ARRAY(handle), nextupow2(count));
+                start = ARRAY(handle).m_first - count;
+            }
+
+            scalar_handle_t s = scalar_allocate_many(count, 0);  FIXME("handle flags\n");
             
-            ARRAY(handle).m_items[--ARRAY(handle).m_first] = s;
-            ++ARRAY(handle).m_count;
+            if (s != 0) {
+                for (size_t i = 0; i < count; i++) {
+                    scalar_set_value(s, &values[i]);
+                    ARRAY(handle).m_items[start + i] = s;
+                    ++s;
+                }
+                ARRAY(handle).m_first = start;
+                ARRAY(handle).m_count += count;
+            }
+            else {
+                debug("couldn't allocate scalars\n");
+                status = -1;
+            }
         }
+
         _array_unlock(handle);
     }
     else {
