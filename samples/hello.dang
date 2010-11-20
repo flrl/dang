@@ -1,8 +1,8 @@
 main:
-    strlit "Hello"
-    strlit " "
-    strlit "World"
-    strcat
+    strlit  "World"
+    strlit  " "
+    strlit  "Hello"
+    byte    3
     strcat
     outl
     end

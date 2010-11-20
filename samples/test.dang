@@ -212,6 +212,8 @@ sheep:
         fltlit 0.5
         fltadd
         fltadd
+        swap
+        byte   2
         strcat
         return
 main:
