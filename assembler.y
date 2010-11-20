@@ -26,7 +26,7 @@
     void yyerror(const char *);
     
     char *read_identifier(void);
-    char *read_quoted(void);
+    char *read_quoted(int);
     int read_hex_byte(void);
     int read_octal_byte(void);
     int read_hex_value(void);
@@ -531,10 +531,21 @@ int yylex(void) {
     
     if (c == '"') {
         // read a literal string
-        char *str = read_quoted();
+        char *str = read_quoted('"');
         
         yylval.sval = str;
         return STRING;
+    }
+    
+    if (c == '\'') {
+        // read a single-quoted character
+        char *str = read_quoted('\'');
+        if (str) {
+            yylval.ival = str[0];
+            if (strlen(str) > 1)  fprintf(stderr, "Ignoring extra characters in character literal: %s\n", str + 1);
+            free(str);
+        }
+        return INTEGER;
     }
     
     if (c == ';' || c == '#') {
@@ -569,12 +580,12 @@ char *read_identifier(void) {
     return buffer;
 }
 
-char *read_quoted(void) {
-    int c, found_closing_double_quote = 0;
+char *read_quoted(int delimiter) {
+    int c, found_closing_delim = 0;
     size_t i = 0, buflen = 64;
     char *buffer = calloc(1, buflen);
     
-    while (!found_closing_double_quote) {
+    while (!found_closing_delim) {
         if (buflen - i <= 2) {
             buflen *= 2;
             char *tmp = calloc(1, buflen);
@@ -583,9 +594,6 @@ char *read_quoted(void) {
             buffer = tmp;
         }
         switch ((c = next())) {
-            case '"':
-                found_closing_double_quote = 1;
-                break;
             case '\\':
                 switch (peek()) {
                     case '\\':  next(); buffer[i++] = '\\'; break;
@@ -619,12 +627,18 @@ char *read_quoted(void) {
             case EOF:
             case '\n':
                 buffer[i] = '\0';
-                fprintf(stderr, "Unterminated string literal\n");
+                fprintf(stderr, "Unterminated quoted string\n");
                 free(buffer);
                 return NULL;
                 
             default:
-                buffer[i++] = c;
+                if (c == delimiter) {
+                    found_closing_delim = 1;
+                }
+                else {
+                    buffer[i++] = c;
+                }
+                break;
         }
     }
 
