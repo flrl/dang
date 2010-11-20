@@ -136,7 +136,7 @@ static inline int type##_POOL_INIT(void) {                                      
         if (0 == pthread_mutex_init(&POOL_SINGLETON(type).m_free_list_mutex, NULL)) {           \
             if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {             \
                 POOL_SINGLETON(type).m_free_list_head = 1;                                      \
-                for (handle_type i = 1; i < POOL_SINGLETON(type).m_allocated_count - 1; i++) {  \
+                for (handle_type i = 1; i < POOL_SINGLETON(type).m_allocated_count; i++) {      \
                     POOL_WRAPPER(type, i).m_next_free = i + 1;                                  \
                 }                                                                               \
                 POOL_WRAPPER(type, POOL_SINGLETON(type).m_allocated_count).m_next_free = 0;     \
@@ -228,7 +228,7 @@ static inline handle_type type##_POOL_ALLOCATE(uint32_t flags) {                
                                                                                                 \
             POOL_SINGLETON(type).m_free_list_head = handle + 1;                                 \
             for (   handle_type i = POOL_SINGLETON(type).m_free_list_head;                      \
-                    i < new_size - 1;                                                           \
+                    i < new_size;                                                               \
                     i++) {                                                                      \
                 POOL_WRAPPER(type, i).m_next_free = i + 1;                                      \
             }                                                                                   \
@@ -318,7 +318,7 @@ static inline handle_type type##_POOL_ALLOCATE_MANY(size_t many, uint32_t flags)
             }                                                                                   \
                                                                                                 \
             /* add the leftover new items to the end of the free list */                        \
-            for (handle_type i = alloc_start + many; i < new_size - 1; i++) {                   \
+            for (handle_type i = alloc_start + many; i < new_size; i++) {                       \
                 POOL_WRAPPER(type, i).m_next_free = i + 1;                                      \
             }                                                                                   \
             POOL_WRAPPER(type, new_size).m_next_free = 0;                                       \
