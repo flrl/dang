@@ -130,7 +130,7 @@ int anon_scalar_destroy(scalar_t *self) {
     if (self->m_flags & SCALAR_FLAG_PTR) {
         switch (self->m_flags & SCALAR_TYPE_MASK) {
             case SCALAR_STRING:
-                if (self->m_value.as_string)  free(self->m_value.as_string);
+                if (self->m_value.as_string)  string_free(self->m_value.as_string);
                 break;
             default:
                 debug("unexpected anon scalar type: %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
@@ -188,7 +188,7 @@ int anon_scalar_clone(scalar_t * restrict self, const scalar_t * restrict other)
     switch(other->m_flags & SCALAR_TYPE_MASK) {
         case SCALAR_STRING:
             self->m_flags = SCALAR_FLAG_PTR | SCALAR_STRING;
-            self->m_value.as_string = strdup(other->m_value.as_string);
+            self->m_value.as_string = string_dup(other->m_value.as_string);
             break;
         case SCALAR_SCAREF:
             self->m_flags = SCALAR_SCAREF;
@@ -231,6 +231,7 @@ Shallow-copy of an anonymous scalar_t object.  Only one of dest and original sho
 int anon_scalar_assign(scalar_t * restrict self, const scalar_t * restrict other) {
     assert(self != NULL);
     assert(other != NULL);
+    debug("do we ever need to use this function?\n");
     
     if (self == other)  return 0;
     
@@ -267,13 +268,13 @@ void anon_scalar_set_float_value(scalar_t *self, floatptr_t fval) {
     self->m_value.as_float = fval;
 }
 
-void anon_scalar_set_string_value(scalar_t *self, const char *sval) {
+void anon_scalar_set_string_value(scalar_t *self, const string_t *sval) {
     assert(self != NULL);
     assert(sval != NULL);
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
 
     self->m_flags = SCALAR_FLAG_PTR | SCALAR_STRING;
-    self->m_value.as_string = strdup(sval);
+    self->m_value.as_string = string_dup(sval);
 }
 
 
@@ -403,9 +404,10 @@ intptr_t anon_scalar_get_bool_value(const scalar_t *self) {
             return (self->m_value.as_float != 0);
             break;
         case SCALAR_STRING:
-            if (self->m_value.as_string != NULL && self->m_value.as_string[0] != '\0') {
-                if (self->m_value.as_string[0] == 0 && self->m_value.as_string[1] == '\0') {
-                    return 0;   
+            assert(self->m_value.as_string != NULL);            
+            if (string_length(self->m_value.as_string) > 0) {
+                if (string_length(self->m_value.as_string) == 1 && self->m_value.as_string->m_bytes[0] == '0') {
+                    return 0;
                 }
                 return 1;
             }
@@ -427,7 +429,8 @@ intptr_t anon_scalar_get_int_value(const scalar_t *self) {
             value = (intptr_t) self->m_value.as_float;
             break;
         case SCALAR_STRING:
-            value = self->m_value.as_string != NULL ? strtol(self->m_value.as_string, NULL, 0) : 0;
+            assert(self->m_value.as_string != NULL);
+            value = strtol(string_cstr(self->m_value.as_string), NULL, 0);
             break;
         case SCALAR_UNDEF:
             value = 0;
@@ -452,7 +455,8 @@ floatptr_t anon_scalar_get_float_value(const scalar_t *self) {
             value = self->m_value.as_float;
             break;
         case SCALAR_STRING:
-            value = self->m_value.as_string != NULL ? strtof(self->m_value.as_string, NULL) : 0.0;
+            assert(self->m_value.as_string != NULL);
+            value = strtof(string_cstr(self->m_value.as_string), NULL);
             break;
         case SCALAR_UNDEF:
             value = 0;
@@ -466,55 +470,55 @@ floatptr_t anon_scalar_get_float_value(const scalar_t *self) {
     return value;    
 }
 
-void anon_scalar_get_string_value(const scalar_t *self, char **result) {
+void anon_scalar_get_string_value(const scalar_t *self, string_t **result) {
     assert(self != NULL);
     
     char buffer[100];
     
     switch(self->m_flags & SCALAR_TYPE_MASK) {
         case SCALAR_UNDEF:
-            *result = strdup("");
+            *result = string_alloc(0, NULL);
             break;
         case SCALAR_INT:
             snprintf(buffer, sizeof(buffer), "%"PRIiPTR"", self->m_value.as_int);
-            *result = strdup(buffer);
+            *result = string_alloc(strlen(buffer), buffer);
             break;
         case SCALAR_FLOAT:
             snprintf(buffer, sizeof(buffer), "%f", self->m_value.as_float);
-            *result = strdup(buffer);
+            *result = string_alloc(strlen(buffer), buffer);
             break;
         case SCALAR_STRING:
-            *result = strdup(self->m_value.as_string);
+            *result = string_dup(self->m_value.as_string);
             break;
 
         case SCALAR_SCAREF:
             snprintf(buffer, sizeof(buffer), "SCALAR(%"PRIuPTR")", self->m_value.as_scalar_handle);
-            *result = strdup(buffer);
+            *result = string_alloc(strlen(buffer), buffer);
             break;
         case SCALAR_ARRREF:
             snprintf(buffer, sizeof(buffer), "ARRAY(%"PRIuPTR")", self->m_value.as_array_handle);
-            *result = strdup(buffer);
+            *result = string_alloc(strlen(buffer), buffer);
             break;
         case SCALAR_HASHREF:
             snprintf(buffer, sizeof(buffer), "HASH(%"PRIuPTR")", self->m_value.as_hash_handle);
-            *result = strdup(buffer);
+            *result = string_alloc(strlen(buffer), buffer);
             break;
         case SCALAR_CHANREF:
             snprintf(buffer, sizeof(buffer), "CHANNEL(%"PRIuPTR")", self->m_value.as_channel_handle);
-            *result = strdup(buffer);
+            *result = string_alloc(strlen(buffer), buffer);
             break;
         case SCALAR_FUNCREF:
             snprintf(buffer, sizeof(buffer), "FUNCTION(%"PRIuPTR")", self->m_value.as_function_handle);
-            *result = strdup(buffer);
+            *result = string_alloc(strlen(buffer), buffer);
             break;
         case SCALAR_STRMREF:
             snprintf(buffer, sizeof(buffer), "STREAM(%"PRIuPTR")", self->m_value.as_stream_handle);
-            *result = strdup(buffer);
+            *result = string_alloc(strlen(buffer), buffer);
             break;
         //...        
         default:
             debug("unexpected type value %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
-            *result = strdup("");
+            *result = string_alloc(0, NULL);
             break;
     }
 

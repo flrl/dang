@@ -16,6 +16,7 @@
 #include <stdio.h>
 
 #include "floatptr_t.h"
+#include "string.h"
 #include "vmtypes.h"
 
 #ifdef POOL_INITIAL_SIZE
@@ -58,7 +59,7 @@ typedef struct scalar_t {
     union {
         intptr_t as_int;
         floatptr_t as_float;
-        char     *as_string;
+        string_t *as_string;
         scalar_handle_t as_scalar_handle;
         array_handle_t as_array_handle;
         hash_handle_t as_hash_handle;
@@ -78,13 +79,13 @@ int anon_scalar_assign(scalar_t * restrict, const scalar_t * restrict);
 
 void anon_scalar_set_int_value(scalar_t *, intptr_t);
 void anon_scalar_set_float_value(scalar_t *, floatptr_t);
-void anon_scalar_set_string_value(scalar_t *, const char *);
+void anon_scalar_set_string_value(scalar_t *, const string_t *);
 
 intptr_t anon_scalar_is_defined(const scalar_t *);
 intptr_t anon_scalar_get_bool_value(const scalar_t *);
 intptr_t anon_scalar_get_int_value(const scalar_t *);
 floatptr_t anon_scalar_get_float_value(const scalar_t *);
-void anon_scalar_get_string_value(const scalar_t *, char **);
+void anon_scalar_get_string_value(const scalar_t *, string_t **);
 
 void anon_scalar_set_scalar_reference(scalar_t *, scalar_handle_t);
 void anon_scalar_set_array_reference(scalar_t *, array_handle_t);
@@ -179,7 +180,7 @@ static inline void scalar_set_float_value(scalar_handle_t handle, floatptr_t fva
     }
 }
 
-static inline void scalar_set_string_value(scalar_handle_t handle, const char *sval) {
+static inline void scalar_set_string_value(scalar_handle_t handle, const string_t *sval) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     assert(sval != NULL);
@@ -348,7 +349,7 @@ static inline floatptr_t scalar_get_float_value(scalar_handle_t handle) {
     return value;
 }
 
-static inline void scalar_get_string_value(scalar_handle_t handle, char **result) {
+static inline void scalar_get_string_value(scalar_handle_t handle, string_t **result) {
     assert(POOL_HANDLE_VALID(scalar_t, handle));
     assert(POOL_HANDLE_IN_USE(scalar_t, handle));
     
