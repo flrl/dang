@@ -1634,37 +1634,51 @@ int inst_STRXPLOD(struct vm_context_t *context) {
 }
 
 /*
-=item STRCAT ( a b -- ab )
+=item STRCAT ( [strings] count -- s )
 
-Pops two strings from the stack, and pushes back their concatenation.
- 
+Pops a count and count strings from the data stack, and pushes back their concatenation.
+
 =cut
- */
+*/
 int inst_STRCAT(struct vm_context_t *context) {
-    scalar_t a = {0}, b = {0}, c = {0};
-    char *str_a, *str_b, *str_c;
-
-    vm_ds_pop(context, &b);
-    vm_ds_pop(context, &a);
+    scalar_t count = {0}, s = {0};
     
-    anon_scalar_get_string_value(&a, &str_a);
-    anon_scalar_get_string_value(&b, &str_b);
+    vm_ds_pop(context, &count);
+    size_t n = anon_scalar_get_int_value(&count);
     
-    str_c = calloc(1 + strlen(str_a) + strlen(str_b), sizeof(*str_c));
-    assert(str_c != NULL);
-    strcpy(str_c, str_a);
-    strcat(str_c, str_b);
-    free(str_a);
-    free(str_b);
+    if (n > 0) {
+        char **strings;
+        if (NULL != (strings = calloc(n, sizeof(*strings)))) {
+            size_t len = 0;
+            
+            scalar_t tmp = {0};
+            for (size_t i = 0; i < n; i++) {
+                vm_ds_pop(context, &tmp);
+                anon_scalar_get_string_value(&tmp, &strings[i]);
+                len += strlen(strings[i]);
+            }
+            anon_scalar_destroy(&tmp);
+            
+            char *result = calloc(len + 1, sizeof(*result));
+            
+            for (size_t i = 0; i < n; i++) {
+                strcat(result, strings[i]);
+                free(strings[i]);
+            }
+            free(strings);
+            
+            anon_scalar_set_string_value(&s, result);
+            free(result);
+        }
+        else {
+            debug("calloc failed\n");
+        }
+    }
     
-    anon_scalar_set_string_value(&c, str_c);
-    free(str_c);
+    vm_ds_push(context, &s);
     
-    vm_ds_push(context, &c);
-    
-    anon_scalar_destroy(&c);
-    anon_scalar_destroy(&b);
-    anon_scalar_destroy(&a);
+    anon_scalar_destroy(&s);
+    anon_scalar_destroy(&count);
     
     return 1;
 }
