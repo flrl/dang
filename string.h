@@ -10,6 +10,7 @@
 #ifndef STRING_H
 #define STRING_H
 
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,6 +45,15 @@ int string_assign(string_t **restrict, size_t, const char *restrict);
 int string_append(string_t **restrict, size_t, const char *restrict);
 int string_appendc(string_t **, int);
 int string_prepend(string_t **restrict, size_t, const char *restrict);
+
+static inline void string_chomp(string_t *self, int delimiter) {
+    if (self->m_length > 0) {
+        if (    self->m_bytes[self->m_length - 1] == delimiter || 
+                (delimiter == DELIMITER_WHITESPACE && isspace(self->m_bytes[self->m_length - 1]))) {
+            self->m_bytes[--self->m_length] = '\0';
+        }
+    }
+}
 
 static inline size_t string_length(const string_t *self) { return self->m_length; }
 static inline const char *string_cstr(const string_t *self) { return self->m_bytes; }
