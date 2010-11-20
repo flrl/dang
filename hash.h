@@ -10,6 +10,7 @@
 #ifndef HASH_H
 #define HASH_H
 
+#include "string.h"
 #include "vmtypes.h"
 
 #ifdef POOL_INITIAL_SIZE
@@ -21,7 +22,7 @@
 #define HASH_BUCKETS    (256)
 
 typedef struct hash_item_t {
-    char *m_key;
+    string_t *m_key;
     scalar_handle_t m_value;
     struct hash_item_t *m_next_item;
 } hash_item_t;

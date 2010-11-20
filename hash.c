@@ -38,14 +38,14 @@ This also means that it's generally not useful to use a reference type as a hash
 
 static int _hash_bucket_init(hash_bucket_t *);
 static int _hash_bucket_destroy(hash_bucket_t *);
-static int _hash_item_init(hash_item_t *, const char *);
+static int _hash_item_init(hash_item_t *, const string_t *);
 static int _hash_item_destroy(hash_item_t *);
 
 static size_t _hash_size_unlocked(hash_t *);
-static scalar_handle_t _hash_key_item_unlocked(hash_t *, const char *);
-static int _hash_key_delete_unlocked(hash_t *, const char *);
-static int _hash_key_exists_unlocked(hash_t *, const char *);
-static inline uint32_t _hash_key(const char *);
+static scalar_handle_t _hash_key_item_unlocked(hash_t *, const string_t *);
+static int _hash_key_delete_unlocked(hash_t *, const string_t *);
+static int _hash_key_exists_unlocked(hash_t *, const string_t *);
+static inline uint32_t _hash_key(const string_t *);
 
 POOL_SOURCE_CONTENTS(hash_t);
 
@@ -133,10 +133,10 @@ scalar_handle_t hash_key_item(hash_handle_t handle, const struct scalar_t *key) 
     assert(key != NULL);
     
     if (0 == POOL_LOCK(hash_t, handle)) {
-        char *skey;
+        string_t *skey;
         anon_scalar_get_string_value(key, &skey);
         scalar_handle_t item = _hash_key_item_unlocked(&HASH(handle), skey);
-        free(skey);
+        string_free(skey);
         POOL_UNLOCK(hash_t, handle);
         return item;
     }
@@ -159,12 +159,12 @@ int hash_slice(hash_handle_t handle, struct scalar_t *elements, size_t count) {
     
     if (0 == POOL_LOCK(hash_t, handle)) {
         for (size_t i = 0; i < count; i++) {
-            char *key;
+            string_t *key;
             anon_scalar_get_string_value(&elements[i], &key);
             scalar_handle_t scalar_handle = _hash_key_item_unlocked(&HASH(handle), key);
             anon_scalar_set_scalar_reference(&elements[i], scalar_handle);
             scalar_release(scalar_handle);
-            free(key);
+            string_free(key);
         }
     
         POOL_UNLOCK(hash_t, handle);
@@ -352,12 +352,12 @@ int hash_fill(hash_handle_t handle, const struct scalar_t *pairs, size_t count) 
         _hash_init(&HASH(handle));
         
         for (size_t i = 0; i < count; i++) {
-            char *key;
+            string_t *key;
             anon_scalar_get_string_value(&pairs[2 * i], &key);
             scalar_handle_t value_handle = _hash_key_item_unlocked(&HASH(handle), key);
             scalar_set_value(value_handle, &pairs[2 * i + 1]);
             scalar_release(value_handle);
-            free(key);
+            string_free(key);
         }
     
         POOL_UNLOCK(hash_t, handle);
@@ -382,10 +382,10 @@ int hash_key_delete(hash_handle_t handle, const struct scalar_t *key) {
     
     int status;
     if (0 == POOL_LOCK(hash_t, handle)) {
-        char *skey;
+        string_t *skey;
         anon_scalar_get_string_value(key, &skey);
         status = _hash_key_delete_unlocked(&HASH(handle), skey);
-        free(skey);
+        string_free(skey);
         POOL_UNLOCK(hash_t, handle);
     }
     else {
@@ -407,10 +407,10 @@ int hash_key_exists(hash_handle_t handle, const struct scalar_t *key) {
     
     int status = 0;
     if (0 == POOL_LOCK(hash_t, handle)) {
-        char *skey;
+        string_t *skey;
         anon_scalar_get_string_value(key, &skey);
         status = _hash_key_exists_unlocked(&HASH(handle), skey);
-        free(skey);
+        string_free(skey);
         POOL_UNLOCK(hash_t, handle);
     }
     return status;
@@ -496,11 +496,11 @@ Setup and teardown functions for hash_item_t objects
 
 =cut
  */
-static int _hash_item_init(hash_item_t *self, const char *key) {
+static int _hash_item_init(hash_item_t *self, const string_t *key) {
     assert(self != NULL);
     assert(key != NULL);
     
-    self->m_key = strdup(key);
+    self->m_key = string_dup(key);
     self->m_value = scalar_allocate(0); FIXME("handle flags\n");
     self->m_next_item = NULL;
     return 0;
@@ -509,7 +509,7 @@ static int _hash_item_init(hash_item_t *self, const char *key) {
 static int _hash_item_destroy(hash_item_t *self) {
     assert(self != NULL);
     
-    free(self->m_key);
+    string_free(self->m_key);
     scalar_release(self->m_value);
     memset(self, 0, sizeof(*self));
     return 0;
@@ -541,7 +541,7 @@ is automatically created.
 The caller must release the handle returned using C<scalar_release()> when they are done with it.
 =cut
  */
-static scalar_handle_t _hash_key_item_unlocked(hash_t *self, const char *key) {
+static scalar_handle_t _hash_key_item_unlocked(hash_t *self, const string_t *key) {
     assert(self != NULL);
     assert(key != NULL);
     
@@ -551,7 +551,7 @@ static scalar_handle_t _hash_key_item_unlocked(hash_t *self, const char *key) {
     scalar_handle_t handle = 0;    
 
     while (item != NULL) {
-        int cmp = strcmp(item->m_key, key);
+        int cmp = string_cmp(item->m_key, key);
         if (cmp == 0) {         // found it
             handle = scalar_reference(item->m_value);
             break;
@@ -590,7 +590,7 @@ Returns 0 on success, non-zero on failure.
 
 =cut
  */
-static int _hash_key_delete_unlocked(hash_t *self, const char *key) {
+static int _hash_key_delete_unlocked(hash_t *self, const string_t *key) {
     assert(self != NULL);
     assert(key != NULL);
     
@@ -602,7 +602,7 @@ static int _hash_key_delete_unlocked(hash_t *self, const char *key) {
     
     int status = 0;
     while (item != NULL) {
-        int cmp = strcmp(item->m_key, key);
+        int cmp = string_cmp(item->m_key, key);
         if (cmp == 0) {     // found it
             if (prev != NULL) {
                 prev->m_next_item = item->m_next_item;
@@ -635,7 +635,7 @@ Returns 1 if the key exists, or 0 if it does not.
 
 =cut
  */
-static int _hash_key_exists_unlocked(hash_t *self, const char *key) {
+static int _hash_key_exists_unlocked(hash_t *self, const string_t *key) {
     assert(self != NULL);
     assert(key != NULL);
     
@@ -646,7 +646,7 @@ static int _hash_key_exists_unlocked(hash_t *self, const char *key) {
     
     int found = 0;
     while (item != NULL) {
-        int cmp = strcmp(item->m_key, key);
+        int cmp = string_cmp(item->m_key, key);
         if (cmp == 0) {
             found = 1;
             break;
@@ -670,9 +670,9 @@ Hashes a string key into a uint32_t.
  * http://www.burtleburtle.net/bob/hash/doobs.html
  * one at a time hash: it's good enough for perl
  */
-static inline uint32_t _hash_key(const char *key) {
-    const uint8_t *p = (const uint8_t *) key;
-    const size_t len = strlen(key);
+static inline uint32_t _hash_key(const string_t *key) {
+    const uint8_t *p = (const uint8_t *) string_cstr(key);
+    const size_t len = string_length(key);
 
     uint32_t hash = 0;    
     for (size_t i = 0; i < len; ++i) {
