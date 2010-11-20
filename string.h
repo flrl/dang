@@ -42,6 +42,7 @@ int string_reserve(string_t **, size_t);
 int string_assign(string_t **restrict, size_t, const char *restrict);
 
 int string_append(string_t **restrict, size_t, const char *restrict);
+int string_appendc(string_t **, int);
 int string_prepend(string_t **restrict, size_t, const char *restrict);
 
 static inline size_t string_length(const string_t *self) { return self->m_length; }

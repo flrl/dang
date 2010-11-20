@@ -59,3 +59,13 @@ int string_append(string_t **restrict self, size_t len, const char *restrict str
     
     return 0;
 }
+
+int string_appendc(string_t **self, int c) {
+    assert(self != NULL && *self != NULL);
+    
+    if (0 != string_reserve(self, (*self)->m_length + 1))  return -1;
+    
+    (*self)->m_bytes[(*self)->m_length++] = (char) c;
+    
+    return 0;
+}
