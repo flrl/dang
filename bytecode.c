@@ -1117,6 +1117,7 @@ int inst_HRLISTP(struct vm_context_t *context) {
     if (0 == hash_list_pairs(anon_scalar_deref_hash_reference(&hr), &pairs, &n)) {
         if (n > 0) {
             vm_ds_npush(context, 2 * n, pairs);
+            for (size_t i = 0; i < 2 * n; i++)  anon_scalar_destroy(&pairs[i]);
             free(pairs);
         }
         anon_scalar_set_int_value(&count, n);
