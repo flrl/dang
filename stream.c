@@ -245,7 +245,7 @@ string_t *stream_read(stream_handle_t handle, size_t bytes) {
                 count = fread(p, rem, 1, STREAM(handle).m_file);
                 rem -= count;
                 p += count;
-            } while (count > 0 && rem > 0);
+            } while (count > 0 && rem > 0 && !ferror(STREAM(handle).m_file));
             
             if (rem != bytes)  string = string_alloc(bytes - rem, buf);
             
