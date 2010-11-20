@@ -63,8 +63,8 @@ stream_handle_t stream_stderr_handle(void);
 int stream_open(stream_handle_t, flags_t, const char *);
 int stream_close(stream_handle_t);
 
-ssize_t stream_read_delim(stream_handle_t, char **, int);
-size_t stream_read(stream_handle_t, char *, size_t);
+string_t *stream_read_delim(stream_handle_t, int);
+string_t *stream_read(stream_handle_t, size_t);
 int stream_write(stream_handle_t, const string_t *);
 
 const char *stream_get_filename(stream_handle_t);

@@ -187,34 +187,36 @@ int stream_close(stream_handle_t handle) {
 /*
 =item stream_read_delim()
 
-...
+Reads from the stream until the delimiter is encountered.  Returns the string read including the delimiter character.
 
 =cut
  */
-ssize_t stream_read_delim(stream_handle_t handle, char **result, int delimiter) {
+string_t *stream_read_delim(stream_handle_t handle, int delimiter) {
     assert(POOL_HANDLE_VALID(stream_t, handle));
-    assert(POOL_HANDLE_IN_USE(stream_t, handle));
-    FIXME("make sure it's open for reading\n");
-    ssize_t status;
 
+    string_t *string = NULL;
+    
     if (0 == POOL_LOCK(stream_t, handle)) {
+        assert(POOL_HANDLE_IN_USE(stream_t, handle));
+        assert(STREAM(handle).m_flags & STREAM_FLAG_READ);
+
         char *buf = NULL;
         size_t bufsize = 0;
-        if ((status = getdelim(&buf, &bufsize, delimiter, STREAM(handle).m_file)) > 0) {
-            *result = buf;
+        ssize_t len;
+        if ((len = getdelim(&buf, &bufsize, delimiter, STREAM(handle).m_file)) > 0) {
+            string = string_alloc(len, buf);
+            free(buf);
         }
         else {
-            debug("getdelim returned %zd\n", status);
-            FIXME("what to do here?\n");
+            debug("getdelim returned %zd\n", len);
         }
         POOL_UNLOCK(stream_t, handle);
     }
     else {
         debug("couldn't lock stream_t handle %"PRIuPTR"\n", handle);
-        status = -1;
     }
     
-    return status;
+    return string;
 }
 
 /*
@@ -224,24 +226,38 @@ ssize_t stream_read_delim(stream_handle_t handle, char **result, int delimiter) 
 
 =cut
  */
-size_t stream_read(stream_handle_t handle, char *buf, size_t bufsize) {
+string_t *stream_read(stream_handle_t handle, size_t bytes) {
     assert(POOL_HANDLE_VALID(stream_t, handle));
     assert(POOL_HANDLE_IN_USE(stream_t, handle));
     FIXME("do this properly\n");
     
-    size_t status;
+    string_t *string = NULL;
+
     if (0 == POOL_LOCK(stream_t, handle)) {
         assert(STREAM(handle).m_flags & STREAM_FLAG_READ);
     
-        status = fread(buf, bufsize, 1, STREAM(handle).m_file);
+        char *buf = calloc(1, bytes + 1);
+        if (buf) {
+            size_t rem = bytes, count;
+            char *p = buf;
+
+            do {
+                count = fread(p, rem, 1, STREAM(handle).m_file);
+                rem -= count;
+                p += count;
+            } while (count > 0 && rem > 0);
+            
+            if (rem != bytes)  string = string_alloc(bytes - rem, buf);
+            
+            free(buf);
+        }
         POOL_UNLOCK(stream_t, handle);
     }
     else {
         debug("couldn't lock stream_t handle %"PRIuPTR"\n", handle);
-        status = 0;
     }
     
-    return status;
+    return string;
 }
 
 /*
