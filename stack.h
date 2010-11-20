@@ -85,6 +85,9 @@ static inline int type##_STACK_INIT(struct type##_STACK *stack) {               
 static inline int type##_STACK_DESTROY(struct type##_STACK *stack) {                    \
     assert(stack != NULL);                                                              \
                                                                                         \
+    while (stack->m_count > 0) {                                                        \
+        (void) dest_func(&stack->m_items[--stack->m_count]);                            \
+    }                                                                                   \
     free(stack->m_items);                                                               \
     memset(stack, 0, sizeof(*stack));                                                   \
     return 0;                                                                           \
