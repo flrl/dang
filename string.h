@@ -47,4 +47,17 @@ int string_prepend(string_t **restrict, size_t, const char *restrict);
 static inline size_t string_length(const string_t *self) { return self->m_length; }
 static inline const char *string_cstr(const string_t *self) { return self->m_bytes; }
 
+static inline int string_cmp(const string_t *a, const string_t *b) {
+    int cmp = memcmp(a->m_bytes, b->m_bytes, MIN(a->m_length, b->m_length));
+    if (cmp == 0) {
+        if (a->m_length > b->m_length) {
+            cmp = 1;
+        }
+        else if (a->m_length < b->m_length) {
+            cmp = -1;
+        }
+    }
+    return cmp;
+}
+
 #endif
