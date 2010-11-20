@@ -2,6 +2,7 @@
 main:   in
         dup
         jmpu ~.done
+        stdout
         out
         jmp ~main
 .done:   return
