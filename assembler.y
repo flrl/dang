@@ -619,8 +619,8 @@ char *read_quoted(int delimiter) {
                         buffer[i++] = read_octal_byte();
                         break;
                         
-                    default:  // unrecognised escape sequence, keep the backslash and carry on as usual
-                        buffer[i++] = c;
+                    default:  // unrecognised escape sequence, ignore the backslash
+                        buffer[i++] = next();
                 }
                 break;
                 
