@@ -227,7 +227,7 @@ ssize_t stream_read_delim(stream_handle_t handle, char **result, int delimiter) 
 size_t stream_read(stream_handle_t handle, char *buf, size_t bufsize) {
     assert(POOL_HANDLE_VALID(stream_t, handle));
     assert(POOL_HANDLE_IN_USE(stream_t, handle));
-    FIXME("do this properly");
+    FIXME("do this properly\n");
     
     size_t status;
     if (0 == POOL_LOCK(stream_t, handle)) {
@@ -256,7 +256,7 @@ int stream_write(stream_handle_t handle, const char *buf, size_t bufsize) {
     assert(POOL_HANDLE_IN_USE(stream_t, handle));
     assert(STREAM(handle).m_flags & STREAM_FLAG_WRITE);
     
-    FIXME("do this properly");
+    FIXME("do this properly\n");
     
     int status;
     if (0 == POOL_LOCK(stream_t, handle)) {
