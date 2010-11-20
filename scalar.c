@@ -130,7 +130,8 @@ int anon_scalar_destroy(scalar_t *self) {
     if (self->m_flags & SCALAR_FLAG_PTR) {
         switch (self->m_flags & SCALAR_TYPE_MASK) {
             case SCALAR_STRING:
-                if (self->m_value.as_string)  string_free(self->m_value.as_string);
+                assert(self->m_value.as_string != NULL);
+                string_free(self->m_value.as_string);
                 break;
             default:
                 debug("unexpected anon scalar type: %"PRIu32"\n", self->m_flags & SCALAR_TYPE_MASK);
