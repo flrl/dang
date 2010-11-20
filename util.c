@@ -20,7 +20,6 @@
 uintptr_t nextupow2(uintptr_t x) {
     if (x == 0)  return 1;
     
-    --x;
     for (unsigned i = 1; i < sizeof(uintptr_t) * CHAR_BIT; i = i << 1) {
         x = x | (x >> i);
     }
