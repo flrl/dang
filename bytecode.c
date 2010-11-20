@@ -1569,14 +1569,14 @@ int inst_STRLIT(struct vm_context_t *context) {
     scalar_t s = {0};
     
     if (len > 0) {
-        char *buf = calloc(len + 1, sizeof(*buf));
-        assert(buf != NULL);
-        strncpy(buf, str, len);
+        string_t *buf = string_alloc(len, str);
         anon_scalar_set_string_value(&s, buf);
-        free(buf);
+        string_free(buf);
     }
     else {
-        anon_scalar_set_string_value(&s, "");
+        string_t *buf = string_alloc(0, NULL);
+        anon_scalar_set_string_value(&s, buf);
+        string_free(buf);
     }
 
     vm_ds_push(context, &s);
@@ -1594,22 +1594,22 @@ Pops a string from the stack, and pushes back a scalar for each character within
 */
 int inst_STRXPLOD(struct vm_context_t *context) {
     scalar_t s = {0}, *characters = NULL, count = {0};
-    char *str = NULL;
-    size_t n;
+    string_t *str = NULL;
     
     vm_ds_pop(context, &s);
     
     anon_scalar_get_string_value(&s, &str);
-    n = strlen(str);
+    size_t n = string_length(str);
     
     if (n > 0) {
         if (NULL != (characters = calloc(n, sizeof(*characters)))) {
+            string_t *buf = string_alloc(1, NULL);
             for (size_t i = 0; i < n; i++) {
-                char buf[2] = {0};
-                buf[0] = str[i];
+                string_assign(&buf, 1, &str->m_bytes[i]);
                 anon_scalar_set_string_value(&characters[i], buf);
-            }
 
+            }
+            string_free(buf);
             vm_ds_npush(context, n, characters);
 
             for (size_t i = 0; i < n; i++)  anon_scalar_destroy(&characters[i]);
@@ -1621,7 +1621,7 @@ int inst_STRXPLOD(struct vm_context_t *context) {
         }
     }
     
-    free(str);
+    string_free(str);
     
     anon_scalar_set_int_value(&count, n);
     
@@ -1647,7 +1647,7 @@ int inst_STRCAT(struct vm_context_t *context) {
     size_t n = anon_scalar_get_int_value(&count);
     
     if (n > 0) {
-        char **strings;
+        string_t **strings;
         if (NULL != (strings = calloc(n, sizeof(*strings)))) {
             size_t len = 0;
             
@@ -1655,20 +1655,20 @@ int inst_STRCAT(struct vm_context_t *context) {
             for (size_t i = 0; i < n; i++) {
                 vm_ds_pop(context, &tmp);
                 anon_scalar_get_string_value(&tmp, &strings[i]);
-                len += strlen(strings[i]);
+                len += string_length(strings[i]);
             }
             anon_scalar_destroy(&tmp);
             
-            char *result = calloc(len + 1, sizeof(*result));
+            string_t *result = string_alloc(len, NULL);
             
             for (size_t i = 0; i < n; i++) {
-                strcat(result, strings[i]);
-                free(strings[i]);
+                string_append(&result, string_length(strings[i]), string_cstr(strings[i]));
+                string_free(strings[i]);
             }
             free(strings);
             
             anon_scalar_set_string_value(&s, result);
-            free(result);
+            string_free(result);
         }
         else {
             debug("calloc failed\n");
@@ -1837,10 +1837,10 @@ int inst_OUT(struct vm_context_t *context) {
     assert((stream.m_flags & SCALAR_TYPE_MASK) == SCALAR_STRMREF);
     
     vm_ds_pop(context, &value);
-    char *str;
+    string_t *str;
     anon_scalar_get_string_value(&value, &str);
-    stream_write(anon_scalar_deref_stream_reference(&stream), str, strlen(str));
-    free(str);
+    stream_write(anon_scalar_deref_stream_reference(&stream), string_cstr(str), string_length(str));
+    string_free(str);
     
     anon_scalar_destroy(&value);
     anon_scalar_destroy(&stream);
@@ -1866,14 +1866,14 @@ int inst_OUTL(struct vm_context_t *context) {
     vm_ds_pop(context, &delimiter);
     vm_ds_pop(context, &string);
     
-    char *str;
+    string_t *str;
     anon_scalar_get_string_value(&string, &str);
-    stream_write(anon_scalar_deref_stream_reference(&stream), str, strlen(str));
-    free(str);
-    
     char tmp[2] = {0};
     tmp[0] = (char) anon_scalar_get_int_value(&delimiter);
-    stream_write(anon_scalar_deref_stream_reference(&stream), tmp, sizeof(tmp));
+
+    string_append(&str, 1, tmp);
+    stream_write(anon_scalar_deref_stream_reference(&stream), string_cstr(str), string_length(str));
+    string_free(str);
     
     anon_scalar_destroy(&string);
     anon_scalar_destroy(&delimiter);
@@ -1896,7 +1896,9 @@ int inst_IN(struct vm_context_t *context) {
     size_t bufsize = 0;
 
     if (getline(&buf, &bufsize, stdin) > 0) {
-        anon_scalar_set_string_value(&a, buf);
+        string_t *tmp = string_alloc(bufsize, buf);
+        anon_scalar_set_string_value(&a, tmp);
+        string_free(tmp);
     }
 
     if (buf != NULL)  free(buf);
@@ -1977,12 +1979,14 @@ Pops an integer value from the data stack.  Pushes back a string containing the 
 */
 int inst_CHR(struct vm_context_t *context) {
     scalar_t i = {0}, a = {0};
-    char str[2] = {0};
+    string_t *str;
     
     vm_ds_pop(context, &i);
 
-    str[0] = (char) anon_scalar_get_int_value(&i);
+    str = string_alloc(1, NULL);
+    str->m_bytes[0] = (char) anon_scalar_get_int_value(&i);
     anon_scalar_set_string_value(&a, str);
+    string_free(str);
     
     vm_ds_push(context, &a);
     
@@ -2002,13 +2006,13 @@ or undefined if the string is empty.
 */
 int inst_ORD(struct vm_context_t *context) {
     scalar_t i = {0}, a = {0};
-    char *str = NULL;
+    string_t *str = NULL;
     
     vm_ds_pop(context, &a);
     
     anon_scalar_get_string_value(&a, &str);
-    if (str[0] != '\0')  anon_scalar_set_int_value(&i, str[0]);
-    free(str);
+    if (string_length(str) > 0)  anon_scalar_set_int_value(&i, str->m_bytes[0]);
+    string_free(str);
     
     vm_ds_push(context, &i);
     
