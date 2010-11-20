@@ -1119,7 +1119,7 @@ int inst_HRLISTP(struct vm_context_t *context) {
             vm_ds_npush(context, 2 * n, pairs);
             free(pairs);
         }
-        anon_scalar_set_int_value(&count, 2 * n);
+        anon_scalar_set_int_value(&count, n);
     }
     
     vm_ds_push(context, &count);
