@@ -7,6 +7,8 @@ main:
             dup
             jmpu ~.tupni
             over
+            byte    1
+            swap
             arunshft
             jmp  ~.input
 .tupni:     drop
