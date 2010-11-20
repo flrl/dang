@@ -304,8 +304,8 @@ int hash_list_pairs(hash_handle_t handle, struct scalar_t **results, size_t *cou
         if (NULL != (pairs = calloc(2 * n, sizeof(*pairs)))) {
             size_t bucket = 0, i = 0;
             while (i < n && bucket < HASH_BUCKETS) {
-                if (HASH(handle).m_buckets[i].m_count > 0) {
-                    hash_item_t *item = HASH(handle).m_buckets[i].m_first_item;
+                if (HASH(handle).m_buckets[bucket].m_count > 0) {
+                    hash_item_t *item = HASH(handle).m_buckets[bucket].m_first_item;
                     while (i < n && item != NULL) {
                         anon_scalar_set_string_value(&pairs[2 * i], item->m_key);
                         scalar_get_value(item->m_value, &pairs[2 * i + 1]);
