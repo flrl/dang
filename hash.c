@@ -546,35 +546,57 @@ static scalar_handle_t _hash_key_item_unlocked(hash_t *self, const string_t *key
     assert(key != NULL);
     
     hash_bucket_t *bucket = &self->m_buckets[_hash_key(key) % HASH_BUCKETS];
-    hash_item_t *item = bucket->m_first_item;
-    hash_item_t *prev = NULL;
+
     scalar_handle_t handle = 0;    
 
-    while (item != NULL) {
-        int cmp = string_cmp(item->m_key, key);
-        if (cmp == 0) {         // found it
-            handle = scalar_reference(item->m_value);
-            break;
+    if (bucket->m_first_item == NULL) {
+        hash_item_t *new_item = calloc(1, sizeof(*new_item));
+        if (new_item != NULL) {
+            _hash_item_init(new_item, key);
+            bucket->m_first_item = new_item;
+            bucket->m_count = 1;
+            handle = scalar_reference(new_item->m_value);
         }
-        else if (cmp > 0) {     // have gone past where it should have been: auto-vivify it
+    }
+    else {
+        hash_item_t *item = bucket->m_first_item;
+        hash_item_t *prev = NULL;
+        while (item != NULL) {
+            int cmp = string_cmp(item->m_key, key);
+            if (cmp == 0) {         // found it
+                handle = scalar_reference(item->m_value);
+                break;
+            }
+            else if (cmp > 0) {     // have gone past where it should have been: auto-vivify it
+                hash_item_t *new_item = calloc(1, sizeof(*new_item));
+                if (new_item != NULL) {
+                    _hash_item_init(new_item, key);
+                    new_item->m_next_item = item;
+                    if (prev != NULL) {
+                        prev->m_next_item = new_item;
+                    }
+                    else {
+                        bucket->m_first_item = new_item;
+                    }
+                    ++bucket->m_count;
+                    handle = scalar_reference(new_item->m_value);
+                }
+                break;
+            }
+            else {                  // keep looking
+                prev = item;
+                item = item->m_next_item;
+            }
+        }
+        if (item == NULL) {
+            // got to the end of the bucket without finding it: auto-vivify it
             hash_item_t *new_item = calloc(1, sizeof(*new_item));
             if (new_item != NULL) {
                 _hash_item_init(new_item, key);
-                new_item->m_next_item = item;
-                if (prev != NULL) {
-                    prev->m_next_item = new_item;
-                }
-                else {
-                    bucket->m_first_item = new_item;
-                }
+                prev->m_next_item = new_item;
                 ++bucket->m_count;
                 handle = scalar_reference(new_item->m_value);
             }
-            break;
-        }
-        else {                  // keep looking
-            prev = item;
-            item = item->m_next_item;
         }
     }
     
