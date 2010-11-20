@@ -24,8 +24,6 @@
 #include "stream.h"
 #include "vm.h"
 
-int _vm_context_destroy(vm_context_t *);
-
 typedef struct vm_context_registry_node_t {
     struct vm_context_registry_node_t *m_next;
     vm_context_t *m_context;
@@ -154,6 +152,7 @@ end:
     debug("vm_execute of context %p about to finish\n", context);
     if (context->m_symboltable)  vm_end_scope(context);
     vm_context_destroy(context);
+    debug("context %p destroyed\n", context);
     free(context);
     debug("vm_execute of context %p finished\n", context);
     return NULL;
