@@ -9,11 +9,14 @@ main:
         byte    2
         coro    &fib
 .top:   
-        strlit  "main: about to read from input channel"
-        outl
+        strlit  "main: about to read from input channel\n"
+        stdout
+        out
         symfind 101
         crread
         dup
+        byte    10
+        stdout
         outl
 ;        strlit  ", "
 ;        out
@@ -21,17 +24,21 @@ main:
         intsubt
         intgt0
         jmp0 ~.top
-        strlit  "main: about to write to control channel"
-        outl
+        strlit  "main: about to write to control channel\n"
+        stdout
+        out
         byte    1
         symfind 102
         crwrite
 .clean: 
-        strlit "main: waiting for channel data to end..."
-        outl
+        strlit "main: waiting for channel data to end...\n"
+        stdout
+        out
         symfind 101
         crtryrd
 ;        dup
+;        byte    10
+;        stdout
 ;        outl
         not
         jmp0 ~.clean
@@ -52,31 +59,36 @@ fib:
         over
         over
         swap
-        strlit  "fib: about to write to output channel"
-        outl
+        strlit  "fib: about to write to output channel\n"
+        stdout
+        out
         crwrite
         swap
-        strlit  "fib: about to write to output channel"
-        outl
+        strlit  "fib: about to write to output channel\n"
+        stdout
+        out
         crwrite
 .top:   swap
         over
         intadd
         dup
-        strlit  "fib: about to write to output channel"
-        outl
+        strlit  "fib: about to write to output channel\n"
+        stdout
+        out
         symfind 1001 
         crwrite
-        strlit  "fib: about to tryread from control channel"
-        outl
+        strlit  "fib: about to tryread from control channel\n"
+        stdout
+        out
         symfind 1002
         crtryrd
         jmp0 ~.top
 ;        jmp  ~.top
     
 .bot:   
-        strlit  "fib: finished, about to return"
-        outl
+        strlit  "fib: finished, about to return\n"
+        stdout
+        out
         return
 
 

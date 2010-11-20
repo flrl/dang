@@ -1,7 +1,10 @@
 inttest:
         strlit  "testing integers:"
+        byte    10
+        stdout
         outl
         strlit  "addition: "
+        stdout
         out
         intlit  0
 .t1:    dup
@@ -11,196 +14,290 @@ inttest:
         intlit  1
         intadd
         dup
+        stdout
         out
         strlit  ", "
+        stdout
         out
         jmp  ~.t1
 .b1:    strlit  "\n"
+        stdout
         out
         strlit  "subtraction: "
+        stdout
         out
 .t2:    dup
         jmp0 ~.b2
         intlit  1
         intsubt
         dup
+        stdout
         out
         strlit  ", "
+        stdout
         out
         jmp  ~.t2
 .b2:    strlit "\n"
+        stdout
         out
         strlit  "multiplication: "
+        stdout
         out
         intlit  5
         dup
+        stdout
         out
         strlit  "x"
+        stdout
         out
         intlit  4
         dup
+        stdout
         out
         intmult
         strlit  "="
+        stdout
         out
+        byte    10
+        stdout
         outl
         strlit  "division: "
+        stdout
         out
         intlit 20
         dup
+        stdout
         out
         strlit "/"
+        stdout
         out
         intlit 4
         dup
+        stdout
         out
         intdiv
         strlit "="
+        stdout
         out
+        byte    10
+        stdout
         outl
         strlit "modulus: "
+        stdout
         out
         intlit 20
         dup
+        stdout
         out
         strlit "%"
+        stdout
         out
         intlit 3
         dup
+        stdout
         out
         intmod
         strlit "="
+        stdout
         out
+        byte    10
+        stdout
         outl
         strlit "increment: "
+        stdout
         out
         intlit 0
         dup
+        stdout
         out
         intincr
         strlit "->"
+        stdout
         out
+        byte    10
+        stdout
         outl
         strlit "decrement: "
+        stdout
         out
         intlit 0
         dup
+        stdout
         out
         intdecr
         strlit "->"
+        stdout
         out
+        byte    10
+        stdout
         outl
-        strlit "132 > 0 ? "
+        strlit "102 > 0 ? "
+        stdout
         out
-        intlit 132
+        intlit 102
         intgt0
+        byte    10
+        stdout
         outl
         strlit "-123 > 0 ? "
+        stdout
         out
         intlit 0
         intlit 123
         intsubt
         intgt0
+        byte    10
+        stdout
         outl
         strlit "0 > 0 ? "
+        stdout
         out
         intlit 0
         intgt0
+        byte    10
+        stdout
         outl
         strlit "123 < 0 ? "
+        stdout
         out
         intlit 123
         intlt0
+        byte    10
+        stdout
         outl
         strlit "-123 < 0 ? "
+        stdout
         out
         intlit 0
         intlit 123
         intsubt
         intlt0
+        byte    10
+        stdout
         outl
         strlit "0 < 0 ? "
+        stdout
         out
         intlit 0
         intlt0
+        byte    10
+        stdout
         outl
         return
         
 
 logictest:
         strlit "logic tests:"
+        byte    10
+        stdout
         outl
         strlit "1 and 1: "
+        stdout
         out
         intlit 1
         dup
         and
+        byte    10
+        stdout
         outl
         strlit "1 and 0: "
+        stdout
         out
         intlit 1
         intlit 0
         and
+        byte    10
+        stdout
         outl
         strlit "0 and 1: "
+        stdout
         out
         intlit 0
         intlit 1
         and
+        byte    10
+        stdout
         outl
         strlit "0 and 0: "
+        stdout
         out
         intlit 0
         dup
         and
+        byte    10
+        stdout
         outl
         strlit "1 or 1: "
+        stdout
         out
         intlit 1
         dup
         or
+        byte    10
+        stdout
         outl
         strlit "1 or 0: "
+        stdout
         out
         intlit 1
         intlit 0
         or
+        byte    10
+        stdout
         outl
         strlit "0 or 1: "
+        stdout
         out
         intlit 0
         intlit 1
         or
+        byte    10
+        stdout
         outl
         strlit "0 or 0: "
+        stdout
         out
         intlit 0
         dup
         or
+        byte    10
+        stdout
         outl
         strlit "1 xor 1: "
+        stdout
         out
         intlit 1
         dup
         xor
+        byte    10
+        stdout
         outl
         strlit "1 xor 0: "
+        stdout
         out
         intlit 1
         intlit 0
         xor
+        byte    10
+        stdout
         outl
         strlit "0 xor 1: "
+        stdout
         out
         intlit 0
         intlit 1
         xor
+        byte    10
+        stdout
         outl
         strlit "0 xor 0: "
+        stdout
         out
         intlit 0
         dup
         xor
+        byte    10
+        stdout
         outl
 
 
@@ -219,6 +316,8 @@ sheep:
 main:
         intlit  10
 .top:   dup
+        byte    10
+        stdout
         outl
         dup
         jmp0 ~.bottom
@@ -227,6 +326,8 @@ main:
         jmp  ~.top
 .bottom: drop
         call &sheep
+        byte    10
+        stdout
         outl
         undef
         symdef  1, 999
@@ -236,54 +337,83 @@ main:
 #        symfind 999
 #        strlit "ok"
 #        outl
-        intlit 1337
+        intlit 1037
         swap
         srwrite
         call &sheep
         strlit "second symfind... "
+        stdout
         out
         symfind 999
         strlit "ok"
+        byte    10
+        stdout
         outl
         srread
         strlit "read value: "
+        stdout
         out
+        byte    10
+        stdout
         outl
         strlit "multi ref symfind... "
+        stdout
         out
         symfind 14
         strlit "ok"
+        byte    10
+        stdout
         outl
         srread
         strlit "read value: "
+        stdout
         out
+        byte    10
+        stdout
         outl
         symundef 999
         strlit "third symfind... "
+        stdout
         out
         symfind 999
         strlit "ok"
+        byte    10
+        stdout
         outl
         jmp0 ~.else
         strlit "symbol is still defined"
+        byte    10
+        stdout
         outl
         jmp0 ~.endif
 .else:  strlit "symbol is no longer defined"
+        byte    10
+        stdout
         outl
 .endif: 
         strlit "enter a value followed by enter: "
+        stdout
         out
         in
         strlit "you entered: "
+        byte    10
+        stdout
         outl
+        byte    10
+        stdout
         outl
         call    &inttest
         call    &logictest
         strlit "function literal: "
+        stdout
         out
         funlit &sheep
         dup
+        byte    10
+        stdout
         outl
         frcall
+        byte    10
+        stdout
         outl
         return
