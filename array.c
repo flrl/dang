@@ -359,13 +359,19 @@ int array_unshift(array_handle_t handle, const scalar_t *values, size_t count) {
             size_t start;
 
             if (ARRAY(handle).m_count == 0) {
+                // if the array is empty, add the new items starting at zero
                 start = 0;
                 while (ARRAY(handle).m_allocated_count < count) {
                     _array_grow_back_unlocked(&ARRAY(handle), ARRAY(handle).m_allocated_count);
                 }
             }
             else if (ARRAY(handle).m_first <= count) {
+                // if the array is not empty, and there's not enough space at the front, grow a bit first
                 _array_grow_front_unlocked(&ARRAY(handle), nextupow2(count));
+                start = ARRAY(handle).m_first - count;
+            }
+            else {
+                // there's already enough free space before the start
                 start = ARRAY(handle).m_first - count;
             }
 
