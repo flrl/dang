@@ -8,6 +8,7 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -70,10 +71,12 @@ These functions may fail if:
 
 [EOVERFLOW] More than {SSIZE_MAX} characters were read without encountering the delimiter character.
 
+As an extension, this implementation accepts the special value DELIMITER_WHITESPACE as a delimiter, which 
+causes any of the whitespace characters recognised by isspace(3) to be treated as the delimiter.
+
 =cut
  */
-#ifdef NEED_GETDELIM
-ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FILE *restrict stream) {
+ssize_t getdelim_ext(char **restrict lineptr, size_t *restrict n, int delimiter, FILE *restrict stream) {
     assert(lineptr != NULL);
     assert(n != NULL);
     assert(stream != NULL);
@@ -117,7 +120,7 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
                     break;
             }
             
-            if (c == delimiter) {
+            if (c == delimiter || (delimiter == DELIMITER_WHITESPACE && isspace(c))) {
                 break;
             }
             else if (count == SSIZE_MAX) {
@@ -142,4 +145,3 @@ ssize_t getdelim(char **restrict lineptr, size_t *restrict n, int delimiter, FIL
         return count;
     }
 }
-#endif

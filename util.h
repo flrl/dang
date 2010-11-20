@@ -32,8 +32,11 @@ static inline int peekc(FILE *stream) {
     return c;
 }
 
+#define DELIMITER_WHITESPACE    (0x100) /* greater than can be stored in a char */
+ssize_t getdelim_ext(char **restrict, size_t *restrict, int, FILE *restrict);
+
 #ifdef NEED_GETDELIM
-ssize_t getdelim(char **restrict, size_t *restrict, int, FILE *restrict);
+#define getdelim(l,n,d,s)    getdelim_ext(l,n,d,s)
 #endif
 
 #ifdef NEED_GETLINE
