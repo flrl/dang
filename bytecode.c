@@ -1911,11 +1911,9 @@ Pushes a reference to the stdin stream to the data stack.
 int inst_STDIN(struct vm_context_t *context) {
     scalar_t stream = {0};
     
-    stream_handle_t handle = stream_stdin_handle();
-    anon_scalar_set_stream_reference(&stream, handle);
+    anon_scalar_set_stream_reference(&stream, stream_stdin_handle());
     vm_ds_push(context, &stream);
     anon_scalar_destroy(&stream);
-    stream_release(handle);
     return 1;
 }
 
@@ -1929,11 +1927,9 @@ Pushes a reference to the stdout stream to the data stack.
 int inst_STDOUT(struct vm_context_t *context) {
     scalar_t stream = {0};
     
-    stream_handle_t handle = stream_stdout_handle();
-    anon_scalar_set_stream_reference(&stream, handle);
+    anon_scalar_set_stream_reference(&stream, stream_stdout_handle());
     vm_ds_push(context, &stream);
     anon_scalar_destroy(&stream);
-    stream_release(handle);
     return 1;
 }
 
@@ -1947,11 +1943,9 @@ Pushes a reference to the stderr stream to the data stack.
 int inst_STDERR(struct vm_context_t *context) {
     scalar_t stream = {0};
     
-    stream_handle_t handle = stream_stderr_handle();
-    anon_scalar_set_stream_reference(&stream, handle);
+    anon_scalar_set_stream_reference(&stream, stream_stderr_handle());
     vm_ds_push(context, &stream);
     anon_scalar_destroy(&stream);
-    stream_release(handle);
     return 1;
 }
 
