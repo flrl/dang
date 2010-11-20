@@ -1,0 +1,48 @@
+; hash.dang
+; 101 - hash
+; 102 - scalar
+main:
+        undef
+        symdef  0x03, 101
+.input: 
+        intlit  0x100
+        stdin
+        inl
+        dup
+        jmpu    ~.output
+        intlit  0x100
+        chomp
+        symfind 101
+        hrindex
+        dup
+        srread
+        intincr
+        swap
+        srwrite
+        jmp     ~.input
+
+.output:
+        drop
+        hrlistp
+        dup
+        jmp0    ~.done
+        symdef  0x01, 102
+        drop
+.print:
+        byte    '\t'
+        stdout
+        outl
+        byte    '\n'
+        stdout
+        outl
+        symfind 102
+        dup
+        srread
+        intdecr
+        dup
+        jmp0    ~.done
+        swap
+        srwrite
+        jmp     ~.print
+.done:
+        end
