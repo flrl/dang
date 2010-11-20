@@ -1906,6 +1906,38 @@ int inst_IN(struct vm_context_t *context) {
 }
 
 /*
+=item INL ( delimiter stream -- value )
+
+Pops a stream reference and a delimiter byte from the stack.  Reads a string from the stream up to and including
+the delimiter, and pushes back the value read.
+
+=cut
+*/
+int inst_INL(struct vm_context_t *context) {
+    scalar_t delimiter = {0}, stream = {0}, value = {0};
+    
+    vm_ds_pop(context, &stream);
+    assert((stream.m_flags & SCALAR_TYPE_MASK) == SCALAR_STRMREF);
+    
+    vm_ds_pop(context, &delimiter);
+
+    string_t *str = stream_read_delim(anon_scalar_deref_stream_reference(&stream), anon_scalar_get_int_value(&delimiter));
+    
+    if (str != NULL) {
+        anon_scalar_set_string_value(&value, str);
+        string_free(str);
+    }
+    
+    vm_ds_push(context, &value);
+    
+    anon_scalar_destroy(&value);
+    anon_scalar_destroy(&delimiter);
+    anon_scalar_destroy(&stream);
+    
+    return 1;
+}
+
+/*
 =item UNDEF ( -- a )
 
 Pushes an undefined value to the data stack
