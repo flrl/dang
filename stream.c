@@ -206,7 +206,10 @@ string_t *stream_read_delim(stream_handle_t handle, int delimiter) {
         if ((len = getdelim_ext(&buf, &bufsize, delimiter, STREAM(handle).m_file)) > 0) {
             string = string_alloc(len, buf);
             free(buf);
+            buf = NULL;
         }
+
+        if (buf != NULL)  free(buf);
 
         POOL_UNLOCK(stream_t, handle);
     }
