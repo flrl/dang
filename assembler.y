@@ -470,7 +470,7 @@ int yylex(void) {
     // bail out at end of file
     if (c == EOF)  return EOF;
     
-    if (c == '0') {
+    if (c == '0' && peek() != '.') {
         // parse a literal integer in either hex or octal
         
         if (peek() == 'x') {
