@@ -1586,6 +1586,54 @@ int inst_STRLIT(struct vm_context_t *context) {
 }
 
 /*
+=item STRXPLOD ( s -- [characters] count )
+
+Pops a string from the stack, and pushes back a scalar for each character within it, and the count.
+
+=cut
+*/
+int inst_STRXPLOD(struct vm_context_t *context) {
+    scalar_t s = {0}, *characters = NULL, count = {0};
+    char *str = NULL;
+    size_t n;
+    
+    vm_ds_pop(context, &s);
+    
+    anon_scalar_get_string_value(&s, &str);
+    n = strlen(str);
+    
+    if (n > 0) {
+        if (NULL != (characters = calloc(n, sizeof(*characters)))) {
+            for (size_t i = 0; i < n; i++) {
+                char buf[2] = {0};
+                buf[0] = str[i];
+                anon_scalar_set_string_value(&characters[i], buf);
+            }
+
+            vm_ds_npush(context, n, characters);
+
+            for (size_t i = 0; i < n; i++)  anon_scalar_destroy(&characters[i]);
+            free(characters);
+        }
+        else {
+            debug("calloc failed\n");
+            n = 0;
+        }
+    }
+    
+    free(str);
+    
+    anon_scalar_set_int_value(&count, n);
+    
+    vm_ds_push(context, &count);
+    
+    anon_scalar_destroy(&count);
+    anon_scalar_destroy(&s);
+    
+    return 1;
+}
+
+/*
 =item STRCAT ( a b -- ab )
 
 Pops two strings from the stack, and pushes back their concatenation.
