@@ -1894,9 +1894,10 @@ int inst_IN(struct vm_context_t *context) {
 
     char *buf = NULL;
     size_t bufsize = 0;
+    ssize_t len = 0;
 
-    if (getline(&buf, &bufsize, stdin) > 0) {
-        string_t *tmp = string_alloc(bufsize, buf);
+    if ((len = getline(&buf, &bufsize, stdin)) > 0) {
+        string_t *tmp = string_alloc(len, buf);
         anon_scalar_set_string_value(&a, tmp);
         string_free(tmp);
     }
