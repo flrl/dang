@@ -171,6 +171,7 @@ bytecode operations
         - put keys and values from a hash onto the stack
         - populate an array from the stack
         - populate a hash from the stack
+        - reverse a list of items on the stack
     - stream i/o
         - IN:  takes a stream ref and a number of bytes to read from the stream, puts back the value read
         - INL: takes a stream ref and an integer delimiter value, puts back the value read including the delimiter
