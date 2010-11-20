@@ -22,7 +22,7 @@ typedef struct string_t {
 } string_t;
 
 static inline string_t *string_alloc(size_t initial_length, const char *initial_value) {
-    size_t size = nextupow2(initial_length + 1);
+    size_t size = nextupow2(initial_length);
     string_t *self = calloc(1, sizeof(*self) + size);
     if (self) {
         self->m_allocated_size = size;
