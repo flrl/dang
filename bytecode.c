@@ -1938,6 +1938,39 @@ int inst_INL(struct vm_context_t *context) {
 }
 
 /*
+=item CHOMP ( s delimiter -- s )
+
+Pops a delimiter byte and a scalar from the stack, and pushes back the scalar minus the trailing delimiter (if any).
+
+=cut
+*/
+
+int inst_CHOMP(struct vm_context_t *context) {
+    scalar_t s = {0}, delimiter = {0};
+    
+    vm_ds_pop(context, &delimiter);
+    vm_ds_pop(context, &s);
+    
+    if ((s.m_flags & SCALAR_TYPE_MASK) == SCALAR_STRING) {
+        string_chomp(s.m_value.as_string, anon_scalar_get_int_value(&delimiter));
+    }
+    else {
+        string_t *str;
+        anon_scalar_get_string_value(&s, &str);
+        string_chomp(str, anon_scalar_get_int_value(&delimiter));
+        anon_scalar_set_string_value(&s, str);
+        string_free(str);
+    }
+    
+    vm_ds_push(context, &s);
+    
+    anon_scalar_destroy(&s);
+    anon_scalar_destroy(&delimiter);
+    
+    return 1;
+}
+
+/*
 =item UNDEF ( -- a )
 
 Pushes an undefined value to the data stack
