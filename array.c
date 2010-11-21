@@ -556,18 +556,19 @@ static int _array_reserve_unlocked(array_t *self, size_t target_size) {
 /*
 =item _array_grow_back_unlocked()
 
-Allocates space for an additional n items at the end of the current allocation.
+Allocates space for at least an additional n items at the end of the current allocation.
 
 =cut
 */
 static int _array_grow_back_unlocked(array_t *self, size_t n) {
     assert(self != NULL);
-    scalar_handle_t *new_items = calloc(self->m_allocated_count + n, sizeof(*new_items));
+    size_t new_size = nextupow2(self->m_allocated_count + n);
+    scalar_handle_t *new_items = calloc(new_size, sizeof(*new_items));
     if (new_items != NULL) {
         memcpy(new_items, self->m_items, self->m_allocated_count * sizeof(*self->m_items));
         scalar_handle_t *tmp = self->m_items;
         self->m_items = new_items;
-        self->m_allocated_count += n;
+        self->m_allocated_count = new_size;
         free(tmp);
         return 0;
     }
