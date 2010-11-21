@@ -309,12 +309,10 @@ int array_push(array_handle_t handle, const scalar_t *values, size_t count) {
         int status = 0;
     
         if (count > 0) {
-            while (ARRAY(handle).m_first + ARRAY(handle).m_count + count > ARRAY(handle).m_allocated_count) {
-                if (0 != _array_grow_back_unlocked(&ARRAY(handle), ARRAY(handle).m_count)) {
-                    debug("couldn't grow array\n");
-                    _array_unlock(handle);
-                    return -1;
-                }
+            if (0 != _array_reserve_unlocked(&ARRAY(handle), ARRAY(handle).m_count + count)) {
+                debug("couldn't grow array\n");
+                _array_unlock(handle);
+                return -1;
             }
             
             scalar_handle_t s = scalar_allocate_many(count, 0); FIXME("handle flags\n");
@@ -360,14 +358,12 @@ int array_unshift(array_handle_t handle, const scalar_t *values, size_t count) {
 
             if (ARRAY(handle).m_count == 0) {
                 // if the array is empty, add the new items starting at zero
+                _array_reserve_unlocked(&ARRAY(handle), count);
                 start = 0;
-                while (ARRAY(handle).m_allocated_count < count) {
-                    _array_grow_back_unlocked(&ARRAY(handle), ARRAY(handle).m_allocated_count);
-                }
             }
             else if (ARRAY(handle).m_first <= count) {
                 // if the array is not empty, and there's not enough space at the front, grow a bit first
-                _array_grow_front_unlocked(&ARRAY(handle), nextupow2(count));
+                _array_grow_front_unlocked(&ARRAY(handle), count);
                 start = ARRAY(handle).m_first - count;
             }
             else {
