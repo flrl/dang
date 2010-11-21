@@ -408,17 +408,20 @@ static inline handle_type _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(size_t len)
     assert(len > 0);                                                                            \
                                                                                                 \
     if (POOL_SINGLETON(type).m_free_count > len) {                                              \
-        handle_type sequence = POOL_SINGLETON(type).m_free_list_head;                           \
+        handle_type prev, iter, sequence;                                                       \
         size_t found = 0;                                                                       \
-        while (sequence != 0) {                                                                 \
-            if (POOL_HANDLE_IN_USE(type, sequence + 1)) {                                       \
-                sequence = POOL_WRAPPER(type, sequence).m_next_free;                            \
+                                                                                                \
+        iter = sequence = POOL_SINGLETON(type).m_free_list_head;                                \
+        prev = 0;                                                                               \
+        while (POOL_HANDLE_VALID(type, iter)) {                                                 \
+            if (POOL_HANDLE_IN_USE(type, iter)) {                                               \
                 found = 0;                                                                      \
+                iter = sequence = POOL_WRAPPER(type, prev).m_next_free;                         \
+                prev = 0;                                                                       \
             }                                                                                   \
             else {                                                                              \
-                ++sequence;                                                                     \
-                ++found;                                                                        \
-                if (found == len)  break;                                                       \
+                if (++found == len)  break;                                                     \
+                prev = iter++;                                                                  \
             }                                                                                   \
         }                                                                                       \
                                                                                                 \
