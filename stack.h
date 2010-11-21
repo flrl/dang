@@ -17,6 +17,8 @@
 #include <assert.h>
 #include <stdlib.h>
 
+#include "util.h"
+
 /* 
  This macro expands to the struct type for stacks of type "type" 
  */
@@ -99,6 +101,7 @@ static inline int type##_STACK_RESERVE(struct type##_STACK *stack, size_t new_si
                                                                                         \
     if (stack->m_allocated_count >= new_size)  return 0;                                \
                                                                                         \
+    new_size = nextupow2(new_size);                                                     \
     type *tmp = calloc(new_size, sizeof(*tmp));                                         \
     if (tmp == NULL)  return -1;                                                        \
                                                                                         \
