@@ -26,24 +26,20 @@ main:
         hrlistp
         dup
         jmp0    ~.done
-        symdef  0x01, 102
-        drop
+
 .print:
+        byte    3
+        rot
         byte    '\t'
         stdout
         outl
         byte    '\n'
         stdout
         outl
-        symfind 102
-        dup
-        srread
         intdecr
         intdecr
         dup
         jmp0    ~.done
-        swap
-        srwrite
         jmp     ~.print
 .done:
         end
