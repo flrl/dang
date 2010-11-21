@@ -177,6 +177,8 @@ bytecode operations
         - INL: takes a stream ref and an integer delimiter value, puts back the value read including the delimiter
         - OUT: takes a stream ref and a value to output, outputs just the value
         - OUTL: takes a stream ref, a value to output, and a delimiter; outputs the value followed by the delimiter
+        - defining, opening and closing stream references
+        - client tcp sockets
 
 
 threading
