@@ -6,13 +6,13 @@ inttest:
         strlit  "addition: "
         stdout
         out
-        intlit  0
+        int  0
 .t1:    dup
-        intlit  10
-        intsubt
+        int  10
+        subt
         jmp0 ~.b1
-        intlit  1
-        intadd
+        int  1
+        add
         dup
         stdout
         out
@@ -28,8 +28,8 @@ inttest:
         out
 .t2:    dup
         jmp0 ~.b2
-        intlit  1
-        intsubt
+        int  1
+        subt
         dup
         stdout
         out
@@ -43,18 +43,18 @@ inttest:
         strlit  "multiplication: "
         stdout
         out
-        intlit  5
+        int  5
         dup
         stdout
         out
         strlit  "x"
         stdout
         out
-        intlit  4
+        int  4
         dup
         stdout
         out
-        intmult
+        mult
         strlit  "="
         stdout
         out
@@ -64,18 +64,18 @@ inttest:
         strlit  "division: "
         stdout
         out
-        intlit 20
+        int 20
         dup
         stdout
         out
         strlit "/"
         stdout
         out
-        intlit 4
+        int 4
         dup
         stdout
         out
-        intdiv
+        div
         strlit "="
         stdout
         out
@@ -85,18 +85,18 @@ inttest:
         strlit "modulus: "
         stdout
         out
-        intlit 20
+        int 20
         dup
         stdout
         out
         strlit "%"
         stdout
         out
-        intlit 3
+        int 3
         dup
         stdout
         out
-        intmod
+        mod
         strlit "="
         stdout
         out
@@ -106,11 +106,11 @@ inttest:
         strlit "increment: "
         stdout
         out
-        intlit 0
+        int 0
         dup
         stdout
         out
-        intincr
+        incr
         strlit "->"
         stdout
         out
@@ -120,11 +120,11 @@ inttest:
         strlit "decrement: "
         stdout
         out
-        intlit 0
+        int 0
         dup
         stdout
         out
-        intdecr
+        decr
         strlit "->"
         stdout
         out
@@ -134,52 +134,52 @@ inttest:
         strlit "102 > 0 ? "
         stdout
         out
-        intlit 102
-        intgt0
+        int 102
+        gt0
         byte    10
         stdout
         outl
         strlit "-123 > 0 ? "
         stdout
         out
-        intlit 0
-        intlit 123
-        intsubt
-        intgt0
+        int 0
+        int 123
+        subt
+        gt0
         byte    10
         stdout
         outl
         strlit "0 > 0 ? "
         stdout
         out
-        intlit 0
-        intgt0
+        int 0
+        gt0
         byte    10
         stdout
         outl
         strlit "123 < 0 ? "
         stdout
         out
-        intlit 123
-        intlt0
+        int 123
+        lt0
         byte    10
         stdout
         outl
         strlit "-123 < 0 ? "
         stdout
         out
-        intlit 0
-        intlit 123
-        intsubt
-        intlt0
+        int 0
+        int 123
+        subt
+        lt0
         byte    10
         stdout
         outl
         strlit "0 < 0 ? "
         stdout
         out
-        intlit 0
-        intlt0
+        int 0
+        lt0
         byte    10
         stdout
         outl
@@ -194,7 +194,7 @@ logictest:
         strlit "1 and 1: "
         stdout
         out
-        intlit 1
+        int 1
         dup
         and
         byte    10
@@ -203,8 +203,8 @@ logictest:
         strlit "1 and 0: "
         stdout
         out
-        intlit 1
-        intlit 0
+        int 1
+        int 0
         and
         byte    10
         stdout
@@ -212,8 +212,8 @@ logictest:
         strlit "0 and 1: "
         stdout
         out
-        intlit 0
-        intlit 1
+        int 0
+        int 1
         and
         byte    10
         stdout
@@ -221,7 +221,7 @@ logictest:
         strlit "0 and 0: "
         stdout
         out
-        intlit 0
+        int 0
         dup
         and
         byte    10
@@ -230,7 +230,7 @@ logictest:
         strlit "1 or 1: "
         stdout
         out
-        intlit 1
+        int 1
         dup
         or
         byte    10
@@ -239,8 +239,8 @@ logictest:
         strlit "1 or 0: "
         stdout
         out
-        intlit 1
-        intlit 0
+        int 1
+        int 0
         or
         byte    10
         stdout
@@ -248,8 +248,8 @@ logictest:
         strlit "0 or 1: "
         stdout
         out
-        intlit 0
-        intlit 1
+        int 0
+        int 1
         or
         byte    10
         stdout
@@ -257,7 +257,7 @@ logictest:
         strlit "0 or 0: "
         stdout
         out
-        intlit 0
+        int 0
         dup
         or
         byte    10
@@ -266,7 +266,7 @@ logictest:
         strlit "1 xor 1: "
         stdout
         out
-        intlit 1
+        int 1
         dup
         xor
         byte    10
@@ -275,8 +275,8 @@ logictest:
         strlit "1 xor 0: "
         stdout
         out
-        intlit 1
-        intlit 0
+        int 1
+        int 0
         xor
         byte    10
         stdout
@@ -284,8 +284,8 @@ logictest:
         strlit "0 xor 1: "
         stdout
         out
-        intlit 0
-        intlit 1
+        int 0
+        int 1
         xor
         byte    10
         stdout
@@ -293,7 +293,7 @@ logictest:
         strlit "0 xor 0: "
         stdout
         out
-        intlit 0
+        int 0
         dup
         xor
         byte    10
@@ -314,15 +314,15 @@ sheep:
         strcat
         return
 main:
-        intlit  10
+        int  10
 .top:   dup
         byte    10
         stdout
         outl
         dup
         jmp0 ~.bottom
-        intlit  1
-        intsubt
+        int  1
+        subt
         jmp  ~.top
 .bottom: drop
         call &sheep
@@ -337,7 +337,7 @@ main:
 #        symfind 999
 #        strlit "ok"
 #        outl
-        intlit 1037
+        int 1037
         swap
         srwrite
         call &sheep

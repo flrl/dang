@@ -20,9 +20,9 @@ main:
         outl
 ;        strlit  ", "
 ;        out
-        intlit  500
-        intsubt
-        intgt0
+        int  500
+        subt
+        gt0
         jmp0 ~.top
         strlit  "main: about to write to control channel\n"
         stdout
@@ -70,7 +70,7 @@ fib:
         crwrite
 .top:   swap
         over
-        intadd
+        add
         dup
         strlit  "fib: about to write to output channel\n"
         stdout

@@ -5,18 +5,18 @@ main:
         undef
         symdef  0x03, 101
 .input: 
-        intlit  0x100
+        int  0x100
         stdin
         inl
         dup
         jmpu    ~.output
-        intlit  0x100
+        int  0x100
         chomp
         symfind 101
         hrindex
         dup
         srread
-        intincr
+        incr
         swap
         srwrite
         jmp     ~.input
@@ -36,8 +36,8 @@ main:
         byte    '\n'
         stdout
         outl
-        intdecr
-        intdecr
+        decr
+        decr
         dup
         jmp0    ~.done
         jmp     ~.print

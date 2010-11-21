@@ -20,7 +20,7 @@ main:
         swap
         stdout
         out
-        intdecr
+        decr
         jmp     ~.dump
         
 .fin:   drop
