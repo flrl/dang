@@ -118,18 +118,15 @@ static inline int type##_STACK_PUSH(    struct type##_STACK *stack, size_t count
     assert(count > 0);                                                                  \
     assert(values != NULL);                                                             \
                                                                                         \
-    int status = 0;                                                                     \
-    while (stack->m_allocated_count <= stack->m_count + count) {                        \
-        status = type##_STACK_RESERVE(stack, stack->m_allocated_count * 2);             \
-    }                                                                                   \
-                                                                                        \
-    if (status == 0) {                                                                  \
+    if (0 == type##_STACK_RESERVE(stack, stack->m_count + count)) {                     \
         for (size_t i = count; i > 0; i--) {                                            \
             copy_func(&stack->m_items[stack->m_count++], &values[i-1]);                 \
         }                                                                               \
+        return 0;                                                                       \
     }                                                                                   \
-                                                                                        \
-    return status;                                                                      \
+    else {                                                                              \
+        return -1;                                                                      \
+    }                                                                                   \
 }                                                                                       \
                                                                                         \
 static inline int type##_STACK_POP( struct type##_STACK *stack, size_t count,           \
