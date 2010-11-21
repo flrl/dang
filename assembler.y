@@ -238,7 +238,7 @@ assembler_output_t *assemble(const char *filename) {
         }
 
         line->m_position = next_position;
-        if (line->m_length > 1) {
+        if (line->m_length > 2 && line->m_instruction != i_STR) {
             // complex instructions should have their position aligned one byte before a four byte boundary
             while (line->m_position % 4 < 3)  line->m_position++;
         }
