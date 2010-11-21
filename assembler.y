@@ -226,9 +226,9 @@ assembler_output_t *assemble(const char *filename) {
             // this line hasn't got an instruction (i.e. it's just a floating label)
             line->m_length = 0;
         }
-        else if (line->m_instruction == i_STRLIT) {
+        else if (line->m_instruction == i_STRING) {
             // special case length for string literals -- need to include the length of the string itself
-            line->m_length = instruction_sizes[i_STRLIT];
+            line->m_length = instruction_sizes[i_STRING];
             if (line->m_params != NULL && line->m_params->m_type == P_STRING) {
                 line->m_length += strlen(line->m_params->m_value.as_string);
             }
@@ -335,11 +335,11 @@ assembler_output_t *assemble(const char *filename) {
                     }
                     break;
 
-                case i_STRLIT:
+                case i_STRING:
                     if (line->m_params != NULL && line->m_params->m_type == P_STRING) {
-                        uint16_t length = line->m_length - instruction_sizes[i_STRLIT];
+                        uint16_t length = line->m_length - instruction_sizes[i_STRING];
                         * (uint16_t *) &(output->m_bytecode[line->m_position + 1]) = length;
-                        memcpy(&(output->m_bytecode[line->m_position + instruction_sizes[i_STRLIT]]), line->m_params->m_value.as_string, length);
+                        memcpy(&(output->m_bytecode[line->m_position + instruction_sizes[i_STRING]]), line->m_params->m_value.as_string, length);
                     }
                     else {
                         debug("instruction '%s' requires a string parameter\n", instruction_names[line->m_instruction]);

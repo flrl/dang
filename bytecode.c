@@ -1628,7 +1628,7 @@ int inst_DECR(struct vm_context_t *context) {
 }
 
 /*
-=item STRLIT ( -- s )
+=item STRING ( -- s )
 
 Reads a length followed by a string of length bytes from the following bytecode, and pushes the string value to the data stack.
 
@@ -1640,7 +1640,7 @@ bytecode.
  
 =cut
  */
-int inst_STRLIT(struct vm_context_t *context) {
+int inst_STRING(struct vm_context_t *context) {
     const uint16_t len = *(uint16_t *) (&context->m_bytecode[context->m_counter + 1]);
     const char *str = (const char *) (&context->m_bytecode[context->m_counter + 1 + sizeof(len)]);
     
@@ -1664,13 +1664,13 @@ int inst_STRLIT(struct vm_context_t *context) {
 }
 
 /*
-=item STRXPLOD ( s -- [characters] count )
+=item XPLOD ( s -- [characters] count )
 
 Pops a string from the stack, and pushes back a scalar for each character within it, and the count.
 
 =cut
 */
-int inst_STRXPLOD(struct vm_context_t *context) {
+int inst_XPLOD(struct vm_context_t *context) {
     scalar_t s = {0}, *characters = NULL, count = {0};
     string_t *str = NULL;
     
@@ -1712,13 +1712,13 @@ int inst_STRXPLOD(struct vm_context_t *context) {
 }
 
 /*
-=item STRCAT ( [strings] count -- s )
+=item CAT ( [strings] count -- s )
 
 Pops a count and count strings from the data stack, and pushes back their concatenation.
 
 =cut
 */
-int inst_STRCAT(struct vm_context_t *context) {
+int inst_CAT(struct vm_context_t *context) {
     scalar_t count = {0}, s = {0};
     
     vm_ds_pop(context, &count);
