@@ -1762,13 +1762,13 @@ int inst_STRCAT(struct vm_context_t *context) {
 }
 
 /*
-=item FLTLIT ( -- a )
+=item FLOAT ( -- a )
 
 Reads a floating point literal from the following bytecode and pushes it onto the data stack.
  
 =cut
  */
-int inst_FLTLIT(struct vm_context_t *context) {
+int inst_FLOAT(struct vm_context_t *context) {
     const floatptr_t lit = *(const floatptr_t *) (&context->m_bytecode[context->m_counter + 1]);
     
     scalar_t a = {0};
@@ -1780,61 +1780,61 @@ int inst_FLTLIT(struct vm_context_t *context) {
 }
 
 /*
-=item FLTADD ( a b -- a+b )
+=item ADDF ( a b -- a+b )
 
 Pops two floating point values from the data stack and pushes back their sum
 
 =cut
  */
-int inst_FLTADD(struct vm_context_t *context) {
+int inst_ADDF(struct vm_context_t *context) {
     BYTECODE_NUMERIC_OP(float, +);
     return 1;
 }
 
 /*
-=item FLTSUBT ( a b -- a-b )
+=item SUBTF ( a b -- a-b )
 
 Pops two floating point values from the data stack and pushes back their difference.
 
 =cut
  */
-int inst_FLTSUBT(struct vm_context_t *context) {
+int inst_SUBTF(struct vm_context_t *context) {
     BYTECODE_NUMERIC_OP(float, -);
     return 1;    
 }
 
 /*
-=item FLTMULT ( a b -- a*b )
+=item MULTF ( a b -- a*b )
 
 Pops two floating point values from the data stack and pushes back their product.
 
 =cut
  */
-int inst_FLTMULT(struct vm_context_t *context) {
+int inst_MULTF(struct vm_context_t *context) {
     BYTECODE_NUMERIC_OP(float, *);
     return 1;    
 }
 
 /*
-=item FLTDIV ( a b -- a/b )
+=item DIVF ( a b -- a/b )
 
 Pops two floating point values from the data stack and pushes back their quotient.
 
 =cut
  */
-int inst_FLTDIV(struct vm_context_t *context) {
+int inst_DIVF(struct vm_context_t *context) {
     BYTECODE_NUMERIC_OP(float, /);
     return 1;    
 }
 
 /*
-=item FLTMOD ( a b -- a%b )
+=item MODF ( a b -- a%b )
 
 Pops two floating point values from the data stack and pushes back their remainder.
 
 =cut
  */
-int inst_FLTMOD(struct vm_context_t *context) {
+int inst_MODF(struct vm_context_t *context) {
     scalar_t a = {0}, b = {0}, c = {0};
     
     vm_ds_pop(context, &b);
@@ -1850,13 +1850,13 @@ int inst_FLTMOD(struct vm_context_t *context) {
 }
 
 /*
-=item FLTLT0 ( a -- b )
+=item LT0F ( a -- b )
 
 Pops a floating point value and pushes back 1 if it is less than zero, or 0 otherwise.
 
 =cut
  */
-int inst_FLTLT0(struct vm_context_t *context) {
+int inst_LT0F(struct vm_context_t *context) {
     scalar_t a = {0}, b = {0};
     vm_ds_pop(context, &a);
     anon_scalar_set_int_value(&b, (anon_scalar_get_float_value(&a) < 0));
@@ -1867,13 +1867,13 @@ int inst_FLTLT0(struct vm_context_t *context) {
 }
 
 /*
-=item FLTGT0 ( a -- b )
+=item GT0F ( a -- b )
 
 Pops a floating point value and pushes back 1 if it is greater than zero, or 0 otherwise.
 
 =cut
  */
-int inst_FLTGT0(struct vm_context_t *context) {
+int inst_GT0F(struct vm_context_t *context) {
     scalar_t a = {0}, b = {0};
     vm_ds_pop(context, &a);
     anon_scalar_set_int_value(&b, (anon_scalar_get_float_value(&a) > 0));

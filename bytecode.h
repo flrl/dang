@@ -78,14 +78,14 @@ typedef enum instruction_t {
     i_STRLIT,       /* uint16_t */
     i_STRXPLOD,
     i_STRCAT,
-    i_FLTLIT,       /* floatptr_t */
-    i_FLTADD,
-    i_FLTSUBT,
-    i_FLTMULT,
-    i_FLTDIV,
-    i_FLTMOD,
-    i_FLTLT0,
-    i_FLTGT0,
+    i_FLOAT,       /* floatptr_t */
+    i_ADDF,
+    i_SUBTF,
+    i_MULTF,
+    i_DIVF,
+    i_MODF,
+    i_LT0F,
+    i_GT0F,
     i_FUNLIT,       /* function_handle_t */
     i_OUT,
     i_OUTL,
