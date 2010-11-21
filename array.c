@@ -580,12 +580,13 @@ static int _array_grow_back_unlocked(array_t *self, size_t n) {
 /*
 =item _array_grow_front_unlocked()
 
-Allocates space for an additional n items at the front of the current allocation.
+Allocates space for at least an additional n items at the front of the current allocation.
 
 =cut
 */
 static int _array_grow_front_unlocked(array_t *self, size_t n) {
     assert(self != NULL);
+    n = nextupow2(n);
     scalar_handle_t *new_items = calloc(self->m_allocated_count + n, sizeof(*new_items));
     if (new_items != NULL) {
         memcpy(&new_items[n], self->m_items, self->m_allocated_count * sizeof(*self->m_items));
