@@ -223,7 +223,7 @@ string_t *stream_read_delim(stream_handle_t handle, int delimiter) {
 /*
 =item stream_read()
 
-...
+Reads up to nbytes byte from a stream.  Returns the string read.
 
 =cut
  */
