@@ -1481,14 +1481,14 @@ int inst_BYTE(vm_context_t *context) {
 
 
 /*
-=item INTLIT ( -- a ) 
+=item INT ( -- a ) 
 
 Reads an integer value from the following bytecode and pushes it onto the data stack.  Transfers execution control to the 
 bytecode following the integer value.
 
 =cut
 */
-int inst_INTLIT(vm_context_t *context) {
+int inst_INT(vm_context_t *context) {
     const intptr_t lit = *(const intptr_t *) NEXT_BYTE(context);
     
     scalar_t a = {0};
@@ -1500,73 +1500,73 @@ int inst_INTLIT(vm_context_t *context) {
 }
 
 /*
-=item INTADD ( a b -- a+b )
+=item ADD ( a b -- a+b )
 
 Pops two values from the data stack, and pushes back their integer sum.
  
 =cut
  */
-int inst_INTADD(vm_context_t *context) {
+int inst_ADD(vm_context_t *context) {
     BYTECODE_NUMERIC_OP(int, +);
     return 1;
 }
 
 /*
-=item INTSUBT ( a b -- a-b )
+=item SUBT ( a b -- a-b )
 
 Pops two values from the data stack, and pushes back their integer difference.
 
 =cut
  */
-int inst_INTSUBT(vm_context_t *context) {
+int inst_SUBT(vm_context_t *context) {
     BYTECODE_NUMERIC_OP(int, -);
     return 1;
 }
 
 /*
-=item INTMULT ( a b -- a*b )
+=item MULT ( a b -- a*b )
 
 Pops two values from the data stack, and pushes back their integer product.
 
 =cut
  */
-int inst_INTMULT(vm_context_t *context) {
+int inst_MULT(vm_context_t *context) {
     BYTECODE_NUMERIC_OP(int, *);
     return 1;
 }
 
 /*
-=item INTDIV ( a b -- a/b )
+=item DIV ( a b -- a/b )
 
 Pops two values from the data stack, and pushes back their integer quotient.
 
 =cut
  */
-int inst_INTDIV(vm_context_t *context) {
+int inst_DIV(vm_context_t *context) {
     BYTECODE_NUMERIC_OP(int, /);
     return 1;
 }
 
 /*
-=item INTMOD ( a b -- a%b )
+=item MOD ( a b -- a%b )
 
 Pops two values from the data stack, and pushes back their integer remainder.
  
 =cut
  */
-int inst_INTMOD(vm_context_t *context) {
+int inst_MOD(vm_context_t *context) {
     BYTECODE_NUMERIC_OP(int, %);
     return 1;
 }
 
 /*
-=item INTLT0 ( a -- b )
+=item LT0 ( a -- b )
 
 Pops a value, and pushes back 1 if the value is less than zero, or 0 otherwise.
 
 =cut
  */
-int inst_INTLT0(struct vm_context_t *context) {
+int inst_LT0(struct vm_context_t *context) {
     scalar_t a = {0}, b = {0};
     vm_ds_pop(context, &a);
     anon_scalar_set_int_value(&b, (anon_scalar_get_int_value(&a) < 0));
@@ -1577,13 +1577,13 @@ int inst_INTLT0(struct vm_context_t *context) {
 }
 
 /*
-=item INTGT0 ( a -- b )
+=item GT0 ( a -- b )
 
 Pops a value, and pushes back 1 if the value is greater than zero, or 0 otherwise.
 
 =cut
  */
-int inst_INTGT0(struct vm_context_t *context) {
+int inst_GT0(struct vm_context_t *context) {
     scalar_t a = {0}, b = {0};
     vm_ds_pop(context, &a);
     anon_scalar_set_int_value(&b, (anon_scalar_get_int_value(&a) > 0));
@@ -1594,13 +1594,13 @@ int inst_INTGT0(struct vm_context_t *context) {
 }
 
 /*
-=item INTINCR ( a -- b )
+=item INCR ( a -- b )
 
 Pops a value, and pushes back the same value incremented by 1.
 
 =cut
  */
-int inst_INTINCR(struct vm_context_t *context) {
+int inst_INCR(struct vm_context_t *context) {
     scalar_t a = {0}, b = {0};
     vm_ds_pop(context, &a);
     anon_scalar_set_int_value(&b, anon_scalar_get_int_value(&a) + 1);
@@ -1611,13 +1611,13 @@ int inst_INTINCR(struct vm_context_t *context) {
 }
 
 /*
-=item INTDECR ( a -- b )
+=item DECR ( a -- b )
 
 Pops a value, and pushes back the same value decremented by 1.
 
 =cut
  */
-int inst_INTDECR(struct vm_context_t *context) {
+int inst_DECR(struct vm_context_t *context) {
     scalar_t a = {0}, b = {0};
     vm_ds_pop(context, &a);
     anon_scalar_set_int_value(&b, anon_scalar_get_int_value(&a) - 1);

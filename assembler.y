@@ -313,7 +313,7 @@ assembler_output_t *assemble(const char *filename) {
                     }
                     break;
                 
-                case i_INTLIT:
+                case i_INT:
                     if (line->m_params != NULL && line->m_params->m_type == P_INTEGER) {
                         intptr_t i = line->m_params->m_value.as_integer;
                         * (intptr_t *) &(output->m_bytecode[line->m_position + 1]) = i;

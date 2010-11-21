@@ -65,16 +65,16 @@ typedef enum instruction_t {
     i_FRCALL,
     i_FRCORO,
     i_BYTE,         /* uint8_t */
-    i_INTLIT,       /* intptr_t */
-    i_INTADD,
-    i_INTSUBT,
-    i_INTMULT,
-    i_INTDIV,
-    i_INTMOD,
-    i_INTLT0,
-    i_INTGT0,
-    i_INTINCR,
-    i_INTDECR,
+    i_INT,       /* intptr_t */
+    i_ADD,
+    i_SUBT,
+    i_MULT,
+    i_DIV,
+    i_MOD,
+    i_LT0,
+    i_GT0,
+    i_INCR,
+    i_DECR,
     i_STRLIT,       /* uint16_t */
     i_STRXPLOD,
     i_STRCAT,
