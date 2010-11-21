@@ -1103,7 +1103,7 @@ int inst_HRLISTV(struct vm_context_t *context) {
 =item HRLISTP ( hr -- [value key] count )
 
 Pops a hash reference from the data stack.  Pushes back a list of the key and value pairs defined in it, and the 
-count of pairs.
+count of items (i.e. an even number).
 
 =cut
 */
@@ -1116,8 +1116,8 @@ int inst_HRLISTP(struct vm_context_t *context) {
 
     if (0 == hash_list_pairs(anon_scalar_deref_hash_reference(&hr), &pairs, &n)) {
         if (n > 0) {
-            vm_ds_npush(context, 2 * n, pairs);
-            for (size_t i = 0; i < 2 * n; i++)  anon_scalar_destroy(&pairs[i]);
+            vm_ds_npush(context, n, pairs);
+            for (size_t i = 0; i < n; i++)  anon_scalar_destroy(&pairs[i]);
             free(pairs);
         }
         anon_scalar_set_int_value(&count, n);
@@ -1132,10 +1132,10 @@ int inst_HRLISTP(struct vm_context_t *context) {
 }
 
 /*
-=item HRFILL ( [value key] count hr -- )
+=item HRFILL ( [valuen keyn ... value2 key2 value1 key1] count hr -- )
 
-Pops a hash reference, a count, and count key/value pairs from the data stack, and replaces the current contents of 
-the hash (if any) with the pairs.
+Pops a hash reference, a count, and count items from the data stack, and replaces the current contents of 
+the hash (if any) with the items.  The count must be an even number.
 
 To empty a hash, provide a count of zero.
 
@@ -1151,10 +1151,15 @@ int inst_HRFILL(struct vm_context_t *context) {
     size_t n = anon_scalar_get_int_value(&count);
     
     if (n > 0) {
-        if (NULL != (pairs = calloc(2 * n, sizeof(*pairs)))) {
-            vm_ds_npop(context, 2 * n, pairs);
+        if (n & 1) {
+            debug("odd count\n");
+            --n;
+        }
+        
+        if (NULL != (pairs = calloc(n, sizeof(*pairs)))) {
+            vm_ds_npop(context, n, pairs);
             hash_fill(anon_scalar_deref_hash_reference(&hr), pairs, n);
-            for (size_t i = 0; i < 2 * n; i++)  anon_scalar_destroy(&pairs[i]);
+            for (size_t i = 0; i < n; i++)  anon_scalar_destroy(&pairs[i]);
             free(pairs);
         }
         else {

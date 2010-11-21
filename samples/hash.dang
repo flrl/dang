@@ -39,6 +39,7 @@ main:
         dup
         srread
         intdecr
+        intdecr
         dup
         jmp0    ~.done
         swap

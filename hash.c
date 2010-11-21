@@ -283,7 +283,7 @@ int hash_list_values(hash_handle_t handle, struct scalar_t **results, size_t *co
 
 Allocates an array of scalars and populates it with the keys and values defined in the hash, such that the array
 contains the contents ( key1, value1, key2, value2, ... keyn, valuen ).  Passes back the array and the count of 
-I<pairs> within it.
+items within it (i.e. an even number).
 
 The scalars in the array must be destroyed when finished with, and the array itself freed.
 
@@ -316,7 +316,7 @@ int hash_list_pairs(hash_handle_t handle, struct scalar_t **results, size_t *cou
                 ++bucket;
             }
             *results = pairs;
-            *count = n;
+            *count = 2 * n;
             status = 0;
         }
         else {
@@ -339,23 +339,24 @@ int hash_list_pairs(hash_handle_t handle, struct scalar_t **results, size_t *cou
 Cleans up the current contents of the hash, if any, and then fills the hash with the provided key value pairs.
 
 The array of pairs must contain an even number of elements, thus (key1, value1, key2, value2, ... keyn, valuen).
-The count is the number of I<pairs>.
+The count is the number elements in the array, and thus must be an even number.
 
 =cut
 */
 int hash_fill(hash_handle_t handle, const struct scalar_t *pairs, size_t count) {
     assert(POOL_HANDLE_VALID(hash_t, handle));
     assert(count == 0 || pairs != NULL);
+    assert((count & 1) == 0);
 
     if (0 == POOL_LOCK(hash_t, handle)) {
         _hash_destroy(&HASH(handle));
         _hash_init(&HASH(handle));
         
-        for (size_t i = 0; i < count; i++) {
+        for (size_t i = 0; i < count; ) {
             string_t *key;
-            anon_scalar_get_string_value(&pairs[2 * i], &key);
+            anon_scalar_get_string_value(&pairs[i++], &key);
             scalar_handle_t value_handle = _hash_key_item_unlocked(&HASH(handle), key);
-            scalar_set_value(value_handle, &pairs[2 * i + 1]);
+            scalar_set_value(value_handle, &pairs[i++]);
             scalar_release(value_handle);
             string_free(key);
         }
