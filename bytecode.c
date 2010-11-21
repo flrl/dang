@@ -235,6 +235,30 @@ int inst_OVER(vm_context_t *context) {
 }
 
 /*
+=item ROT ( [xn .. x2 x1] n -- [x1 xn .. x2] )
+
+Rotates n items on the stack such that the top item is moved to the bottom.
+
+=cut
+*/
+int inst_ROT(struct vm_context_t *context) {
+    FIXME("implement this\n");
+    return 0;
+}
+
+/*
+=item TOR ( [xn .. x2 x1] n -- [.. x2 x1 xn] )
+
+Rotates n items on the stack such that the bottom is moved to the top.
+
+=cut
+*/
+int inst_TOR(struct vm_context_t *context) {
+    FIXME("implement this\n");
+    return 0;
+}
+
+/*
 =item AND ( a b -- c )
 
 Pops two values from the stack, and pushes back the result of a logical and of the two values.

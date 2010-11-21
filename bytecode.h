@@ -24,6 +24,8 @@ typedef enum instruction_t {
     i_SWAP,
     i_DUP,
     i_OVER,
+    i_ROT,
+    i_TOR,
     i_AND,
     i_OR,
     i_XOR,
