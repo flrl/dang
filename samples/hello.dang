@@ -1,9 +1,9 @@
 main:
-    strlit  "World"
-    strlit  " "
-    strlit  "Hello"
+    string  "World"
+    string  " "
+    string  "Hello"
     byte    3
-    strcat
+    cat
     byte    '\n'
     stdout
     outl
