@@ -242,8 +242,32 @@ Rotates n items on the stack such that the top item is moved to the bottom.
 =cut
 */
 int inst_ROT(struct vm_context_t *context) {
-    FIXME("implement this\n");
-    return 0;
+    scalar_t count = {0}, top = {0}, *items = NULL;
+    
+    vm_ds_pop(context, &count);
+    size_t n = anon_scalar_get_int_value(&count);
+    
+    if (n > 1) {
+        if (NULL != (items = calloc(n - 1, sizeof(*items)))) {
+            vm_ds_pop(context, &top);
+            vm_ds_npop(context, n - 1, items);
+
+            vm_ds_push(context, &top);
+            vm_ds_npush(context, n - 1, items);
+
+            anon_scalar_destroy(&top);
+        
+            for (size_t i = 0; i < n - 1; i++)  anon_scalar_destroy(&items[i]);
+            free(items);
+        }
+        else {
+            debug("calloc failed\n");
+        }
+    }
+    
+    anon_scalar_destroy(&count);
+
+    return 1;
 }
 
 /*
@@ -254,8 +278,32 @@ Rotates n items on the stack such that the bottom is moved to the top.
 =cut
 */
 int inst_TOR(struct vm_context_t *context) {
-    FIXME("implement this\n");
-    return 0;
+    scalar_t count = {0}, bottom = {0}, *items = NULL;
+    
+    vm_ds_pop(context, &count);
+    size_t n = anon_scalar_get_int_value(&count);
+    
+    if (n > 1) {
+        if (NULL != (items = calloc(n - 1, sizeof(*items)))) {
+            vm_ds_npop(context, n - 1, items);
+            vm_ds_pop(context, &bottom);
+            
+            vm_ds_npush(context, n - 1, items);
+            vm_ds_push(context, &bottom);
+            
+            anon_scalar_destroy(&bottom);
+        
+            for (size_t i = 0; i < n - 1; i++)  anon_scalar_destroy(&items[i]);
+            free(items);
+        }
+        else {
+            debug("calloc failed\n");
+        }
+    }
+    
+    anon_scalar_destroy(&count);
+    
+    return 1;
 }
 
 /*
