@@ -65,7 +65,7 @@ typedef enum instruction_t {
     i_FRCALL,
     i_FRCORO,
     i_BYTE,         /* uint8_t */
-    i_INT,       /* intptr_t */
+    i_INT,          /* intptr_t */
     i_ADD,
     i_SUBT,
     i_MULT,
@@ -78,7 +78,7 @@ typedef enum instruction_t {
     i_STRING,       /* uint16_t */
     i_XPLOD,
     i_CAT,
-    i_FLOAT,       /* floatptr_t */
+    i_FLOAT,        /* floatptr_t */
     i_ADDF,
     i_SUBTF,
     i_MULTF,
