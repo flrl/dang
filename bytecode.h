@@ -75,6 +75,7 @@ typedef enum instruction_t {
     i_GT0,
     i_INCR,
     i_DECR,
+    i_STR,          /* uint8_t */
     i_STRING,       /* uint16_t */
     i_XPLOD,
     i_CAT,

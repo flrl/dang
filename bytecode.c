@@ -1628,6 +1628,45 @@ int inst_DECR(struct vm_context_t *context) {
 }
 
 /*
+=item STR ( -- s )
+
+Reads a length followed by a string of length bytes from the following bytecode, and pushes the string value to the data stack.
+
+If a zero byte occurs within the string, the resulting string will be terminated at this byte.  However, the full length will
+always be consumed from the bytecode.
+
+If length is zero, an empty string value will be pushed to the data stack, and no additional bytes will be consumed from the 
+bytecode.
+
+The length is encoded as a single unsigned byte, so the maximum length of the string is 255 characters.
+
+=cut
+*/
+int inst_STR(struct vm_context_t *context) {
+    const uint8_t len = *(uint8_t *) (&context->m_bytecode[context->m_counter + 1]);
+    const char *str = (const char *) (&context->m_bytecode[context->m_counter + 1 + sizeof(len)]);
+    
+    scalar_t s = {0};
+    
+    if (len > 0) {
+        string_t *buf = string_alloc(len, str);
+        anon_scalar_set_string_value(&s, buf);
+        string_free(buf);
+    }
+    else {
+        string_t *buf = string_alloc(0, NULL);
+        anon_scalar_set_string_value(&s, buf);
+        string_free(buf);
+    }
+
+    vm_ds_push(context, &s);
+    anon_scalar_destroy(&s);
+    
+    return 1 + sizeof(len) + len;
+}
+
+
+/*
 =item STRING ( -- s )
 
 Reads a length followed by a string of length bytes from the following bytecode, and pushes the string value to the data stack.
