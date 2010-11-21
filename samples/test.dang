@@ -1,9 +1,9 @@
 inttest:
-        string  "testing integers:"
+        str  "testing integers:"
         byte    10
         stdout
         outl
-        string  "addition: "
+        str  "addition: "
         stdout
         out
         int  0
@@ -16,14 +16,14 @@ inttest:
         dup
         stdout
         out
-        string  ", "
+        str  ", "
         stdout
         out
         jmp  ~.t1
-.b1:    string  "\n"
+.b1:    str  "\n"
         stdout
         out
-        string  "subtraction: "
+        str  "subtraction: "
         stdout
         out
 .t2:    dup
@@ -33,21 +33,21 @@ inttest:
         dup
         stdout
         out
-        string  ", "
+        str  ", "
         stdout
         out
         jmp  ~.t2
-.b2:    string "\n"
+.b2:    str "\n"
         stdout
         out
-        string  "multiplication: "
+        str  "multiplication: "
         stdout
         out
         int  5
         dup
         stdout
         out
-        string  "x"
+        str  "x"
         stdout
         out
         int  4
@@ -55,20 +55,20 @@ inttest:
         stdout
         out
         mult
-        string  "="
+        str  "="
         stdout
         out
         byte    10
         stdout
         outl
-        string  "division: "
+        str  "division: "
         stdout
         out
         int 20
         dup
         stdout
         out
-        string "/"
+        str "/"
         stdout
         out
         int 4
@@ -76,20 +76,20 @@ inttest:
         stdout
         out
         div
-        string "="
+        str "="
         stdout
         out
         byte    10
         stdout
         outl
-        string "modulus: "
+        str "modulus: "
         stdout
         out
         int 20
         dup
         stdout
         out
-        string "%"
+        str "%"
         stdout
         out
         int 3
@@ -97,13 +97,13 @@ inttest:
         stdout
         out
         mod
-        string "="
+        str "="
         stdout
         out
         byte    10
         stdout
         outl
-        string "increment: "
+        str "increment: "
         stdout
         out
         int 0
@@ -111,13 +111,13 @@ inttest:
         stdout
         out
         incr
-        string "->"
+        str "->"
         stdout
         out
         byte    10
         stdout
         outl
-        string "decrement: "
+        str "decrement: "
         stdout
         out
         int 0
@@ -125,13 +125,13 @@ inttest:
         stdout
         out
         decr
-        string "->"
+        str "->"
         stdout
         out
         byte    10
         stdout
         outl
-        string "102 > 0 ? "
+        str "102 > 0 ? "
         stdout
         out
         int 102
@@ -139,7 +139,7 @@ inttest:
         byte    10
         stdout
         outl
-        string "-123 > 0 ? "
+        str "-123 > 0 ? "
         stdout
         out
         int 0
@@ -149,7 +149,7 @@ inttest:
         byte    10
         stdout
         outl
-        string "0 > 0 ? "
+        str "0 > 0 ? "
         stdout
         out
         int 0
@@ -157,7 +157,7 @@ inttest:
         byte    10
         stdout
         outl
-        string "123 < 0 ? "
+        str "123 < 0 ? "
         stdout
         out
         int 123
@@ -165,7 +165,7 @@ inttest:
         byte    10
         stdout
         outl
-        string "-123 < 0 ? "
+        str "-123 < 0 ? "
         stdout
         out
         int 0
@@ -175,7 +175,7 @@ inttest:
         byte    10
         stdout
         outl
-        string "0 < 0 ? "
+        str "0 < 0 ? "
         stdout
         out
         int 0
@@ -187,11 +187,11 @@ inttest:
         
 
 logictest:
-        string "logic tests:"
+        str "logic tests:"
         byte    10
         stdout
         outl
-        string "1 and 1: "
+        str "1 and 1: "
         stdout
         out
         int 1
@@ -200,7 +200,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "1 and 0: "
+        str "1 and 0: "
         stdout
         out
         int 1
@@ -209,7 +209,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "0 and 1: "
+        str "0 and 1: "
         stdout
         out
         int 0
@@ -218,7 +218,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "0 and 0: "
+        str "0 and 0: "
         stdout
         out
         int 0
@@ -227,7 +227,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "1 or 1: "
+        str "1 or 1: "
         stdout
         out
         int 1
@@ -236,7 +236,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "1 or 0: "
+        str "1 or 0: "
         stdout
         out
         int 1
@@ -245,7 +245,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "0 or 1: "
+        str "0 or 1: "
         stdout
         out
         int 0
@@ -254,7 +254,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "0 or 0: "
+        str "0 or 0: "
         stdout
         out
         int 0
@@ -263,7 +263,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "1 xor 1: "
+        str "1 xor 1: "
         stdout
         out
         int 1
@@ -272,7 +272,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "1 xor 0: "
+        str "1 xor 0: "
         stdout
         out
         int 1
@@ -281,7 +281,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "0 xor 1: "
+        str "0 xor 1: "
         stdout
         out
         int 0
@@ -290,7 +290,7 @@ logictest:
         byte    10
         stdout
         outl
-        string "0 xor 0: "
+        str "0 xor 0: "
         stdout
         out
         int 0
@@ -303,7 +303,7 @@ logictest:
 
 
 sheep:  
-        string "hello world "
+        str "hello world "
         float 1.0
 .top:   dup
         float 0.5
@@ -332,72 +332,72 @@ main:
         undef
         symdef  1, 999
         symdef  0, 14
-#        string "first symfind... "
+#        str "first symfind... "
 #        out
 #        symfind 999
-#        string "ok"
+#        str "ok"
 #        outl
         int 1037
         swap
         srwrite
         call &sheep
-        string "second symfind... "
+        str "second symfind... "
         stdout
         out
         symfind 999
-        string "ok"
+        str "ok"
         byte    10
         stdout
         outl
         srread
-        string "read value: "
+        str "read value: "
         stdout
         out
         byte    10
         stdout
         outl
-        string "multi ref symfind... "
+        str "multi ref symfind... "
         stdout
         out
         symfind 14
-        string "ok"
+        str "ok"
         byte    10
         stdout
         outl
         srread
-        string "read value: "
+        str "read value: "
         stdout
         out
         byte    10
         stdout
         outl
         symundef 999
-        string "third symfind... "
+        str "third symfind... "
         stdout
         out
         symfind 999
-        string "ok"
+        str "ok"
         byte    10
         stdout
         outl
         jmp0 ~.else
-        string "symbol is still defined"
+        str "symbol is still defined"
         byte    10
         stdout
         outl
         jmp0 ~.endif
-.else:  string "symbol is no longer defined"
+.else:  str "symbol is no longer defined"
         byte    10
         stdout
         outl
 .endif: 
-        string "enter a value followed by enter: "
+        str "enter a value followed by enter: "
         stdout
         out
         byte    '\n'
         stdin
         inl
-        string "you entered: "
+        str "you entered: "
         byte    10
         stdout
         outl
@@ -406,7 +406,7 @@ main:
         outl
         call    &inttest
         call    &logictest
-        string "function literal: "
+        str "function literal: "
         stdout
         out
         funlit &sheep

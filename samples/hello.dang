@@ -1,7 +1,7 @@
 main:
-    string  "World"
-    string  " "
-    string  "Hello"
+    str  "World"
+    str  " "
+    str  "Hello"
     byte    3
     cat
     byte    '\n'

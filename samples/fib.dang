@@ -9,7 +9,7 @@ main:
         byte    2
         coro    &fib
 .top:   
-        string  "main: about to read from input channel\n"
+        str  "main: about to read from input channel\n"
         stdout
         out
         symfind 101
@@ -18,20 +18,20 @@ main:
         byte    10
         stdout
         outl
-;        string  ", "
+;        str  ", "
 ;        out
         int  500
         subt
         gt0
         jmp0 ~.top
-        string  "main: about to write to control channel\n"
+        str  "main: about to write to control channel\n"
         stdout
         out
         byte    1
         symfind 102
         crwrite
 .clean: 
-        string "main: waiting for channel data to end...\n"
+        str "main: waiting for channel data to end...\n"
         stdout
         out
         symfind 101
@@ -59,12 +59,12 @@ fib:
         over
         over
         swap
-        string  "fib: about to write to output channel\n"
+        str  "fib: about to write to output channel\n"
         stdout
         out
         crwrite
         swap
-        string  "fib: about to write to output channel\n"
+        str  "fib: about to write to output channel\n"
         stdout
         out
         crwrite
@@ -72,12 +72,12 @@ fib:
         over
         add
         dup
-        string  "fib: about to write to output channel\n"
+        str  "fib: about to write to output channel\n"
         stdout
         out
         symfind 1001 
         crwrite
-        string  "fib: about to tryread from control channel\n"
+        str  "fib: about to tryread from control channel\n"
         stdout
         out
         symfind 1002
@@ -86,7 +86,7 @@ fib:
 ;        jmp  ~.top
     
 .bot:   
-        string  "fib: finished, about to return\n"
+        str  "fib: finished, about to return\n"
         stdout
         out
         return
