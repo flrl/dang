@@ -304,11 +304,11 @@ logictest:
 
 sheep:  
         strlit "hello world "
-        fltlit 1.0
+        float 1.0
 .top:   dup
-        fltlit 0.5
-        fltadd
-        fltadd
+        float 0.5
+        addf
+        addf
         swap
         byte   2
         strcat
