@@ -1676,11 +1676,12 @@ always be consumed from the bytecode.
 
 If length is zero, an empty string value will be pushed to the data stack, and no additional bytes will be consumed from the 
 bytecode.
- 
+
+The length is encoded as an unsigned four byte value, so the maximum length of the string is a big as your mom.
 =cut
  */
 int inst_STRING(struct vm_context_t *context) {
-    const uint16_t len = *(uint16_t *) (&context->m_bytecode[context->m_counter + 1]);
+    const uint32_t len = *(uint32_t *) (&context->m_bytecode[context->m_counter + 1]);
     const char *str = (const char *) (&context->m_bytecode[context->m_counter + 1 + sizeof(len)]);
     
     scalar_t s = {0};

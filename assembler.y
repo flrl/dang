@@ -349,8 +349,8 @@ assembler_output_t *assemble(const char *filename) {
 
                 case i_STRING:
                     if (line->m_params != NULL && line->m_params->m_type == P_STRING) {
-                        uint16_t length = line->m_length - instruction_sizes[i_STRING];
-                        * (uint16_t *) &(output->m_bytecode[line->m_position + 1]) = length;
+                        uint32_t length = line->m_length - instruction_sizes[i_STRING];
+                        * (uint32_t *) &(output->m_bytecode[line->m_position + 1]) = length;
                         memcpy(&(output->m_bytecode[line->m_position + instruction_sizes[i_STRING]]), line->m_params->m_value.as_string, length);
                     }
                     else {
