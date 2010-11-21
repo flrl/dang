@@ -394,7 +394,9 @@ main:
         strlit "enter a value followed by enter: "
         stdout
         out
-        in
+        byte    '\n'
+        stdin
+        inl
         strlit "you entered: "
         byte    10
         stdout
