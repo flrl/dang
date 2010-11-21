@@ -2091,6 +2091,43 @@ int inst_ORD(struct vm_context_t *context) {
 }
 
 /*
+=item REV ( [an .. a2 a1] count -- [a1 a2 .. an] count )
+
+Reverses a list of count items on the stack.
+
+=cut
+*/
+int inst_REV(vm_context_t *context) {
+    scalar_t count = {0}, *items = NULL;
+    
+    vm_ds_pop(context, &count);
+    size_t n = anon_scalar_get_int_value(&count);
+
+    if (n > 0) {
+        if (NULL != (items = calloc(n, sizeof(*items)))) {
+            vm_ds_npop(context, n, items);
+            
+            for (size_t i = 0; i < n; i++) {
+                vm_ds_push(context, &items[i]);
+                anon_scalar_destroy(&items[i]);
+            }
+            
+            free(items);
+        }
+        else {
+            debug("calloc failed\n");
+            anon_scalar_set_int_value(&count, 0);
+        }
+    }
+    
+    vm_ds_push(context, &count);
+    
+    anon_scalar_destroy(&count);
+    return 1;
+}
+
+
+/*
 =back
 
 =cut

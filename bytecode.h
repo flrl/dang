@@ -96,9 +96,9 @@ typedef enum instruction_t {
     i_STDERR,
     i_CHR,
     i_ORD,
+    i_REV,
 /*-- INSTRUCTIONS END --*/
     
-//    iOVER,
 //    iTUCK,
 //    iPICK,
 //    iROLL,
