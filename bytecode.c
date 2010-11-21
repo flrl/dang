@@ -1885,29 +1885,34 @@ int inst_OUTL(struct vm_context_t *context) {
 }
 
 /*
-=item IN ( -- a )
+=item IN ( len stream -- value )
 
-Reads a scalar from the standard input channel, up until the next newline character, and pushes it to the stack.
+Pops a stream reference and an integer length from the stack.  Reads up to len bytes from the stream, and pushes back
+the value read.
 
 =cut
  */
 int inst_IN(struct vm_context_t *context) {
-    scalar_t a = {0};
-
-    char *buf = NULL;
-    size_t bufsize = 0;
-    ssize_t len = 0;
-
-    if ((len = getline(&buf, &bufsize, stdin)) > 0) {
-        string_t *tmp = string_alloc(len, buf);
-        anon_scalar_set_string_value(&a, tmp);
-        string_free(tmp);
+    scalar_t len = {0}, stream = {0}, value = {0};
+    
+    vm_ds_pop(context, &stream);
+    assert((stream.m_flags & SCALAR_TYPE_MASK) == SCALAR_STRMREF);
+    
+    vm_ds_pop(context, &len);
+    size_t n = anon_scalar_get_int_value(&len);
+    
+    if (n > 0) {
+        string_t *str = stream_read(anon_scalar_deref_stream_reference(&stream), n);
+        anon_scalar_set_string_value(&value, str);
+        string_free(str);
     }
+    
+    vm_ds_push(context, &value);
 
-    if (buf != NULL)  free(buf);
+    anon_scalar_destroy(&value);
+    anon_scalar_destroy(&len);
+    anon_scalar_destroy(&stream);
 
-    vm_ds_push(context, &a);
-    anon_scalar_destroy(&a);
     return 1;
 }
 
