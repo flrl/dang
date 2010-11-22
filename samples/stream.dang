@@ -1,0 +1,19 @@
+; stream
+main:
+        str     "/bin/ls"
+        stream
+        open    0x13
+.top:
+        dup
+        byte    '\n'
+        swap
+        inl
+        dup
+        jmpu    ~.bottom
+        stdout
+        out
+        jmp     ~.top
+.bottom:
+        drop
+        close
+        end
