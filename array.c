@@ -74,11 +74,11 @@ Functions for managing allocation of arrays.
 
 =cut
  */
-array_handle_t array_allocate(flags32_t flags) {
+array_handle_t array_allocate(flags8_t flags) {
     return POOL_ALLOCATE(array_t, flags);
 }
 
-array_handle_t array_allocate_many(size_t n, flags32_t flags) {
+array_handle_t array_allocate_many(size_t n, flags8_t flags) {
     return POOL_ALLOCATE_MANY(array_t, n, flags);
 }
 
@@ -141,7 +141,8 @@ scalar_handle_t array_item_at(array_handle_t handle, intptr_t index) {
             }
             
             size_t need = index - (ARRAY(handle).m_first + ARRAY(handle).m_count - 1);
-            scalar_handle_t handle = scalar_allocate_many(need, 0);  FIXME("handle flags\n");
+            flags8_t shared = (POOL_WRAPPER(array_t, handle).m_mutex != NULL ? POOL_OBJECT_FLAG_SHARED : 0);
+            scalar_handle_t handle = scalar_allocate_many(need, shared);
             
             while (ARRAY(handle).m_count <= index - ARRAY(handle).m_first) {
                 ARRAY(handle).m_items[ARRAY(handle).m_first + ARRAY(handle).m_count++] = handle + 1;
@@ -188,7 +189,8 @@ int array_slice(array_handle_t handle, struct scalar_t *elements, size_t n) {
                 if (0 != _array_reserve_unlocked(&ARRAY(handle), index + 1))  return 0;
                 
                 size_t need = index - (ARRAY(handle).m_first + ARRAY(handle).m_count - 1);
-                scalar_handle_t handle = scalar_allocate_many(need, 0);  FIXME("handle flags\n");
+                flags8_t shared = (POOL_WRAPPER(array_t, handle).m_mutex != NULL ? POOL_OBJECT_FLAG_SHARED : 0);
+                scalar_handle_t handle = scalar_allocate_many(need, shared);
                 
                 while (ARRAY(handle).m_count <= index - ARRAY(handle).m_first) {
                     ARRAY(handle).m_items[ARRAY(handle).m_first + ARRAY(handle).m_count++] = handle + 1;
@@ -277,8 +279,9 @@ int array_fill(array_handle_t handle, const struct scalar_t *values, size_t coun
         memset(ARRAY(handle).m_items, 0, sizeof(*ARRAY(handle).m_items) * ARRAY(handle).m_allocated_count);
         ARRAY(handle).m_first = 0;
 
-        _array_reserve_unlocked(&ARRAY(handle), count);        
-        scalar_handle_t s = scalar_allocate_many(count, 0); FIXME("handle flags\n");
+        _array_reserve_unlocked(&ARRAY(handle), count);
+        flags8_t shared = (POOL_WRAPPER(array_t, handle).m_mutex != NULL ? POOL_OBJECT_FLAG_SHARED : 0);
+        scalar_handle_t s = scalar_allocate_many(count, shared);
         for (size_t i = 0; i < count; i++) {            
             ARRAY(handle).m_items[i] = s++;
             scalar_set_value(ARRAY(handle).m_items[i], &values[i]);
@@ -315,7 +318,8 @@ int array_push(array_handle_t handle, const scalar_t *values, size_t count) {
                 return -1;
             }
             
-            scalar_handle_t s = scalar_allocate_many(count, 0); FIXME("handle flags\n");
+            flags8_t shared = (POOL_WRAPPER(array_t, handle).m_mutex != NULL ? POOL_OBJECT_FLAG_SHARED : 0);
+            scalar_handle_t s = scalar_allocate_many(count, shared);
             if (s != 0) {
                 for (size_t i = 0; i < count; i++) {
                     scalar_set_value(s, &values[i]);
@@ -371,7 +375,8 @@ int array_unshift(array_handle_t handle, const scalar_t *values, size_t count) {
                 start = ARRAY(handle).m_first - count;
             }
 
-            scalar_handle_t s = scalar_allocate_many(count, 0);  FIXME("handle flags\n");
+            flags8_t shared = (POOL_WRAPPER(array_t, handle).m_mutex != NULL ? POOL_OBJECT_FLAG_SHARED : 0);
+            scalar_handle_t s = scalar_allocate_many(count, shared);
             
             if (s != 0) {
                 for (size_t i = 0; i < count; i++) {
