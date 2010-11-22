@@ -28,14 +28,14 @@ pool
 #define POOL_TYPE(type)                         struct type##_POOL
 #define POOL_WRAPPER_TYPE(type)                 struct POOLED_##type
 
-#define POOL_OBJECT_FLAG_INUSE                  UINTPTR_MAX
+#define POOL_OBJECT_STATE_INUSE                 UINTPTR_MAX
 #define POOL_OBJECT_FLAG_SHARED                 0x01u
 
 #define POOL_SINGLETON(type)                    g_##type##_POOL
 #define POOL_OBJECT(type, handle)               POOL_SINGLETON(type).m_items[(handle) - 1].m_object
 #define POOL_WRAPPER(type, handle)              POOL_SINGLETON(type).m_items[(handle) - 1]
 
-#define POOL_HANDLE_IN_USE(type, handle)        (POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_FLAG_INUSE)
+#define POOL_HANDLE_IN_USE(type, handle)        (POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_STATE_INUSE)
 #define POOL_HANDLE_VALID(type, handle)         ((handle) > 0 && (handle) <= POOL_SINGLETON(type).m_allocated_count)
 
 #define POOL_INIT(type)                         type##_POOL_INIT()
@@ -104,7 +104,7 @@ static inline handle_type _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(size_t);   
                                                                                                 \
 static inline int type##_POOL_LOCK(handle_type handle) {                                        \
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
-    assert(POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_FLAG_INUSE);                   \
+    assert(POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_STATE_INUSE);                   \
                                                                                                 \
     if (POOL_WRAPPER(type, handle).m_mutex != NULL) {                                           \
         return pthread_mutex_lock(POOL_WRAPPER(type, handle).m_mutex);                          \
@@ -116,7 +116,7 @@ static inline int type##_POOL_LOCK(handle_type handle) {                        
                                                                                                 \
 static inline int type##_POOL_UNLOCK(handle_type handle) {                                      \
     assert(POOL_HANDLE_VALID(type, handle));                                                    \
-    assert(POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_FLAG_INUSE);                   \
+    assert(POOL_WRAPPER(type, handle).m_next_free == POOL_OBJECT_STATE_INUSE);                   \
                                                                                                 \
     if (POOL_WRAPPER(type, handle).m_mutex != NULL) {                                           \
         return pthread_mutex_unlock(POOL_WRAPPER(type, handle).m_mutex);                        \
@@ -252,7 +252,7 @@ static inline handle_type type##_POOL_ALLOCATE(flags8_t flags) {                
             }                                                                                   \
         }                                                                                       \
                                                                                                 \
-        POOL_WRAPPER(type, handle).m_next_free = POOL_OBJECT_FLAG_INUSE;                        \
+        POOL_WRAPPER(type, handle).m_next_free = POOL_OBJECT_STATE_INUSE;                        \
         POOL_SINGLETON(type).m_count++;                                                         \
                                                                                                 \
         return handle;                                                                          \
@@ -335,7 +335,7 @@ static inline handle_type type##_POOL_ALLOCATE_MANY(size_t many, flags8_t flags)
                     &POOL_SINGLETON(type).m_shared_mutex_attr);                                 \
             }                                                                                   \
                                                                                                 \
-            POOL_WRAPPER(type, i).m_next_free = POOL_OBJECT_FLAG_INUSE;                         \
+            POOL_WRAPPER(type, i).m_next_free = POOL_OBJECT_STATE_INUSE;                         \
             if (0 == POOL_LOCK(type, i)) {                                                      \
                 POOL_WRAPPER(type, i).m_references = 1;                                         \
                 init(&POOL_OBJECT(type, i));                                                    \
