@@ -28,7 +28,7 @@ typedef struct symbol_t {
     struct symbol_t *m_left_child;
     struct symbol_t *m_right_child;
     identifier_t m_identifier;
-    flags_t m_flags;
+    flags32_t m_flags;
     handle_t m_referent;
 } symbol_t;
 
@@ -43,7 +43,7 @@ int symboltable_destroy(symboltable_t *);
 int symboltable_isolate(symboltable_t *);
 int symboltable_garbage_collect(void);
 
-const symbol_t *symbol_define(symboltable_t *, identifier_t, flags_t, handle_t);
+const symbol_t *symbol_define(symboltable_t *, identifier_t, flags32_t, handle_t);
 const symbol_t *symbol_clone(symboltable_t *, identifier_t);
 const symbol_t *symbol_lookup(symboltable_t *, identifier_t);
 int symbol_undefine(symboltable_t *, identifier_t);

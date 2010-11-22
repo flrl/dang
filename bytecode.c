@@ -568,7 +568,7 @@ Pushes back a reference to the new symbol on success, or undef on failure.
 =cut
  */
 int inst_SYMDEF(struct vm_context_t *context) {
-    const flags_t flags = *(const flags_t *) (&context->m_bytecode[context->m_counter + 1]);
+    const flags32_t flags = *(const flags32_t *) (&context->m_bytecode[context->m_counter + 1]);
     const identifier_t identifier = *(const identifier_t *) (&context->m_bytecode[context->m_counter + 1 + sizeof(flags)]);
     
     scalar_t a = {0}, ref = {0};
@@ -585,7 +585,7 @@ int inst_SYMDEF(struct vm_context_t *context) {
         // a itself will continue to hold onto the reference and ensure it isn't deallocated
         // before we finish
         handle_t handle = a.m_value.as_scalar_handle;  // handle types are interchangeable
-        flags_t flags = 0;
+        flags32_t flags = 0;
         switch (a.m_flags & SCALAR_TYPE_MASK) {
             case SCALAR_SCAREF:     flags = SYMBOL_SCALAR;      break;
             case SCALAR_ARRREF:     flags = SYMBOL_ARRAY;       break;
@@ -2054,7 +2054,7 @@ int inst_FUNLIT(struct vm_context_t *context) {
 =cut
 */
 int inst_OPEN(struct vm_context_t *context) {
-    const small_flags_t flags = *(const small_flags_t *) (&context->m_bytecode[context->m_counter + 1]);
+    const flags8_t flags = *(const flags8_t *) (&context->m_bytecode[context->m_counter + 1]);
     
     scalar_t stream = {0}, path = {0};
     

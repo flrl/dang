@@ -229,7 +229,7 @@ Returns the new symbol, or NULL on failure.
 
 =cut
  */
-const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, flags_t flags, handle_t handle) {
+const symbol_t *symbol_define(symboltable_t *table, identifier_t identifier, flags32_t flags, handle_t handle) {
     assert(table != NULL);
 
     symbol_t *symbol = calloc(1, sizeof(*symbol));

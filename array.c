@@ -74,11 +74,11 @@ Functions for managing allocation of arrays.
 
 =cut
  */
-array_handle_t array_allocate(flags_t flags) {
+array_handle_t array_allocate(flags32_t flags) {
     return POOL_ALLOCATE(array_t, flags);
 }
 
-array_handle_t array_allocate_many(size_t n, flags_t flags) {
+array_handle_t array_allocate_many(size_t n, flags32_t flags) {
     return POOL_ALLOCATE_MANY(array_t, n, flags);
 }
 

@@ -38,7 +38,7 @@ typedef enum instruction_t {
     i_HASH,
     i_CHANNEL,
     i_STREAM,
-    i_SYMDEF,       /* flags_t identifier_t */
+    i_SYMDEF,       /* flags32_t identifier_t */
     i_SYMFIND,      /* identifier_t */
     i_SYMCLONE,     /* identifier_t */
     i_SYMUNDEF,     /* identifier_t */
@@ -93,7 +93,7 @@ typedef enum instruction_t {
     i_LT0F,
     i_GT0F,
     i_FUNLIT,       /* function_handle_t */
-    i_OPEN,         /* small_flags_t */
+    i_OPEN,         /* flags8_t */
     i_CLOSE,
     i_OUT,
     i_OUTL,

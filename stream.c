@@ -37,10 +37,10 @@ stream
 
 POOL_SOURCE_CONTENTS(stream_t);
 
-int _stream_open_file(stream_t *restrict, flags_t, const char *restrict);
-int _stream_open_pipe(stream_t *restrict, flags_t, const char *restrict);
+int _stream_open_file(stream_t *restrict, flags32_t, const char *restrict);
+int _stream_open_pipe(stream_t *restrict, flags32_t, const char *restrict);
 void _stream_close(stream_t *);
-int _stream_bind(stream_t *, flags_t, int);
+int _stream_bind(stream_t *, flags32_t, int);
 int _stream_unbind(stream_t *, int);
 
 static stream_handle_t _stream_stdin_handle = 0;
@@ -139,7 +139,7 @@ Functions for opening and closing streams
 
 =cut
  */
-int stream_open(stream_handle_t handle, flags_t flags, const char *arg) {
+int stream_open(stream_handle_t handle, flags32_t flags, const char *arg) {
     assert(POOL_HANDLE_VALID(stream_t, handle));
     assert(POOL_HANDLE_IN_USE(stream_t, handle));
     
@@ -347,11 +347,11 @@ FIXME: what about appending to existing files?
 
 =cut
 */
-int _stream_open_file(stream_t *restrict self, flags_t flags, const char *restrict filename) {
+int _stream_open_file(stream_t *restrict self, flags32_t flags, const char *restrict filename) {
     assert(self != NULL);
     assert(self->m_flags == STREAM_TYPE_UNDEF);
     
-    flags_t truncate = flags & STREAM_FLAG_TRUNC;
+    flags32_t truncate = flags & STREAM_FLAG_TRUNC;
     char *mode;
     switch (flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE)) {
         case STREAM_FLAG_READ:
@@ -396,11 +396,11 @@ The command is interpreted by /bin/sh.
 
 =cut
 */
-int _stream_open_pipe(stream_t *restrict self, flags_t flags, const char *restrict command) {
+int _stream_open_pipe(stream_t *restrict self, flags32_t flags, const char *restrict command) {
     assert(self != NULL);
     assert(self->m_flags == STREAM_TYPE_UNDEF);
     
-    flags_t flag_mode = flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE);
+    flags32_t flag_mode = flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE);
     int fildes[2], pid, child_end, parent_end;
     char *stream_mode;
     
@@ -501,7 +501,7 @@ Alternatively, the stream_t object can be safely closed with C<_stream_close()>.
 
 =cut
 */
-int _stream_bind(stream_t *self, flags_t flags, int fd) {
+int _stream_bind(stream_t *self, flags32_t flags, int fd) {
     assert(self != NULL);
     assert(self->m_flags == STREAM_TYPE_UNDEF);
     
