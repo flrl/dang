@@ -28,8 +28,6 @@ pool
 #define POOL_TYPE(type)                         struct type##_POOL
 #define POOL_WRAPPER_TYPE(type)                 struct POOLED_##type
 
-//#define handle_type                       uintptr_t
-
 #define POOL_OBJECT_FLAG_INUSE                  UINTPTR_MAX
 #define POOL_OBJECT_FLAG_SHARED                 0x80000000u
 
