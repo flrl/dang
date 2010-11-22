@@ -343,7 +343,7 @@ void anon_scalar_set_stream_reference(scalar_t *self, stream_handle_t handle) {
     if ((self->m_flags & SCALAR_TYPE_MASK) != SCALAR_UNDEF)  anon_scalar_destroy(self);
     
     self->m_flags = SCALAR_STRMREF;
-    self->m_value.as_stream_handle = handle;
+    self->m_value.as_stream_handle = stream_reference(handle);
 }
 
 /*
