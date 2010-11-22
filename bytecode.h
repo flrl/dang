@@ -33,6 +33,11 @@ typedef enum instruction_t {
     i_JMP,          /* intptr_t */
     i_JMP0,         /* intptr_t */
     i_JMPU,         /* intptr_t */
+    i_SCALAR,
+    i_ARRAY,
+    i_HASH,
+    i_CHANNEL,
+    i_STREAM,
     i_SYMDEF,       /* flags_t identifier_t */
     i_SYMFIND,      /* identifier_t */
     i_SYMCLONE,     /* identifier_t */

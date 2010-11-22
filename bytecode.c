@@ -435,6 +435,111 @@ int inst_JMPU(struct vm_context_t *context) {
     return incr;
 }
 
+/*
+=item SCALAR ( -- ref )
+
+Defines a new empty scalar and places a reference to it on the stack.
+
+=cut
+*/
+int inst_SCALAR(struct vm_context_t *context) {
+    scalar_t ref = {0};
+    
+    scalar_handle_t handle = scalar_allocate(0);  FIXME("handle flags\n");
+    anon_scalar_set_scalar_reference(&ref, handle);
+    
+    vm_ds_push(context, &ref);
+    
+    scalar_release(handle);
+    anon_scalar_destroy(&ref);
+    
+    return 1;
+}
+
+/*
+=item ARRAY ( -- ref )
+
+Defines a new empty array and places a reference to it on the stack.
+
+=cut
+*/
+int inst_ARRAY(struct vm_context_t *context) {
+    scalar_t ref = {0};
+    
+    array_handle_t handle = array_allocate(0);  FIXME("handle flags\n");
+    anon_scalar_set_array_reference(&ref, handle);
+    
+    vm_ds_push(context, &ref);
+    
+    array_release(handle);
+    anon_scalar_destroy(&ref);
+    
+    return 1;
+}
+
+/*
+=item HASH ( -- ref )
+
+Defines a new empty hash and places a reference to it on the stack.
+
+=cut
+*/
+int inst_HASH(struct vm_context_t *context) {
+    scalar_t ref = {0};
+    
+    hash_handle_t handle = hash_allocate();
+    anon_scalar_set_hash_reference(&ref, handle);
+    
+    vm_ds_push(context, &ref);
+    
+    hash_release(handle);
+    anon_scalar_destroy(&ref);
+    
+    return 1;
+}
+
+/*
+=item CHANNEL ( -- ref )
+
+Defines a new channel and places a reference to it on the stack.
+
+=cut
+*/
+int inst_CHANNEL(struct vm_context_t *context) {
+    scalar_t ref = {0};
+    
+    channel_handle_t handle = channel_allocate();
+    anon_scalar_set_channel_reference(&ref, handle);
+    
+    vm_ds_push(context, &ref);
+    
+    channel_release(handle);
+    anon_scalar_destroy(&ref);
+    
+    return 1;
+}
+
+/*
+=item STREAM ( -- ref )
+
+Defines a new stream and places a reference to it on the stack.
+
+=cut
+*/
+int inst_STREAM(struct vm_context_t *context) {
+    scalar_t ref = {0};
+    
+    stream_handle_t handle = stream_allocate();
+    anon_scalar_set_stream_reference(&ref, handle);
+    
+    vm_ds_push(context, &ref);
+    
+    stream_release(handle);
+    anon_scalar_destroy(&ref);
+    
+    return 1;
+}
+
 
 /*
 =item SYMDEF ( a -- ref )
