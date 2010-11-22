@@ -23,6 +23,7 @@ typedef handle_t function_handle_t;
 typedef handle_t stream_handle_t;
 
 typedef uint32_t flags_t;
+typedef uint8_t small_flags_t;
 typedef uintptr_t identifier_t;
 
 #endif
