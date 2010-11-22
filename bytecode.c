@@ -2077,6 +2077,7 @@ int inst_OPEN(struct vm_context_t *context) {
     
     anon_scalar_destroy(&stream);
     anon_scalar_destroy(&path);
+    string_free(s);
     
     return 1 + sizeof(flags);
 }
