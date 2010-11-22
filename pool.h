@@ -29,7 +29,7 @@ pool
 #define POOL_WRAPPER_TYPE(type)                 struct POOLED_##type
 
 #define POOL_OBJECT_FLAG_INUSE                  UINTPTR_MAX
-#define POOL_OBJECT_FLAG_SHARED                 0x80000000u
+#define POOL_OBJECT_FLAG_SHARED                 0x01u
 
 #define POOL_SINGLETON(type)                    g_##type##_POOL
 #define POOL_OBJECT(type, handle)               POOL_SINGLETON(type).m_items[(handle) - 1].m_object
@@ -194,7 +194,7 @@ static inline int type##_POOL_DESTROY(void) {                                   
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline handle_type type##_POOL_ALLOCATE(uint32_t flags) {                                \
+static inline handle_type type##_POOL_ALLOCATE(flags8_t flags) {                                \
     if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {                     \
         handle_type handle;                                                                     \
                                                                                                 \
@@ -263,7 +263,7 @@ static inline handle_type type##_POOL_ALLOCATE(uint32_t flags) {                
     }                                                                                           \
 }                                                                                               \
                                                                                                 \
-static inline handle_type type##_POOL_ALLOCATE_MANY(size_t many, uint32_t flags) {              \
+static inline handle_type type##_POOL_ALLOCATE_MANY(size_t many, flags8_t flags) {              \
     assert(many > 0);                                                                           \
     if (0 == pthread_mutex_lock(&POOL_SINGLETON(type).m_free_list_mutex)) {                     \
         handle_type alloc_start = _##type##_POOL_FIND_FREE_SEQUENCE_UNLOCKED(many);             \
