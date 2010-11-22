@@ -21,17 +21,18 @@
 #endif
 #include "pool.h"
 
-#define STREAM_TYPE_UNDEF   0x00000000u
-#define STREAM_TYPE_FILE    0x00000001u
-#define STREAM_TYPE_FIFO    0x00000002u
-#define STREAM_TYPE_PIPE    0x00000004u
-#define STREAM_TYPE_SOCK    0x00000008u
+#define STREAM_TYPE_UNDEF   0x00u
+#define STREAM_TYPE_FILE    0x01u
+#define STREAM_TYPE_FIFO    0x02u
+#define STREAM_TYPE_PIPE    0x03u
+#define STREAM_TYPE_SOCK    0x04u
 
-#define STREAM_TYPE_MASK    0x0000000Fu
+#define STREAM_TYPE_MASK    0x07u
 
-#define STREAM_FLAG_READ    0x00000100u
-#define STREAM_FLAG_WRITE   0x00000200u
-#define STREAM_FLAG_TRUNC   0x00000400u
+#define STREAM_FLAG_READ    0x10u
+#define STREAM_FLAG_WRITE   0x20u
+#define STREAM_FLAG_TRUNC   0x40u
+#define STREAM_FLAG_APPEND  0x80u
 
 typedef struct stream_t {
     /* innards of this struct will most likely change a lot */
