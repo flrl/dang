@@ -161,6 +161,7 @@ int stream_open(stream_handle_t handle, flags_t flags, const char *arg) {
                 break;
         }
 
+        POOL_UNLOCK(stream_t, handle);
         return status;
     }
     else {
