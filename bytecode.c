@@ -2047,6 +2047,59 @@ int inst_FUNLIT(struct vm_context_t *context) {
 }
 
 /*
+=item OPEN ( path stream -- stream )
+
+...
+
+=cut
+*/
+int inst_OPEN(struct vm_context_t *context) {
+    const small_flags_t flags = *(const small_flags_t *) (&context->m_bytecode[context->m_counter + 1]);
+    
+    scalar_t stream = {0}, path = {0};
+    
+    vm_ds_pop(context, &stream);
+    assert((stream.m_flags & SCALAR_TYPE_MASK) == SCALAR_STRMREF);
+    
+    vm_ds_pop(context, &path);
+    string_t *s; 
+    anon_scalar_get_string_value(&path, &s);
+    
+    if (0 == stream_open(anon_scalar_deref_stream_reference(&stream), flags, string_cstr(s))) {
+        debug("opened stream\n");
+    }
+    else {
+        debug("failed to open stream\n");
+    }
+
+    assert((stream.m_flags & SCALAR_TYPE_MASK) == SCALAR_STRMREF);
+    vm_ds_push(context, &stream);
+    
+    anon_scalar_destroy(&stream);
+    anon_scalar_destroy(&path);
+    
+    return 1 + sizeof(flags);
+}
+
+/*
+=item CLOSE ( stream -- )
+
+=cut
+*/
+int inst_CLOSE(struct vm_context_t *context) {
+    scalar_t stream = {0};
+    
+    vm_ds_pop(context, &stream);
+    assert((stream.m_flags & SCALAR_TYPE_MASK) == SCALAR_STRMREF);
+    
+    stream_close(anon_scalar_deref_stream_reference(&stream));
+    
+    anon_scalar_destroy(&stream);
+
+    return 1;
+}
+
+/*
 =item OUT ( value stream -- )
 
 Pops a stream reference and a scalar value from from the stack, and prints the value to the stream.

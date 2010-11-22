@@ -93,6 +93,8 @@ typedef enum instruction_t {
     i_LT0F,
     i_GT0F,
     i_FUNLIT,       /* function_handle_t */
+    i_OPEN,         /* small_flags_t */
+    i_CLOSE,
     i_OUT,
     i_OUTL,
     i_IN,
