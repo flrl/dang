@@ -591,10 +591,8 @@ int inst_SYMDEF(struct vm_context_t *context) {
             case SCALAR_ARRREF:     flags = SYMBOL_ARRAY;       break;
             case SCALAR_HASHREF:    flags = SYMBOL_HASH;        break;
             case SCALAR_CHANREF:    flags = SYMBOL_CHANNEL;     break;
-            case SCALAR_FUNCREF:    
-                FIXME("make symbols able to contain function references\n");
-                handle = flags = 0;
-                break;
+            case SCALAR_FUNCREF:    flags = SYMBOL_FUNCTION;    break;
+            case SCALAR_STRMREF:    flags = SYMBOL_STREAM;      break;
             default:
                 debug("unhandled scalar reference type: %"PRIu32"\n", a.m_flags);
                 handle = 0;
@@ -625,10 +623,16 @@ int inst_SYMDEF(struct vm_context_t *context) {
             case SYMBOL_HASH:
                 anon_scalar_set_hash_reference(&ref, symbol->m_referent);
                 break;
-            //...
             case SYMBOL_CHANNEL:
                 anon_scalar_set_channel_reference(&ref, symbol->m_referent);
                 break;
+            case SYMBOL_FUNCTION:
+                anon_scalar_set_function_reference(&ref, symbol->m_referent);
+                break;
+            case SYMBOL_STREAM:
+                anon_scalar_set_stream_reference(&ref, symbol->m_referent);
+                break;
+            //...
             default:
                 debug("unhandled symbol type: %"PRIu32"\n", symbol->m_flags);
                 break;
@@ -674,10 +678,16 @@ int inst_SYMFIND(struct vm_context_t *context) {
             case SYMBOL_HASH:
                 anon_scalar_set_hash_reference(&ref, symbol->m_referent);
                 break;
-            //...
             case SYMBOL_CHANNEL:
                 anon_scalar_set_channel_reference(&ref, symbol->m_referent);
                 break;
+            case SYMBOL_FUNCTION:
+                anon_scalar_set_function_reference(&ref, symbol->m_referent);
+                break;
+            case SYMBOL_STREAM:
+                anon_scalar_set_stream_reference(&ref, symbol->m_referent);
+                break;
+            //...
             default:
                 debug("unhandled symbol type: %"PRIu32"\n", symbol->m_flags);
                 break;
@@ -716,10 +726,16 @@ int inst_SYMCLONE(struct vm_context_t *context) {
             case SYMBOL_HASH:
                 anon_scalar_set_hash_reference(&ref, symbol->m_referent);
                 break;
-            //...
             case SYMBOL_CHANNEL:
                 anon_scalar_set_channel_reference(&ref, symbol->m_referent);
                 break;
+            case SYMBOL_FUNCTION:
+                anon_scalar_set_function_reference(&ref, symbol->m_referent);
+                break;
+            case SYMBOL_STREAM:
+                anon_scalar_set_stream_reference(&ref, symbol->m_referent);
+                break;
+            //...
             default:
                 debug("unhandled symbol type: %"PRIu32"\n", symbol->m_flags);
                 break;
