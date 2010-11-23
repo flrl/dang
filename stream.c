@@ -20,12 +20,14 @@ stream
 =cut 
  */
 
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <netdb.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -456,6 +458,81 @@ int _stream_open_pipe(stream_t *restrict self, flags32_t flags, const string_t *
     }
     else {
         debug("pipe failed with error %i\n", errno);
+        return -1;
+    }
+}
+
+/*
+=item _stream_open_socket()
+
+...
+
+=cut
+*/
+int _stream_open_socket(stream_t *restrict self, flags32_t flags, const string_t *restrict dest) {
+    assert(self != NULL);
+    assert(self->m_flags == STREAM_TYPE_UNDEF);
+    assert((self->m_flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE)) != 0);
+    
+    string_t *nodename = NULL, *servname = NULL;
+    if (0 == _stream_parse_socket_dest(dest, &nodename, &servname)) {
+        struct addrinfo hints = {0}, *results = NULL;
+        int status = 0;
+    
+        hints.ai_family = PF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
+        hints.ai_flags = AI_CANONNAME;
+        
+        if (0 == (status = getaddrinfo(string_cstr(nodename), string_cstr(servname), &hints, &results))) {
+            int s = -1;
+            
+            for (struct addrinfo *iter = results; iter != NULL; iter = iter->ai_next) {
+                s = socket(iter->ai_family, iter->ai_socktype, iter->ai_protocol);
+                if (s >= 0) {
+                    if (0 != connect(s, iter->ai_addr, iter->ai_addrlen)) {
+                        break;
+                    }
+                    else {
+                        debug("connect failed\n");
+                        close(s);
+                    }
+                }
+                else {
+                    debug("socket failed\n");
+                }
+            }
+            
+            if (s >= 0) {
+                if (NULL != (self->m_file = fdopen(s, "r+"))) {
+                    fcntl(fileno(self->m_file), F_SETFD, 1);
+                    self->m_meta.addr_info = results;
+                    self->m_flags = STREAM_TYPE_SOCK | STREAM_FLAG_READ | STREAM_FLAG_WRITE;
+                    status = 0;
+                }
+                else {
+                    debug("fdopen failed with error %i\n", errno);
+                    close(s);
+                    freeaddrinfo(results);
+                    status = -1;
+                }
+            }
+            else {
+                freeaddrinfo(results);
+                status = -1;
+            }
+        }
+        else {
+            debug("getaddrinfo failed: %i\n", status);
+        }
+    
+        string_free(nodename);
+        string_free(servname);
+
+        return status;
+    }
+    else {
+        debug("couldn't parse socket dest: %s\n", string_cstr(dest));
         return -1;
     }
 }

@@ -10,6 +10,7 @@
 #ifndef STREAM_H
 #define STREAM_H
 
+#include <sys/socket.h>
 #include <stdio.h>
 
 #include "string.h"
@@ -41,6 +42,7 @@ typedef struct stream_t {
     union {
         string_t *filename;
         int child_pid;
+        struct addrinfo *addr_info;
     } m_meta;
 } stream_t;
 
