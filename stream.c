@@ -41,6 +41,7 @@ POOL_SOURCE_CONTENTS(stream_t);
 
 int _stream_open_file(stream_t *restrict, flags32_t, const string_t *restrict);
 int _stream_open_pipe(stream_t *restrict, flags32_t, const string_t *restrict);
+int _stream_open_socket(stream_t *restrict, flags32_t, const string_t *restrict);
 void _stream_close(stream_t *);
 int _stream_bind(stream_t *, flags32_t, int);
 int _stream_unbind(stream_t *, int);
@@ -158,6 +159,9 @@ int stream_open(stream_handle_t handle, flags32_t flags, const string_t *arg) {
                 break;
             case STREAM_TYPE_PIPE:
                 status = _stream_open_pipe(&STREAM(handle), flags, arg);
+                break;
+            case STREAM_TYPE_SOCK:
+                status = _stream_open_socket(&STREAM(handle), flags, arg);
                 break;
             default:
                 debug("unhandle stream type: %"PRIu32"\n", flags);
@@ -472,7 +476,7 @@ int _stream_open_pipe(stream_t *restrict self, flags32_t flags, const string_t *
 int _stream_open_socket(stream_t *restrict self, flags32_t flags, const string_t *restrict dest) {
     assert(self != NULL);
     assert(self->m_flags == STREAM_TYPE_UNDEF);
-    assert((self->m_flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE)) != 0);
+    assert((flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE)) != 0);
     
     string_t *nodename = NULL, *servname = NULL;
     if (0 == _stream_parse_socket_dest(dest, &nodename, &servname)) {
@@ -490,16 +494,18 @@ int _stream_open_socket(stream_t *restrict self, flags32_t flags, const string_t
             for (struct addrinfo *iter = results; iter != NULL; iter = iter->ai_next) {
                 s = socket(iter->ai_family, iter->ai_socktype, iter->ai_protocol);
                 if (s >= 0) {
-                    if (0 != connect(s, iter->ai_addr, iter->ai_addrlen)) {
+                    debug("s is %i\n", s);
+                    if (0 == connect(s, iter->ai_addr, iter->ai_addrlen)) {
+                        /* got a connection */
                         break;
                     }
                     else {
-                        debug("connect failed\n");
+                        debug("connect failed: %i\n", errno);
                         close(s);
                     }
                 }
                 else {
-                    debug("socket failed\n");
+                    debug("socket failed: %i\n", errno);
                 }
             }
             
@@ -559,6 +565,10 @@ void _stream_close(stream_t *self) {
                 ;
             }
             debug("child pid %i terminated\n", self->m_meta.child_pid);
+            break;
+        case STREAM_TYPE_SOCK:
+            fclose(self->m_file);
+            freeaddrinfo(self->m_meta.addr_info);
             break;
         default:
             debug("unhandled stream type: %"PRIu32"\n", self->m_flags);
