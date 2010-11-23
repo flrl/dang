@@ -1,4 +1,5 @@
-; stream
+; stream-pipe
+
 main:
         str     "/bin/ls"
         stream

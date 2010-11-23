@@ -1,4 +1,4 @@
-; sock
+; stream-sock
 
 main:   
         str     "cookieandscream.com:http"
