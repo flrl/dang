@@ -34,8 +34,8 @@ struct scalar_t;
 int array_pool_init(void);
 int array_pool_destroy(void);
 
-array_handle_t array_allocate(flags32_t);
-array_handle_t array_allocate_many(size_t, flags32_t);
+array_handle_t array_allocate(flags8_t);
+array_handle_t array_allocate_many(size_t, flags8_t);
 array_handle_t array_reference(array_handle_t);
 int array_release(array_handle_t);
 
