@@ -2081,7 +2081,7 @@ int inst_OPEN(struct vm_context_t *context) {
     string_t *s; 
     anon_scalar_get_string_value(&path, &s);
     
-    if (0 == stream_open(anon_scalar_deref_stream_reference(&stream), flags, string_cstr(s))) {
+    if (0 == stream_open(anon_scalar_deref_stream_reference(&stream), flags, s)) {
         debug("opened stream\n");
     }
     else {

@@ -37,8 +37,8 @@ stream
 
 POOL_SOURCE_CONTENTS(stream_t);
 
-int _stream_open_file(stream_t *restrict, flags32_t, const char *restrict);
-int _stream_open_pipe(stream_t *restrict, flags32_t, const char *restrict);
+int _stream_open_file(stream_t *restrict, flags32_t, const string_t *restrict);
+int _stream_open_pipe(stream_t *restrict, flags32_t, const string_t *restrict);
 void _stream_close(stream_t *);
 int _stream_bind(stream_t *, flags32_t, int);
 int _stream_unbind(stream_t *, int);
@@ -139,7 +139,7 @@ Functions for opening and closing streams
 
 =cut
  */
-int stream_open(stream_handle_t handle, flags32_t flags, const char *arg) {
+int stream_open(stream_handle_t handle, flags32_t flags, const string_t *arg) {
     assert(POOL_HANDLE_VALID(stream_t, handle));
     assert(POOL_HANDLE_IN_USE(stream_t, handle));
     
@@ -347,7 +347,7 @@ FIXME: what about appending to existing files?
 
 =cut
 */
-int _stream_open_file(stream_t *restrict self, flags32_t flags, const char *restrict filename) {
+int _stream_open_file(stream_t *restrict self, flags32_t flags, const string_t *restrict filename) {
     assert(self != NULL);
     assert(self->m_flags == STREAM_TYPE_UNDEF);
     
@@ -371,9 +371,9 @@ int _stream_open_file(stream_t *restrict self, flags32_t flags, const char *rest
             return -1;
     }
     
-    if (NULL != (self->m_file = fopen(filename, mode))) {
+    if (NULL != (self->m_file = fopen(string_cstr(filename), mode))) {
         fcntl(fileno(self->m_file), F_SETFD, 1);
-        self->m_meta.filename = strdup(filename);
+        self->m_meta.filename = string_dup(filename);
         self->m_flags |= STREAM_TYPE_FILE;
         return 0;
     }
@@ -396,7 +396,7 @@ The command is interpreted by /bin/sh.
 
 =cut
 */
-int _stream_open_pipe(stream_t *restrict self, flags32_t flags, const char *restrict command) {
+int _stream_open_pipe(stream_t *restrict self, flags32_t flags, const string_t *restrict command) {
     assert(self != NULL);
     assert(self->m_flags == STREAM_TYPE_UNDEF);
     
@@ -428,7 +428,7 @@ int _stream_open_pipe(stream_t *restrict self, flags32_t flags, const char *rest
             close(fildes[parent_end]);
             dup2(fildes[child_end], child_end);
             close(fildes[child_end]);
-            execl("/bin/sh", "sh", "-c", command, NULL);
+            execl("/bin/sh", "sh", "-c", string_cstr(command), NULL);
             debug("execl failed with error %i\n", errno);
             _exit(1);
         }
@@ -471,7 +471,7 @@ void _stream_close(stream_t *self) {
     switch (self->m_flags & STREAM_TYPE_MASK) {
         case STREAM_TYPE_FILE:
             fclose(self->m_file);
-            free(self->m_meta.filename);
+            string_free(self->m_meta.filename);
             break;
         case STREAM_TYPE_PIPE:
             fclose(self->m_file);
@@ -523,7 +523,7 @@ int _stream_bind(stream_t *self, flags32_t flags, int fd) {
 
     if (NULL != (self->m_file = fdopen(fd, mode))) {
         self->m_flags = STREAM_TYPE_FILE | (flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE));
-        self->m_meta.filename = strdup("<fd>");
+        self->m_meta.filename = string_alloc(4, "<fd>");
         return 0;
     }
     else {
@@ -549,7 +549,7 @@ int _stream_unbind(stream_t *self, int fd) {
     
     if (fileno(self->m_file) == fd) {
         fclose(self->m_file);
-        free(self->m_meta.filename);
+        string_free(self->m_meta.filename);
         self->m_flags = STREAM_TYPE_UNDEF;
         return 0;
     }

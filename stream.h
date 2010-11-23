@@ -39,7 +39,7 @@ typedef struct stream_t {
     flags32_t m_flags;
     FILE *m_file;
     union {
-        char *filename;
+        string_t *filename;
         int child_pid;
     } m_meta;
 } stream_t;
@@ -61,7 +61,7 @@ stream_handle_t stream_stdin_handle(void);
 stream_handle_t stream_stdout_handle(void);
 stream_handle_t stream_stderr_handle(void);
 
-int stream_open(stream_handle_t, flags32_t, const char *);
+int stream_open(stream_handle_t, flags32_t, const string_t *);
 int stream_close(stream_handle_t);
 
 string_t *stream_read_delim(stream_handle_t, int);
