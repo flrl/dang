@@ -35,6 +35,16 @@
 #define STREAM_FLAG_TRUNC   0x40u
 #define STREAM_FLAG_APPEND  0x80u
 
+/*
+    1111 0111
+    ||||  '''- type
+    ||||
+    |||'------ read
+    ||'------- write
+    |'-------- trunc
+    '--------- append
+*/
+
 typedef struct stream_t {
     /* innards of this struct will most likely change a lot */
     flags32_t m_flags;
