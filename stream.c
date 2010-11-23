@@ -42,6 +42,8 @@ int _stream_open_pipe(stream_t *restrict, flags32_t, const string_t *restrict);
 void _stream_close(stream_t *);
 int _stream_bind(stream_t *, flags32_t, int);
 int _stream_unbind(stream_t *, int);
+int _stream_parse_socket_dest(const string_t *restrict, string_t **restrict, string_t **restrict);
+
 
 static stream_handle_t _stream_stdin_handle = 0;
 static stream_handle_t _stream_stdout_handle = 0;
@@ -557,6 +559,44 @@ int _stream_unbind(stream_t *self, int fd) {
         debug("attempt to unbind from the wrong file descriptor\n");
         return -1;
     }
+}
+
+/*
+=item _stream_parse_socket_dest()
+
+Takes a string of format "nodename:servname" and parses it into its separate components.
+
+The nodename part of the string may contain ':' characters (e.g. IPv6 addresses), but the servname
+part may not.  (The delimiting ':' is discovered by searching backwards from the end of the string.)
+
+=cut
+*/
+int _stream_parse_socket_dest(const string_t *restrict dest, string_t **restrict nodename, string_t **restrict servname) {
+    assert(dest != NULL);
+    assert(dest->m_length >= 3);
+    assert(nodename != NULL);
+    assert(servname != NULL);
+    
+    const char *node = dest->m_bytes;
+    const char *serv = NULL;
+    size_t node_len = dest->m_length;
+    size_t serv_len = 0;
+    
+    for (; node_len > 0; node_len--) {
+        if (dest->m_bytes[node_len - 1] == ':') {
+            serv = &dest->m_bytes[node_len];
+            serv_len = dest->m_length - node_len;
+            --node_len;
+            break;
+        }
+    }
+
+    if (node_len == 0 || serv_len == 0)  return -1;
+
+    *nodename = string_alloc(node_len, node);
+    *servname = string_alloc(serv_len, serv);
+
+    return 0;
 }
 
 /*
