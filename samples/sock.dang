@@ -8,9 +8,8 @@ main:
         over
         out
 .a:
-        dup
         byte    '\n'
-        swap
+        over
         inl
         dup
         jmpu    ~.b

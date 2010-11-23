@@ -4,9 +4,8 @@ main:
         stream
         open    0x13
 .top:
-        dup
         byte    '\n'
-        swap
+        over
         inl
         dup
         jmpu    ~.bottom
