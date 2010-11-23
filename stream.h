@@ -18,8 +18,8 @@
 
 #ifdef POOL_INITIAL_SIZE
 #undef POOL_INITIAL_SIZE
-#define POOL_INITIAL_SIZE 16
 #endif
+#define POOL_INITIAL_SIZE 16
 #include "pool.h"
 
 #define STREAM_TYPE_UNDEF   0x00u
