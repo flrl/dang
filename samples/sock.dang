@@ -1,0 +1,23 @@
+; sock
+
+main:   
+        str     "cookieandscream.com:http"
+        stream
+        open    0x34    ; read|write|sock
+        str     "GET /hello.txt HTTP/1.1\nhost: cookieandscream.com\n\n"
+        over
+        out
+.a:
+        dup
+        byte    '\n'
+        swap
+        inl
+        dup
+        jmpu    ~.b
+        stdout
+        out
+        jmp     ~.a
+.b:
+        drop
+        close
+        return
