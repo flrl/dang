@@ -255,3 +255,8 @@ dynamic link modules
         - registering a handle to a module function (dlsym)
         - calling a module function by its handle
     - how to make the public api available to modules?
+
+
+exceptions
+    - do i want them?
+    - how do i implement them?  froth used setjmp/longjmp, iirc
