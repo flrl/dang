@@ -380,7 +380,7 @@ int _stream_open_file(stream_t *restrict self, flags32_t flags, const string_t *
     }
     
     if (NULL != (self->m_file = fopen(string_cstr(filename), mode))) {
-        fcntl(fileno(self->m_file), F_SETFD, 1);
+        fcntl(fileno(self->m_file), F_SETFD, FD_CLOEXEC);
         self->m_meta.filename = string_dup(filename);
         self->m_flags |= STREAM_TYPE_FILE;
         return 0;
@@ -443,7 +443,7 @@ int _stream_open_pipe(stream_t *restrict self, flags32_t flags, const string_t *
         else {                  /* parent */
             close(fildes[child_end]);
             if (NULL != (self->m_file = fdopen(fildes[parent_end], stream_mode))) {
-                fcntl(fileno(self->m_file), F_SETFD, 1);
+                fcntl(fileno(self->m_file), F_SETFD, FD_CLOEXEC);
                 self->m_meta.child_pid = pid;
                 self->m_flags = STREAM_TYPE_PIPE | flag_mode;
                 return 0;
@@ -511,7 +511,7 @@ int _stream_open_socket(stream_t *restrict self, flags32_t flags, const string_t
             
             if (s >= 0) {
                 if (NULL != (self->m_file = fdopen(s, "r+"))) {
-                    fcntl(fileno(self->m_file), F_SETFD, 1);
+                    fcntl(fileno(self->m_file), F_SETFD, FD_CLOEXEC);
                     self->m_meta.addr_info = results;
                     self->m_flags = STREAM_TYPE_SOCK | STREAM_FLAG_READ | STREAM_FLAG_WRITE;
                     status = 0;
