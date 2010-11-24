@@ -241,6 +241,7 @@ threading
 assembler
     - parse hexadecimal and octal numbers (leading zero)
     - parse single characters in '' as integers
+    - line numbers!
 
 
 signals
