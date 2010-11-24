@@ -469,7 +469,12 @@ int _stream_open_pipe(stream_t *restrict self, flags32_t flags, const string_t *
 /*
 =item _stream_open_socket()
 
-...
+Opens and connects a client TCP socket to dest, where dest is a server specified in the format "address:port".
+
+The address component can be an IPv4 or IPv6 address, or a hostname.  The post component can be a numeric port
+number or a service name as listed in /etc/services.
+
+Returns 0 on success or non-zero on failure.
 
 =cut
 */
