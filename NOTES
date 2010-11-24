@@ -237,7 +237,21 @@ threading
           variables.  but pooled scalars can safely use a recursive mutex, because they do not make any use of condition
           variables.
 
+
 assembler
     - parse hexadecimal and octal numbers (leading zero)
-    - parse single characters in '' as integers?
+    - parse single characters in '' as integers
 
+
+signals
+    - how to allow a program to register signal handlers?
+    - what should default behaviours be?
+
+
+dynamic link modules
+    - modules provide a bunch of functions like:   void foo(vm_context_t *)
+    - vm provides instructions for:
+        - loading/unloading modules (dlopen/dlclose)
+        - registering a handle to a module function (dlsym)
+        - calling a module function by its handle
+    - how to make the public api available to modules?
