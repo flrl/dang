@@ -2065,7 +2065,10 @@ int inst_FUNLIT(struct vm_context_t *context) {
 /*
 =item OPEN ( path stream -- stream )
 
-...
+Reads flags from the following byte.  Pops a stream reference and a path, and opens the path according to the flags.
+Pushes back a reference to the opened stream.
+
+FIXME write something about flags and path format here.
 
 =cut
 */
@@ -2100,6 +2103,8 @@ int inst_OPEN(struct vm_context_t *context) {
 
 /*
 =item CLOSE ( stream -- )
+
+Pops a stream reference from the stack and closes the underlying stream.
 
 =cut
 */
