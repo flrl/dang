@@ -283,7 +283,7 @@ int stream_write(stream_handle_t handle, const string_t *string) {
     int status;
     if (0 == POOL_LOCK(stream_t, handle)) {
         assert(POOL_HANDLE_IN_USE(stream_t, handle));
-        assert(STREAM(handle).m_flags & STREAM_FLAG_WRITE);
+        assert(STREAM(handle).m_flags & (STREAM_FLAG_WRITE | STREAM_FLAG_APPEND));
         status = fwrite(string_cstr(string), string_length(string), 1, STREAM(handle).m_file);
         POOL_UNLOCK(stream_t, handle);
     }
@@ -340,10 +340,11 @@ int _stream_destroy(stream_t *self) {
 =item _stream_open_file()
 
 Opens an ordinary file according to flags provided.  Valid flags are STREAM_FLAG_READ, 
-STREAM_FLAG_WRITE, STREAM_FLAG_TRUNC; other flags are ignored.
+STREAM_FLAG_WRITE, STREAM_FLAG_TRUNC, STREAM_FLAG_APPEND; other flags are ignored.
 
-At least one of STREAM_FLAG_READ and STREAM_FLAG_WRITE must be provided.  If only one
-of these are provided, the file is opened as read-only or write-only respectively.
+At least one of STREAM_FLAG_READ, STREAM_FLAG_WRITE or STREAM_FLAG_APPEND must be provided.  
+If only one of these are provided, the file is opened as read-only, write-only or append-only
+respectively.
 
 If both STREAM_FLAG_READ and STREAM_FLAG_WRITE are provided, then the file is opened
 for both reading and writing at the beginning of the file.  If the STREAM_FLAG_TRUNC
@@ -351,7 +352,9 @@ flag is provided, the existing contents of the file will be truncated, and the f
 position set to the start of the file; otherwise the existing contents will be left
 alone and the file position set to the start of the file.
 
-FIXME: what about appending to existing files?
+If STREAM_FLAG_APPEND is provided, both STREAM_FLAG_WRITE and STREAM_FLAG_TRUNC are ignored,
+and the file is opened for appending.  If both STREAM_FLAG_APPEND and STREAM_FLAG_READ are
+specified, the file is opened for both appending and reading.
 
 =cut
 */
@@ -359,9 +362,12 @@ int _stream_open_file(stream_t *restrict self, flags32_t flags, const string_t *
     assert(self != NULL);
     assert(self->m_flags == STREAM_TYPE_UNDEF);
     
+    if ((flags & STREAM_FLAG_APPEND))  flags &= ~(STREAM_FLAG_WRITE | STREAM_FLAG_TRUNC);
+
     flags32_t truncate = flags & STREAM_FLAG_TRUNC;
+
     char *mode;
-    switch (flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE)) {
+    switch (flags & (STREAM_FLAG_READ | STREAM_FLAG_WRITE | STREAM_FLAG_APPEND)) {
         case STREAM_FLAG_READ:
             self->m_flags |= STREAM_FLAG_READ;
             mode = "r";
@@ -370,9 +376,17 @@ int _stream_open_file(stream_t *restrict self, flags32_t flags, const string_t *
             self->m_flags |= STREAM_FLAG_WRITE;
             mode = "w";
             break;
+        case STREAM_FLAG_APPEND:
+            self->m_flags |= STREAM_FLAG_APPEND;
+            mode = "a";
+            break;
         case STREAM_FLAG_READ | STREAM_FLAG_WRITE:
             self->m_flags |= STREAM_FLAG_READ | STREAM_FLAG_WRITE | truncate;
             mode = (truncate ? "w+" : "r+");
+            break;
+        case STREAM_FLAG_READ | STREAM_FLAG_APPEND:
+            self->m_flags |= STREAM_FLAG_READ | STREAM_FLAG_APPEND;
+            mode = "a+";
             break;
         default:
             debug("no read or write mode specified: %"PRIu32"\n", flags);
