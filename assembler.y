@@ -88,6 +88,7 @@
 }
 
 %error-verbose
+%locations
 
 %token <ival> INTEGER
 %token <fval> FLOAT
@@ -207,6 +208,8 @@ assembler_output_t *assemble(const char *filename) {
     }
     
     if (g_input != NULL) {
+//        yylloc.first_line = yylloc.last_line = 1;
+//        yylloc.first_column = yylloc.last_column = 0;
         status = yyparse();
         fclose(g_input);
         g_input = NULL;
@@ -457,7 +460,7 @@ assembler_output_t *assemble(const char *filename) {
 }
 
 void yyerror(char const *s) {
-    printf("%s\n", s);
+    printf("line %i column %i - %s\n", yylloc.first_line, yylloc.first_column, s);
 }
 
 #ifndef digittoint
@@ -469,7 +472,16 @@ static inline int peek(void) {
 }
 
 static inline int next(void) {
-    return getc(g_input);
+    int c = getc(g_input);
+    switch (c) {
+        case '\n':
+            ++yylloc.last_line;
+            yylloc.last_column = 0;
+            break;
+        default:
+            ++yylloc.last_column;
+    }
+    return c;
 }
 
 int yylex(void) {
@@ -480,12 +492,15 @@ int yylex(void) {
         c = next();
     } while (c == ' ' || c == '\t');
     
+    // update location
+    yylloc.first_line = yylloc.last_line;
+    yylloc.first_column = yylloc.last_column;
+    
     // bail out at end of file
     if (c == EOF)  return EOF;
-    
+
     if (c == '0' && peek() != '.') {
         // parse a literal integer in either hex or octal
-        
         if (peek() == 'x') {
             c = next();
             yylval.ival = read_hex_value();
