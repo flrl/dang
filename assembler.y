@@ -208,9 +208,9 @@ assembler_output_t *assemble(const char *filename) {
     }
     
     if (g_input != NULL) {
-//        yylloc.first_line = yylloc.last_line = 1;
-//        yylloc.first_column = yylloc.last_column = 0;
+        flockfile(g_input);
         status = yyparse();
+        funlockfile(g_input);
         fclose(g_input);
         g_input = NULL;
     }
@@ -468,11 +468,11 @@ static void yyerror(char const *s) {
 #endif
 
 static inline int peek(void) {
-    return peekc(g_input);
+    return peekc_unlocked(g_input);
 }
 
 static inline int next(void) {
-    int c = getc(g_input);
+    int c = getc_unlocked(g_input);
     ++yylloc.last_column;
     return c;
 }
