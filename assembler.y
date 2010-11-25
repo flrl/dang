@@ -473,14 +473,7 @@ static inline int peek(void) {
 
 static inline int next(void) {
     int c = getc(g_input);
-    switch (c) {
-        case '\n':
-            ++yylloc.last_line;
-            yylloc.last_column = 0;
-            break;
-        default:
-            ++yylloc.last_column;
-    }
+    ++yylloc.last_column;
     return c;
 }
 
@@ -584,7 +577,12 @@ static int yylex(void) {
         return c;
     }
     
-    // anything else, return the character read
+    if (c == '\n') {
+        ++yylloc.last_line;
+        yylloc.last_column = 0;
+    }
+
+    // by default just return the character read
     return c;
 }
 
