@@ -32,17 +32,17 @@
         #define PRITID "x"
     #endif
     #define debug(...)  do {                                                                            \
-        char s1[512], s2[512];                                                                          \
-        snprintf(s1, sizeof(s1), "debug %"PRITID" %s(%s:%d)", THREADID, __func__, __FILE__, __LINE__);  \
-        snprintf(s2, sizeof(s2), __VA_ARGS__);                                                          \
-        fprintf(stderr, "%s: %s", s1, s2);                                                              \
+        flockfile(stderr);                                                                              \
+        fprintf(stderr, "debug %"PRITID" %s(%s:%d): ", THREADID, __func__, __FILE__, __LINE__);           \
+        fprintf(stderr, __VA_ARGS__);                                                                   \
+        funlockfile(stderr);                                                                            \
     } while (0)
     
     #define FIXME(...)  do {                                                                            \
-        char s1[512], s2[512];                                                                          \
-        snprintf(s1, sizeof(s1), "FIXME %"PRITID" %s(%s:%d)", THREADID, __func__, __FILE__, __LINE__);  \
-        snprintf(s2, sizeof(s2), __VA_ARGS__);                                                          \
-        fprintf(stderr, "%s: %s", s1, s2);                                                              \
+        flockfile(stderr);                                                                              \
+        fprintf(stderr, "FIXME %"PRITID" %s(%s:%d): ", THREADID, __func__, __FILE__, __LINE__);           \
+        fprintf(stderr, __VA_ARGS__);                                                                   \
+        funlockfile(stderr);                                                                            \
     } while (0)
 #endif
 //
