@@ -22,24 +22,24 @@
 #include "util.h"
 #include "vmtypes.h"
 
-    int yylex(void);
-    void yyerror(const char *);
+    static int yylex(void);
+    static void yyerror(const char *);
     
-    char *read_identifier(void);
-    char *read_quoted(int);
-    int read_hex_byte(void);
-    int read_octal_byte(void);
-    int read_hex_value(void);
-    int read_octal_value(void);
+    static char *read_identifier(void);
+    static char *read_quoted(int);
+    static int read_hex_byte(void);
+    static int read_octal_byte(void);
+    static int read_hex_value(void);
+    static int read_octal_value(void);
     
     typedef struct line_t line_t;
     typedef struct param_t param_t;
     typedef struct label_t label_t;
     typedef struct label_ref_t label_ref_t;
     
-    label_t *get_label(const char *, const char *);
-    line_t *get_line(label_t *, uintptr_t, param_t *);
-    void append_param(param_t *, param_t *);
+    static label_t *get_label(const char *, const char *);
+    static line_t *get_line(label_t *, uintptr_t, param_t *);
+    static void append_param(param_t *, param_t *);
 
     static FILE     *g_input = NULL;
     static line_t   *g_lines = NULL;
@@ -136,7 +136,7 @@ label   :   LABEL '.' LABEL             { $$ = get_label($1, $3); free($1); free
 
 %%
 
-void append_param(param_t *list, param_t *param) {
+static void append_param(param_t *list, param_t *param) {
     param_t *p = list;
     while (p && p->m_next != NULL) {
         p = p->m_next;
@@ -144,7 +144,7 @@ void append_param(param_t *list, param_t *param) {
     p->m_next = param;
 }
 
-line_t *get_line(label_t *label, uintptr_t instruction, param_t *params) {
+static line_t *get_line(label_t *label, uintptr_t instruction, param_t *params) {
     line_t *line = calloc(1, sizeof(*line));
     
     line->m_label = label;
@@ -155,7 +155,7 @@ line_t *get_line(label_t *label, uintptr_t instruction, param_t *params) {
     return line;
 }
 
-label_t *get_label(const char *prim, const char *sub) {
+static label_t *get_label(const char *prim, const char *sub) {
     label_t *label = g_labels;
     char *key;
     size_t keylen = 0;
@@ -459,7 +459,7 @@ assembler_output_t *assemble(const char *filename) {
     return output;
 }
 
-void yyerror(char const *s) {
+static void yyerror(char const *s) {
     printf("line %i column %i - %s\n", yylloc.first_line, yylloc.first_column, s);
 }
 
@@ -484,7 +484,7 @@ static inline int next(void) {
     return c;
 }
 
-int yylex(void) {
+static int yylex(void) {
     int c;
     
     // skip over whitespace
@@ -608,7 +608,7 @@ char *read_identifier(void) {
     return buffer;
 }
 
-char *read_quoted(int delimiter) {
+static char *read_quoted(int delimiter) {
     int c, found_closing_delim = 0;
     size_t i = 0, buflen = 64;
     char *buffer = calloc(1, buflen);
@@ -673,7 +673,7 @@ char *read_quoted(int delimiter) {
     return buffer;
 }
 
-int read_hex_byte(void) {
+static int read_hex_byte(void) {
     int i = 0, val;
     char digits[3], *endptr=NULL;
     
@@ -689,7 +689,7 @@ int read_hex_byte(void) {
     return (char) val;
 }
 
-int read_octal_byte(void) {
+static int read_octal_byte(void) {
     int i = 0, val;
     char digits[4], *endptr=NULL;
     
@@ -708,7 +708,7 @@ int read_octal_byte(void) {
     return (char) val;
 }
 
-int read_hex_value(void) {
+static int read_hex_value(void) {
     int i = 0, val;
     char digits[64], *endptr=NULL;
     
@@ -725,7 +725,7 @@ int read_hex_value(void) {
     return val;
 }
 
-int read_octal_value(void) {
+static int read_octal_value(void) {
     int i = 0, val;
     char digits[64], *endptr=NULL;
     
