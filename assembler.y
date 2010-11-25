@@ -536,6 +536,7 @@ static int yylex(void) {
     if (isalpha(c)) {
         // parse a string -- either an instruction or an identifier
         ungetc(c, g_input);
+        --yylloc.last_column;
         char *str = read_identifier();
 
         for (size_t i = 0; i < i__MAX; i++) {
