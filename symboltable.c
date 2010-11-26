@@ -142,7 +142,7 @@ int symboltable_destroy(symboltable_t *self) {
     }
     else {
         --self->m_references;
-        debug("others still hold references (%zd), not cleaning up\n", self->m_references);
+        debug("%zd others still hold references, not cleaning up\n", self->m_references);
         return -1;
     }
 }
