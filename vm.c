@@ -51,7 +51,7 @@ vm
 */
 
 STACK_DEFINITIONS(scalar_t, anon_scalar_init, anon_scalar_destroy, anon_scalar_clone);
-STACK_DEFINITIONS(function_handle_t, STACK_basic_init, STACK_basic_destroy, STACK_basic_copy);
+STACK_DEFINITIONS(vm_state_t, vm_state_init, vm_state_destroy, vm_state_clone);
 
 /*
 =head2 The Virtual Machine
@@ -127,7 +127,11 @@ void *vm_execute(void *ptr) {
     
     // set the top of the return stack to point back to the zero'th instruction, which always contains END.
     // this allows the vm entry point to be a normal function that expects to simply return when it's done.
-    vm_rs_push(context, 0);
+    vm_state_t initial_state = {0};
+    vm_state_init(&initial_state, 0, context->m_symboltable);
+    vm_rs_push(context, &initial_state);
+    vm_state_destroy(&initial_state);
+    
     vm_start_scope(context);
     
     int incr;
@@ -246,23 +250,23 @@ Return stack management functions
 
 =cut
  */
-int vm_rs_push(vm_context_t *context, size_t value) {
+int vm_rs_push(vm_context_t *context, const vm_state_t *state) {
     assert(context != NULL);
     
-    return STACK_PUSH(function_handle_t, &context->m_return_stack, &value);
+    return STACK_PUSH(vm_state_t, &context->m_return_stack, state);
 }
 
-int vm_rs_pop(vm_context_t *context, size_t *result) {
+int vm_rs_pop(vm_context_t *context, vm_state_t *result) {
     assert(context != NULL);
     
-    return STACK_POP(function_handle_t, &context->m_return_stack, result);
+    return STACK_POP(vm_state_t, &context->m_return_stack, result);
 }
 
-int vm_rs_top(vm_context_t *context, size_t *result) {
+int vm_rs_top(vm_context_t *context, vm_state_t *result) {
     assert(context != NULL);
     assert(result != NULL);
     
-    return STACK_TOP(function_handle_t, &context->m_return_stack, result);
+    return STACK_TOP(vm_state_t, &context->m_return_stack, result);
 }
 
 /*
@@ -325,7 +329,7 @@ int vm_context_init(vm_context_t *self, const uint8_t *bytecode, size_t bytecode
     memset(self, 0, sizeof(*self));
     
     if (0 == STACK_INIT(scalar_t, &self->m_data_stack)) {
-        if (0 == STACK_INIT(function_handle_t, &self->m_return_stack)) {
+        if (0 == STACK_INIT(vm_state_t, &self->m_return_stack)) {
             self->m_bytecode = bytecode;
             self->m_bytecode_length = bytecode_len;
             self->m_counter = start;
@@ -343,14 +347,14 @@ int vm_context_init(vm_context_t *self, const uint8_t *bytecode, size_t bytecode
                 else {
                     debug("failed to lock _vm_context_registry.m_mutex\n");
                     free(node);
-                    STACK_DESTROY(function_handle_t, &self->m_return_stack);
+                    STACK_DESTROY(vm_state_t, &self->m_return_stack);
                     STACK_DESTROY(scalar_t, &self->m_data_stack);
                     return -1;
                 }
             }
             else {
                 debug("couldn't allocate memory for a vm_context_registry_node_t\n");
-                STACK_DESTROY(function_handle_t, &self->m_return_stack);
+                STACK_DESTROY(vm_state_t, &self->m_return_stack);
                 STACK_DESTROY(scalar_t, &self->m_data_stack);
                 return -1;
             }            
@@ -380,7 +384,7 @@ int vm_context_destroy(vm_context_t *self) {
     
     // clean up
     STACK_DESTROY(scalar_t, &self->m_data_stack);
-    STACK_DESTROY(function_handle_t, &self->m_return_stack);
+    STACK_DESTROY(vm_state_t, &self->m_return_stack);
     
     if (self->m_symboltable != NULL && 0 == symboltable_destroy(self->m_symboltable)) {
         free(self->m_symboltable);
@@ -418,6 +422,51 @@ int vm_context_destroy(vm_context_t *self) {
     }
     
     debug("destroyed %p, returning\n", self);
+    return 0;
+}
+
+/*
+=item vm_state_init()
+
+=item vm_state_destroy()
+
+=item vm_state_clone()
+
+...
+
+=cut
+*/
+int vm_state_init(vm_state_t *restrict self, function_handle_t position, symboltable_t *restrict symboltable) {
+    assert(self != NULL);
+    
+    self->m_position = position;
+    self->m_symboltable_top = symboltable;
+    if (self->m_symboltable_top != NULL)  ++self->m_symboltable_top->m_references;
+    
+    return 0;
+}
+
+int vm_state_destroy(vm_state_t *self) {
+    assert(self != NULL);
+    
+    if (self->m_symboltable_top) {
+        symboltable_destroy(self->m_symboltable_top);
+        self->m_symboltable_top = NULL;
+    }
+    
+    self->m_position = 0;
+    return 0;
+}
+
+int vm_state_clone(vm_state_t *restrict self, const vm_state_t *restrict other) {
+    assert(self != NULL);
+    assert(other != NULL);
+    assert(self != other);
+    
+    self->m_position = other->m_position;
+    self->m_symboltable_top = other->m_symboltable_top;
+    if (self->m_symboltable_top)  ++self->m_symboltable_top->m_references;
+    
     return 0;
 }
 

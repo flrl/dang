@@ -102,9 +102,13 @@ to the return stack, starts a new symbol table scope, then transfers execution c
 int inst_CALL(vm_context_t *context) {
     const function_handle_t jump_dest = *(const function_handle_t *) NEXT_BYTE(context);
     
-    vm_start_scope(context);
+    vm_state_t ret_state = {0};
+    vm_state_init(&ret_state, context->m_counter + 1 + sizeof(function_handle_t), context->m_symboltable);
+    vm_rs_push(context, &ret_state);
+    vm_state_destroy(&ret_state);
 
-    vm_rs_push(context, context->m_counter + 1 + sizeof(function_handle_t));
+    vm_start_scope(context);
+    
     return jump_dest - context->m_counter;
 }
 
@@ -178,12 +182,20 @@ Ends the current symbol table scope.  Pops a return destination from the return 
 =cut
  */
 int inst_RETURN(vm_context_t *context) {
+    vm_state_t ret_state = {0};
     function_handle_t jump_dest;
+    symboltable_t *symboltable_top;
+
+    vm_rs_pop(context, &ret_state);
+    jump_dest = ret_state.m_position;
+    symboltable_top = ret_state.m_symboltable_top;
+    vm_state_destroy(&ret_state);
+
+    while (context->m_symboltable != NULL && context->m_symboltable != symboltable_top) {
+        vm_end_scope(context);
+    }
     
-    vm_end_scope(context);
-    
-    vm_rs_pop(context, &jump_dest);
-    return jump_dest - context->m_counter;    
+    return jump_dest - context->m_counter;
 }
 
 /*
@@ -1506,8 +1518,11 @@ int inst_FRCALL(struct vm_context_t *context) {
     vm_ds_pop(context, &fr);
     function_handle_t jump_dest = anon_scalar_deref_function_reference(&fr);
     anon_scalar_destroy(&fr);
-    
-    vm_rs_push(context, context->m_counter + 1);
+
+    vm_state_t ret_state = {0};
+    vm_state_init(&ret_state, context->m_counter + 1, context->m_symboltable);
+    vm_rs_push(context, &ret_state);
+    vm_state_destroy(&ret_state);
     
     vm_start_scope(context);
     
