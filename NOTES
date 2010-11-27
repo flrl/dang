@@ -250,12 +250,23 @@ signals
     - which thread(s) can handle signals?
         - make all threads block all signals (done by blocking all signals in main before starting any), then each time around 
           the vm_execute loop, call sigtimedwait to check synchronously for any pending signals
-            - sigtimedwait call should itself be in a loop whereby as long as it returns success, process the signal received,
-              then once it returns failure, continue to process the next instruction
             - need a way for threads to register their interest in and set a handler for a signal
             - what to do if a signal arrives that the thread hasn't got a handler for?
             - should the main thread set itself up some builtin handlers for the usual suspects?
             - what about things like sigsegv/etc?
+            - if sigtimedwait finds a pending signal, it should
+                - push the next instruction that would have been executed if not for the pending signal to the return stack
+                - flag the vm context as currently being in a signal handler
+                    - return stack entries needs to record this flag, and the usual call and return mechanisms need to use it
+                      appropriately, so that signal handlers can call other functions and continue to track that they are in
+                      a signal handler
+                - push the signal number to the data stack
+                - transfer control to the signal handler's bytecode
+            - while the context is marked as being in a signal handler, the sigtimedwait check is bypassed completely, so any
+              further signals will not get processed until the current one finishes processing
+            - when the signal handler eventually returns, the return stack entry it created is popped and restored, which disables
+              the "in a signal handler" flag and transfers execution to the next instruction
+            - signal handlers must thus be functions that consume one data stack item (the signal number) and don't produce any
 
 
 dynamic link modules
