@@ -261,3 +261,13 @@ dynamic link modules
 exceptions
     - do i want them?
     - how do i implement them?  froth used setjmp/longjmp, iirc
+    - exception stack should be vm_state_t's, like the return stack
+        - "catch" sets up a new one of these frames (record current top of symbol table, and bytecode location of the
+          desired exception handling code
+        - "throw" pops an exception frame, unwinds the symbol table back to the stored top, pushes the thrown value to
+          the data stack, and transfers control to the exception handler
+        - when initialising the exception stack, the first entry should point back to byte 0, like the return stack, so that
+          uncaught exceptions cause the vm context to end
+    
+    
+    
