@@ -635,7 +635,7 @@ int _stream_bind(stream_t *self, flags32_t flags, int fd) {
         return 0;
     }
     else {
-        debug("fdopen returned %i\n", errno);
+        debug("fdopen of %i returned %i\n", fd, errno);
         self->m_flags = STREAM_TYPE_UNDEF;
         return -1;
     }
