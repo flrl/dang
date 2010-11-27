@@ -269,9 +269,15 @@ signals
             - when the signal handler eventually returns, the return stack entry it created is popped and restored, which disables
               the "in a signal handler" flag and transfers execution to the next instruction
             - signal handlers must thus be functions that consume one data stack item (the signal number) and don't produce any
-        - alas, osx doesn't provide sigtimedwait
-        - can't find any docs for how sigtimedwait interacts with blocked, unblocked, ignored, default, etc signals, or what the
-          "correct" way to use it is... thanks internet
+        - main thread blocks all signals that have had a "handler" registered, then uses sigtimedwait as above to invoke the
+          handlers.
+            - unhandled signals end up with their default behaviour occurring asynchronously in the main thread
+        - threads spawned with coro block *all* signals, and then used sigtimedwait as above to invoke handlers for any that
+          have handlers registered.
+            - what about sigsegv etc where the signal gets sent to the thread rather than the process? then a segfault in a parallel
+              thread would get ignored unless they had a handler for it, rather than making it dump core like you'd expect
+    - alas, osx doesn't provide sigtimedwait
+        - how to roll my own replacement?
 
 
 dynamic link modules
