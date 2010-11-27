@@ -22,8 +22,8 @@
 #include "util.h"
 #include "vmtypes.h"
 
-    static int yylex(void);
-    static void yyerror(const char *);
+    static int ass_lex(void);
+    static void ass_error(const char *);
     
     static char *read_identifier(void);
     static char *read_quoted(int);
@@ -89,6 +89,7 @@
 
 %error-verbose
 %locations
+%name-prefix = "ass_"
 
 %token <ival> INTEGER
 %token <fval> FLOAT
@@ -459,7 +460,7 @@ assembler_output_t *assemble(const char *filename) {
     return output;
 }
 
-static void yyerror(char const *s) {
+static void ass_error(char const *s) {
     printf("line %i column %i - %s\n", yylloc.first_line, yylloc.first_column, s);
 }
 
@@ -477,7 +478,7 @@ static inline int next(void) {
     return c;
 }
 
-static int yylex(void) {
+static int ass_lex(void) {
     int c;
     
     // skip over whitespace
