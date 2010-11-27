@@ -422,7 +422,8 @@ assembler_output_t *assemble(const char *filename) {
     }    
     
     // if there was a main label defined, make it the start point
-    if (status == 0 && (label = get_label("main", NULL))) {
+    label = get_label("main", NULL);
+    if (status == 0 && label != NULL && label->m_line != NULL) {
         output->m_bytecode_start = label->m_line->m_position;
     }
     
