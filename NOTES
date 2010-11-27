@@ -247,6 +247,15 @@ assembler
 signals
     - how to allow a program to register signal handlers?
     - what should default behaviours be?
+    - which thread(s) can handle signals?
+        - make all threads block all signals (done by blocking all signals in main before starting any), then each time around 
+          the vm_execute loop, call sigtimedwait to check synchronously for any pending signals
+            - sigtimedwait call should itself be in a loop whereby as long as it returns success, process the signal received,
+              then once it returns failure, continue to process the next instruction
+            - need a way for threads to register their interest in and set a handler for a signal
+            - what to do if a signal arrives that the thread hasn't got a handler for?
+            - should the main thread set itself up some builtin handlers for the usual suspects?
+            - what about things like sigsegv/etc?
 
 
 dynamic link modules
@@ -268,6 +277,7 @@ exceptions
           the data stack, and transfers control to the exception handler
         - when initialising the exception stack, the first entry should point back to byte 0, like the return stack, so that
           uncaught exceptions cause the vm context to end
-    
+    - should exceptions in parallel execution contexts trickle back to the main thread?
+        - if so, how?
     
     
