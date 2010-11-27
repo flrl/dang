@@ -211,8 +211,9 @@ assembler_output_t *assemble(const char *filename) {
     if (g_input != NULL) {
         flockfile(g_input);
         status = yyparse();
+        clearerr_unlocked(g_input);
         funlockfile(g_input);
-        fclose(g_input);
+        if (g_input != stdin)  fclose(g_input);        
         g_input = NULL;
     }
     else {
