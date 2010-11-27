@@ -256,6 +256,8 @@ signals
             - what about things like sigsegv/etc?
             - if sigtimedwait finds a pending signal, it should
                 - push the next instruction that would have been executed if not for the pending signal to the return stack
+                - start a new symbol scope
+                    - and anything else that usually occurs as part of the setup for a CALL instruction
                 - flag the vm context as currently being in a signal handler
                     - return stack entries needs to record this flag, and the usual call and return mechanisms need to use it
                       appropriately, so that signal handlers can call other functions and continue to track that they are in
@@ -267,6 +269,9 @@ signals
             - when the signal handler eventually returns, the return stack entry it created is popped and restored, which disables
               the "in a signal handler" flag and transfers execution to the next instruction
             - signal handlers must thus be functions that consume one data stack item (the signal number) and don't produce any
+        - alas, osx doesn't provide sigtimedwait
+        - can't find any docs for how sigtimedwait interacts with blocked, unblocked, ignored, default, etc signals, or what the
+          "correct" way to use it is... thanks internet
 
 
 dynamic link modules
