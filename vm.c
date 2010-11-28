@@ -29,7 +29,7 @@ typedef struct vm_context_registry_node_t {
     vm_context_t *m_context;
 } vm_context_registry_node_t;
 
-struct {
+static struct {
     vm_context_registry_node_t *m_nodes;
     pthread_mutex_t m_mutex;
     pthread_cond_t m_changed;
