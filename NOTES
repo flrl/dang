@@ -278,6 +278,7 @@ signals
               thread would get ignored unless they had a handler for it, rather than making it dump core like you'd expect
     - alas, osx doesn't provide sigtimedwait
         - how to roll my own replacement?
+        - nevermind a replacement: what i need to do is something like:  if (sigpending(&set) && notempty(&set)) { sigwait(&set) }
 
 
 dynamic link modules
