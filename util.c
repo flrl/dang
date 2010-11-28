@@ -147,6 +147,7 @@ ssize_t getdelim_ext(char **restrict lineptr, size_t *restrict n, int delimiter,
     }
 }
 
+#ifdef NEED_SIGISEMPTYSET
 /*
 =item sigisemptyset()
 
@@ -163,3 +164,4 @@ int sigisemptyset(const sigset_t *set) {
 
     return 1;
 }
+#endif
