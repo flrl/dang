@@ -103,7 +103,7 @@ int inst_CALL(vm_context_t *context) {
     const function_handle_t jump_dest = *(const function_handle_t *) NEXT_BYTE(context);
     
     vm_state_t ret_state = {0};
-    vm_state_init(&ret_state, context->m_counter + 1 + sizeof(function_handle_t), context->m_symboltable);
+    vm_state_init(&ret_state, context->m_counter + 1 + sizeof(function_handle_t), context->m_flags, context->m_symboltable);
     vm_rs_push(context, &ret_state);
     vm_state_destroy(&ret_state);
 
@@ -1520,7 +1520,7 @@ int inst_FRCALL(struct vm_context_t *context) {
     anon_scalar_destroy(&fr);
 
     vm_state_t ret_state = {0};
-    vm_state_init(&ret_state, context->m_counter + 1, context->m_symboltable);
+    vm_state_init(&ret_state, context->m_counter + 1, context->m_flags, context->m_symboltable);
     vm_rs_push(context, &ret_state);
     vm_state_destroy(&ret_state);
     

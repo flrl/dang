@@ -25,6 +25,9 @@
 #include "stream.h"
 #include "vm.h"
 
+#define VM_CONTEXT_FLAG_SIG_MANAGER     0x00000001u
+#define VM_CONTEXT_FLAG_IN_SIG_HANDLER  0x00000002u
+
 typedef struct vm_context_registry_node_t {
     struct vm_context_registry_node_t *m_next;
     vm_context_t *m_context;
@@ -94,6 +97,7 @@ int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
     
     if (NULL != (context = calloc(1, sizeof(*context)))) {
         vm_context_init(context, bytecode, length, start);
+        context->m_flags |= VM_CONTEXT_FLAG_SIG_MANAGER;
         vm_execute(context);
     }
     
@@ -154,10 +158,17 @@ void *vm_execute(void *ptr) {
     assert(context != NULL);
     debug("vm_execute of context %p starting up\n", context);
     
+    // block all signals if this thread is not the signal manager
+    if (0 == (context->m_flags & VM_CONTEXT_FLAG_SIG_MANAGER)) {
+        sigset_t all;
+        sigfillset(&all);
+        pthread_sigmask(SIG_SETMASK, &all, NULL);
+    }
+    
     // set the top of the return stack to point back to the zero'th instruction, which always contains END.
     // this allows the vm entry point to be a normal function that expects to simply return when it's done.
     vm_state_t initial_state = {0};
-    vm_state_init(&initial_state, 0, context->m_symboltable);
+    vm_state_init(&initial_state, 0, context->m_flags, context->m_symboltable);
     vm_rs_push(context, &initial_state);
     vm_state_destroy(&initial_state);
     
@@ -178,6 +189,48 @@ void *vm_execute(void *ptr) {
                 assert(incr != 0);
                 context->m_counter += incr;
                 break;
+        }
+        
+        // if this thread is the signal manager, and isn't currently in a signal handler, then deal with the next symbol
+        if ((context->m_flags & VM_CONTEXT_FLAG_SIG_MANAGER) && !(context->m_flags & VM_CONTEXT_FLAG_IN_SIG_HANDLER)) {
+            if (0 == pthread_mutex_lock(&_vm_signal_registry.m_mutex)) {
+                sigset_t pending;
+                sigpending(&pending);
+                if (!sigisemptyset(&pending)) {
+                    int sig;
+                    if (0 == sigwait(&pending, &sig)) {
+                        if (sig >= 0 && sig < _vm_signal_registry.m_count) {
+                            if (_vm_signal_registry.m_handlers[sig] == VM_SIGNAL_DEFAULT) {
+                                debug("received signal expects default handling, re-raising: %i\n", sig);
+                                raise(sig);
+                                debug("raised\n");
+                            }
+                            else if (_vm_signal_registry.m_handlers[sig] == VM_SIGNAL_IGNORE) {
+                                debug("ignoring signal %i\n", sig);
+                            }
+                            else {
+                                debug("received signal %i, calling handler %"PRIuPTR"\n", sig, _vm_signal_registry.m_handlers[sig]);
+                                vm_state_t post_signal_state = {0};
+                                vm_state_init(&post_signal_state, context->m_counter, context->m_flags, context->m_symboltable);
+                                vm_rs_push(context, &post_signal_state);
+                                vm_state_destroy(&post_signal_state);
+                                vm_start_scope(context);
+                                context->m_flags |= VM_CONTEXT_FLAG_IN_SIG_HANDLER;
+                                context->m_counter = _vm_signal_registry.m_handlers[sig];
+                            }
+                        }
+                        else {
+                            debug("signal %i is out of range for installed handlers, re-raising it\n", sig);
+                            raise(sig);
+                            debug("raised\n");
+                        }
+                    }
+                }
+                pthread_mutex_unlock(&_vm_signal_registry.m_mutex);
+            }
+            else {
+                debug("couldn't lock signal registry mutex, not processing signals\n");
+            }
         }
     }
     
@@ -200,7 +253,7 @@ Sends a signal to the virtual machine.
 =cut
 */
 int vm_signal(int sig) {
-    return kill(getpid(), sig);
+    return raise(sig);
 }
 
 /*
@@ -511,10 +564,11 @@ int vm_context_destroy(vm_context_t *self) {
 
 =cut
 */
-int vm_state_init(vm_state_t *restrict self, function_handle_t position, symboltable_t *restrict symboltable) {
+int vm_state_init(vm_state_t *restrict self, function_handle_t position, flags32_t flags, symboltable_t *restrict symboltable) {
     assert(self != NULL);
     
     self->m_position = position;
+    self->m_flags = flags;
     self->m_symboltable_top = symboltable;
     if (self->m_symboltable_top != NULL)  ++self->m_symboltable_top->m_references;
     
@@ -530,6 +584,7 @@ int vm_state_destroy(vm_state_t *self) {
     }
     
     self->m_position = 0;
+    self->m_flags = 0;
     return 0;
 }
 
