@@ -16,6 +16,9 @@
 #include "stack.h"
 #include "symboltable.h"
 
+#define VM_SIGNAL_DEFAULT   (function_handle_t)(-1)
+#define VM_SIGNAL_IGNORE    (function_handle_t)(-2)
+
 typedef struct vm_state_t {
     function_handle_t m_position;
     symboltable_t *m_symboltable_top;
@@ -25,6 +28,7 @@ typedef STACK_STRUCT(scalar_t) data_stack_t;
 typedef STACK_STRUCT(vm_state_t) return_stack_t;
 
 typedef struct vm_context_t {
+    flags32_t m_flags;
     const uint8_t *m_bytecode;
     size_t  m_bytecode_length;
     size_t  m_counter;
@@ -35,6 +39,8 @@ typedef struct vm_context_t {
 
 int vm_main(const uint8_t *, size_t, size_t);
 void *vm_execute(void *);  // n.b. actually takes and returns a vm_context_t*
+int vm_signal(int);
+int vm_set_signal_handler(int, function_handle_t);
 
 int vm_context_init(vm_context_t *, const uint8_t *, size_t, size_t);
 int vm_context_destroy(vm_context_t *);

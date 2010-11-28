@@ -9,9 +9,10 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <pthread.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <string.h>
-#include <pthread.h>
 #include <unistd.h>
 
 #include "array.h"
@@ -35,7 +36,12 @@ static struct {
     pthread_cond_t m_changed;
 } _vm_context_registry = { NULL, PTHREAD_MUTEX_INITIALIZER, PTHREAD_COND_INITIALIZER };
 
-
+static struct {
+    const size_t m_count;
+    pthread_mutex_t m_mutex;
+    function_handle_t m_handlers[NSIG];
+    sigset_t m_sigset;
+} _vm_signal_registry = {NSIG, PTHREAD_MUTEX_INITIALIZER, {0}};
 /*
 =head1 NAME
 
@@ -67,6 +73,19 @@ Runs the virtual machine.
 int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
     vm_context_t *context;
 
+    if (0 == pthread_mutex_lock(&_vm_signal_registry.m_mutex)) {
+        sigemptyset(&_vm_signal_registry.m_sigset);
+        for (size_t i = 0; i < _vm_signal_registry.m_count; i++) {
+            _vm_signal_registry.m_handlers[i] = VM_SIGNAL_DEFAULT;
+        }
+        pthread_sigmask(SIG_SETMASK, &_vm_signal_registry.m_sigset, NULL);
+        pthread_mutex_unlock(&_vm_signal_registry.m_mutex);
+    }
+    else {
+        debug("failed to initialise signal handlers\n");
+        return -1;
+    }
+
     scalar_pool_init();
     array_pool_init();
     hash_pool_init();
@@ -86,6 +105,16 @@ int vm_main(const uint8_t *bytecode, size_t length, size_t start) {
         pthread_mutex_unlock(&_vm_context_registry.m_mutex);
     }
     
+    if (0 == pthread_mutex_lock(&_vm_signal_registry.m_mutex)) {
+        sigemptyset(&_vm_signal_registry.m_sigset);
+        for (size_t i = 0; i < _vm_signal_registry.m_count; i++) {
+            _vm_signal_registry.m_handlers[i] = VM_SIGNAL_DEFAULT;
+        }
+        pthread_sigmask(SIG_SETMASK, &_vm_signal_registry.m_sigset, NULL);
+        pthread_mutex_unlock(&_vm_signal_registry.m_mutex);
+        pthread_mutex_destroy(&_vm_signal_registry.m_mutex);
+    }
+
     debug("about to start cleaning up\n");
     while (symboltable_garbage_collect() > 0) {
         debug("symbol tables still remaining...\n");
@@ -161,6 +190,52 @@ end:
     debug("vm_execute of context %p finished\n", context);
     return NULL;
 }
+
+
+/*
+=item vm_signal()
+
+Sends a signal to the virtual machine.
+
+=cut
+*/
+int vm_signal(int sig) {
+    return kill(getpid(), sig);
+}
+
+/*
+=item vm_set_signal_handler()
+
+Installs a signal handler in the virtual machine.
+
+=cut
+*/
+int vm_set_signal_handler(int sig, function_handle_t handle) {
+    assert(sig >= 0);
+    assert(sig < NSIG);
+    
+    if (0 == pthread_mutex_lock(&_vm_signal_registry.m_mutex)) {
+        _vm_signal_registry.m_handlers[sig] = handle;
+        switch (handle) {
+            case VM_SIGNAL_DEFAULT:
+                sigdelset(&_vm_signal_registry.m_sigset, sig);
+                break;
+            case VM_SIGNAL_IGNORE:
+            default:
+                sigaddset(&_vm_signal_registry.m_sigset, sig);
+                break;
+        }
+        pthread_sigmask(SIG_SETMASK, &_vm_signal_registry.m_sigset, NULL);
+        pthread_mutex_unlock(&_vm_signal_registry.m_mutex);
+        return 0;
+    }
+    else {
+        debug("couldn't lock signal registry mutex\n");
+        return -1;
+    }
+
+}
+
 
 /*
 =head2 Virtual Machine Functions
