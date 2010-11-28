@@ -159,7 +159,7 @@ int sigisemptyset(const sigset_t *set) {
     assert(set != NULL);
     
     for (int i = 0; i < NSIG; i++) {
-        if (sigismember(set, i)) return 0;
+        if (sigismember(set, i) > 0) return 0;
     }
 
     return 1;
