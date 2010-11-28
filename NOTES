@@ -276,6 +276,22 @@ signals
           have handlers registered.
             - what about sigsegv etc where the signal gets sent to the thread rather than the process? then a segfault in a parallel
               thread would get ignored unless they had a handler for it, rather than making it dump core like you'd expect
+        - set up a special thread just for handling signals
+            - would need a bunch of functions for telling it what signals to listen for etc
+                - if you register a new signal for it to wait for, you need a way to break it out of its current wait so that it
+                  can update the list that it's waiting for
+            - any registered signals it would block/sigwait on, and unregistered signals would happen asynchronously per their
+              default behaviour.
+            - it would need some way to communicate back to vm_execute to say "go and run this signal handler"
+                - invoke the signal thread with a pointer to the main thread's vm_context_t
+                - add a mutex and a "pending signal" value to vm_context_t which it checks each time around its loop
+                - if mutex is null, don't bother to check?
+            - but what happens when the main thread's vm_execute cleans up and frees the context?
+                - the signal handler is going to barf next time it tries to do anything with this bit of memory
+        - set a flag in vm_context_t which instructs vm_execute to do a poll/wait test for signals between each instruction
+            - vm_main would set this flag on the vm_execute that it creates, but other vm_executes would run without this flag
+              set
+        - what happens if a thread with all signals blocked causes a sigsegv or sigbus?
     - alas, osx doesn't provide sigtimedwait
         - how to roll my own replacement?
         - nevermind a replacement: what i need to do is something like:  if (sigpending(&set) && notempty(&set)) { sigwait(&set) }
