@@ -45,4 +45,9 @@ static inline ssize_t getline(char **restrict lineptr, size_t *restrict n, FILE 
 }
 #endif
 
+#ifdef NEED_SIGISEMPTYSET
+int sigisemptyset(const sigset_t *set);
 #endif
+
+
+#endif /* UTIL_H */

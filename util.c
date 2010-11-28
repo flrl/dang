@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -144,4 +145,21 @@ ssize_t getdelim_ext(char **restrict lineptr, size_t *restrict n, int delimiter,
     else {
         return count;
     }
+}
+
+/*
+=item sigisemptyset()
+
+Returns 1 if the set is empty, 0 otherwise.
+
+=cut
+*/
+int sigisemptyset(const sigset_t *set) {
+    assert(set != NULL);
+    
+    for (int i = 0; i < NSIG; i++) {
+        if (sigismember(set, i)) return 0;
+    }
+
+    return 1;
 }
