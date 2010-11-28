@@ -195,6 +195,7 @@ void *vm_execute(void *ptr) {
         if ((context->m_flags & VM_CONTEXT_FLAG_SIG_MANAGER) && !(context->m_flags & VM_CONTEXT_FLAG_IN_SIG_HANDLER)) {
             if (0 == pthread_mutex_lock(&_vm_signal_registry.m_mutex)) {
                 sigset_t pending;
+                sigemptyset(&pending);
                 sigpending(&pending);
                 if (!sigisemptyset(&pending)) {
                     int sig;
