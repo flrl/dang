@@ -188,6 +188,7 @@ int inst_RETURN(vm_context_t *context) {
 
     vm_rs_pop(context, &ret_state);
     jump_dest = ret_state.m_position;
+    context->m_flags = ret_state.m_flags;
     symboltable_top = ret_state.m_symboltable_top;
     vm_state_destroy(&ret_state);
 
