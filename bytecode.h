@@ -107,6 +107,7 @@ typedef enum instruction_t {
     i_CHR,
     i_ORD,
     i_REV,
+    i_SIG,
 /*-- INSTRUCTIONS END --*/
     
 //    iTUCK,

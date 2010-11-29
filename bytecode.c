@@ -2439,6 +2439,34 @@ int inst_REV(vm_context_t *context) {
     return 1;
 }
 
+/*
+=item SIG ( sig fr -- )
+
+Pops a function reference and a signal number from the stack, and installs the function reference as the handler
+for the signal.
+
+The referenced function should take the basic form ( sig -- ).
+
+FIXME The special values VM_SIGNAL_IGNORE and VM_SIGNAL_DEFAULT can be used to ignore or restore the default signal
+handler for the signal, respectively.
+
+=cut
+*/
+int inst_SIG(vm_context_t *context) {
+    scalar_t sig = {0}, fr = {0};
+    
+    vm_ds_pop(context, &fr);
+    assert((fr.m_flags & SCALAR_TYPE_MASK) == SCALAR_FUNCREF);
+    
+    vm_ds_pop(context, &sig);
+    
+    vm_set_signal_handler(anon_scalar_get_int_value(&sig), anon_scalar_deref_function_reference(&fr));
+    
+    anon_scalar_destroy(&sig);
+    anon_scalar_destroy(&fr);
+
+    return 1;
+}
 
 /*
 =back
