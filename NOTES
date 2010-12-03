@@ -291,7 +291,12 @@ signals
         - set a flag in vm_context_t which instructs vm_execute to do a poll/wait test for signals between each instruction
             - vm_main would set this flag on the vm_execute that it creates, but other vm_executes would run without this flag
               set
+              - signals can't be used to break out of blocking instructions (e.g. read) -- not good!
         - what happens if a thread with all signals blocked causes a sigsegv or sigbus?
+        - set up a simple asynchronous handler that just sets a flag with the signal value, so that if it arrives when the thread
+          is blocked, it breaks it out of whatever it's doing.  then check the flag after each instruction
+            - can this be set up to allow other threads to also have their own signal handlers?
+                - still have the problem of determining which signals main/subthreads should allow/block
     - alas, osx doesn't provide sigtimedwait
         - how to roll my own replacement?
         - nevermind a replacement: what i need to do is something like:  if (sigpending(&set) && notempty(&set)) { sigwait(&set) }
