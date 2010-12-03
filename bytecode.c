@@ -1841,6 +1841,27 @@ int inst_STRING(struct vm_context_t *context) {
 }
 
 /*
+=item LEN ( string -- length )
+
+Pops a string from the stack, and pushes back its length.
+
+=cut
+*/
+int inst_LEN(struct vm_context_t *context) {
+    scalar_t s = {0};
+    string_t *str;
+    
+    vm_ds_pop(context, &s);
+    anon_scalar_get_string_value(&s, &str);
+    anon_scalar_set_int_value(&s, string_length(str));
+    vm_ds_push(context, &s);
+    
+    anon_scalar_destroy(&s);
+    
+    return 1;
+}
+
+/*
 =item XPLOD ( s -- [characters] count )
 
 Pops a string from the stack, and pushes back a scalar for each character within it, and the count.
