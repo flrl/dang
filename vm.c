@@ -191,7 +191,7 @@ void *vm_execute(void *ptr) {
                 break;
         }
         
-        // if this thread is the signal manager, and isn't currently in a signal handler, then deal with the next symbol
+        // if this thread is the signal manager, and isn't currently in a signal handler, then deal with the next signal
         if ((context->m_flags & VM_CONTEXT_FLAG_SIG_MANAGER) && !(context->m_flags & VM_CONTEXT_FLAG_IN_SIG_HANDLER)) {
             if (0 == pthread_mutex_lock(&_vm_signal_registry.m_mutex)) {
                 sigset_t pending;
