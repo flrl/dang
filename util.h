@@ -35,6 +35,13 @@ static inline int peekc(FILE *stream) {
 #define DELIMITER_WHITESPACE    (0x100) /* greater than can be stored in a char */
 ssize_t getdelim_ext(char **restrict, size_t *restrict, int, FILE *restrict);
 
+#if defined __DARWIN_C_LEVEL && __DARWIN_C_LEVEL < 200809L
+/* OS X Lion added system implementations of getdelim() and getline(), */
+/* which previously were not present */
+#define NEED_GETDELIM
+#define NEED_GETLINE
+#endif
+
 #ifdef NEED_GETDELIM
 #define getdelim(l,n,d,s)    getdelim_ext(l,n,d,s)
 #endif
