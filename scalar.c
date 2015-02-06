@@ -232,7 +232,6 @@ Shallow-copy of an anonymous scalar_t object.  Only one of dest and original sho
 int anon_scalar_assign(scalar_t * restrict self, const scalar_t * restrict other) {
     assert(self != NULL);
     assert(other != NULL);
-    debug("do we ever need to use this function?\n");
     
     if (self == other)  return 0;
     
